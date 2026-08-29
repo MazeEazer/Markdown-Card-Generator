@@ -5,7 +5,7 @@ interface ToolbarProps {
   themeOverride: ThemeName | 'auto'
   onThemeChange: (theme: ThemeName | 'auto') => void
   onLoadTemplate: () => void
-  onExport: () => void
+  onExportHtml: () => void
   parseError: string | null
 }
 
@@ -13,7 +13,7 @@ export function Toolbar({
   themeOverride,
   onThemeChange,
   onLoadTemplate,
-  onExport,
+  onExportHtml,
   parseError,
 }: ToolbarProps) {
   return (
@@ -48,11 +48,12 @@ export function Toolbar({
 
           <button
             type="button"
-            onClick={onExport}
-            className="text-sm px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-colors"
+            onClick={onExportHtml}
+            className="text-sm px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
           >
             Экспорт HTML
           </button>
+
         </div>
       </div>
 

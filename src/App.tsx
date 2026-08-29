@@ -46,20 +46,32 @@ export default function App() {
     [displayCard, themeOverride],
   )
 
-  const handleExport = useCallback(() => {
+  const handleExportHtml = useCallback(() => {
     if (!parsed.data) return
     const { html, filename } = exportHtml(parsed.data, resolved)
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
     saveAs(blob, filename)
   }, [parsed.data, resolved])
 
+ 
+ const handleImageUpload = useCallback((dataUrl: string) => {
+    setMarkdown(prev => {
+      if (/^avatar:\s*.+$/m.test(prev)) {
+        return prev.replace(/^avatar:\s*.+$/m, `avatar: ${dataUrl}`)
+      }
+      if (/^location:\s*.+$/m.test(prev)) {
+        return prev.replace(/^location:\s*.+$/m, match => `${match}\navatar: ${dataUrl}`)
+      }
+      return prev + `\navatar: ${dataUrl}\n`
+    })
+  }, [])
   return (
     <div className="h-screen flex flex-col bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
       <Toolbar
         themeOverride={themeOverride}
         onThemeChange={setThemeOverride}
         onLoadTemplate={() => setMarkdown(defaultTemplate)}
-        onExport={handleExport}
+        onExportHtml={handleExportHtml}
         parseError={parseError}
       />
 
@@ -80,12 +92,16 @@ export default function App() {
         ))}
       </div>
 
-      <div className="flex-1 grid md:grid-cols-2 min-h-0">
-        <div className={`min-h-0 ${mobileTab === 'editor' ? 'block' : 'hidden'} md:block`}>
+      <div className="flex-1 grid md:grid-cols-2 min-h-0 overflow-hidden">
+        <div className={`h-full min-h-0 ${mobileTab === 'editor' ? 'block' : 'hidden'} md:block`}>
           <EditorPane value={markdown} onChange={setMarkdown} />
         </div>
-        <div className={`min-h-0 border-t md:border-t-0 md:border-l border-zinc-200 dark:border-zinc-800 ${mobileTab === 'preview' ? 'block' : 'hidden'} md:block`}>
-          <PreviewPane data={displayCard} resolved={resolved} />
+        <div className={`h-full min-h-0 border-t md:border-t-0 md:border-l border-zinc-200 dark:border-zinc-800 ${mobileTab === 'preview' ? 'block' : 'hidden'} md:block`}>
+          <PreviewPane 
+            data={displayCard} 
+            resolved={resolved} 
+            onImageUpload={handleImageUpload} 
+          />
         </div>
       </div>
     </div>

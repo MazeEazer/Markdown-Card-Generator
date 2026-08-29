@@ -42,10 +42,9 @@ export function generatePalette(seed: string): ThemeColors {
 }
 
 const THEME_KEYWORDS: Record<ThemeName, string[]> = {
-  aurora: ['design', 'designer', 'creative', 'art', 'ui', 'ux', 'illustrat', 'brand', 'дизайн', 'креатив'],
+  glass: ['design', 'designer', 'creative', 'art', 'ui', 'ux', 'illustrat', 'brand', 'дизайн', 'креатив', 'architect', 'data', 'scientist', 'research', 'аналит', 'архитект'],
   noir: ['developer', 'engineer', 'program', 'code', 'dev', 'backend', 'frontend', 'fullstack', 'разработ', 'инженер'],
   minimal: ['manager', 'director', 'lead', 'consult', 'analyst', 'product', 'менедж', 'директор', 'консульт'],
-  glass: ['architect', 'data', 'scientist', 'research', 'architect', 'аналит', 'архитект'],
 }
 
 function detectTheme(data: CardData): ThemeName {
@@ -56,7 +55,7 @@ function detectTheme(data: CardData): ThemeName {
     .join(' ')
     .toLowerCase()
 
-  let best: ThemeName = 'aurora'
+  let best: ThemeName = 'glass'
   let bestScore = 0
 
   for (const [theme, keywords] of Object.entries(THEME_KEYWORDS) as [ThemeName, string[]][]) {
@@ -67,7 +66,7 @@ function detectTheme(data: CardData): ThemeName {
     }
   }
 
-  return bestScore > 0 ? best : 'aurora'
+  return bestScore > 0 ? best : 'glass'
 }
 
 function paletteForTheme(theme: ThemeName, seed: string): ThemeColors {
@@ -120,7 +119,6 @@ export function resolveTheme(data: CardData | null | undefined, overrideTheme?: 
 }
 
 export const THEME_LABELS: Record<ThemeName, string> = {
-  aurora: 'Aurora',
   glass: 'Glass',
   minimal: 'Minimal',
   noir: 'Noir',

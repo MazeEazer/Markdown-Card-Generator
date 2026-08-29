@@ -1,4 +1,4 @@
-export type ThemeName = 'aurora' | 'glass' | 'minimal' | 'noir'
+export type ThemeName = 'glass' | 'minimal' | 'noir'
 
 export interface CardLink {
   label: string

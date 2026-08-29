@@ -1,7 +1,7 @@
 import { parse as parseYaml } from 'yaml'
 import type { CardData, CardLink, CardSection, ParseResult, ThemeName } from '../types/card'
 
-const VALID_THEMES: ThemeName[] = ['aurora', 'glass', 'minimal', 'noir']
+const VALID_THEMES: ThemeName[] = ['glass', 'minimal', 'noir']
 
 function parseFrontmatter(markdown: string): { data: Record<string, unknown>; content: string } {
   const match = markdown.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/)

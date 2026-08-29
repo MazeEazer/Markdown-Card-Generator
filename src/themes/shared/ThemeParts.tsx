@@ -85,6 +85,7 @@ export function Avatar({ src, name, size = 96 }: { src?: string; name: string; s
       <img
         src={src}
         alt={name}
+        crossOrigin="anonymous"  // ← ДОБАВЛЕНО: критично для экспорта PDF
         width={size}
         height={size}
         className="rounded-full object-cover"

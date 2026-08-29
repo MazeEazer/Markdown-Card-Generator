@@ -17,7 +17,7 @@ npm run preview  # предпросмотр production-сборки
 ---
 name: Алексей Иванов
 title: Frontend-разработчик
-theme: auto          # auto | aurora | glass | minimal | noir
+theme: auto          # auto | glass | minimal | noir
 accent: auto         # auto — палитра из имени
 avatar: https://...
 location: Москва
@@ -48,7 +48,6 @@ React, TypeScript, Node.js
 
 | Тема | Стиль |
 |------|-------|
-| **Aurora** | Градиенты, glassmorphism, мягкие анимации |
 | **Glass** | Frosted glass, blur-эффекты |
 | **Minimal** | Типографика Playfair + Inter, много воздуха |
 | **Noir** | Тёмный фон, neon accent, monospace |
@@ -59,6 +58,8 @@ React, TypeScript, Node.js
 ## Экспорт
 
 Кнопка **Экспорт HTML** скачивает один `.html` файл со встроенными стилями и шрифтами. Файл работает без сервера.
+
+Кнопка **Экспорт PDF** сохраняет текущее превью как PDF-документ.
 
 ## Стек
 
