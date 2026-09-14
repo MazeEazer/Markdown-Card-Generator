@@ -6,7 +6,7 @@ accent: auto
 avatar: https://api.dicebear.com/7.x/avataaars/svg?seed=Alexey
 location: Москва
 links:
-  - label: GitHub
+  - label: GitHuba
     url: https://github.com
     icon: github
   - label: Email
