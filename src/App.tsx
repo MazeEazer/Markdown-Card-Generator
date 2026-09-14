@@ -140,7 +140,7 @@ export default function App() {
         onExportHtml={handleExportHtml}
         parseError={parseError}
         onSignOut={signOut}
-        userEmail={user.email}
+userEmail={user.email ?? null}
         onBackToList={handleBackToList}
         saving={saving}
         siteName={currentSite?.name} // Название сайта из БД, а не из Markdown
