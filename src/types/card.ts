@@ -1,4 +1,4 @@
-export type ThemeName = 'glass' | 'minimal' | 'noir'
+export type ThemeName = 'glass' | 'minimal' | 'noir' | 'vercel'
 
 export interface CardLink {
   label: string
@@ -6,9 +6,46 @@ export interface CardLink {
   icon?: string
 }
 
+export type SectionType = 'text' | 'table' | 'accordion' | 'code-block' | 'card-grid'
+
+export interface TableData {
+  headers: string[]
+  rows: string[][]
+}
+
+export interface AccordionItem {
+  title: string
+  content: string
+}
+
+export interface CodeBlockData {
+  lang: string
+  code: string
+}
+
+export interface CardGridItem {
+  title: string
+  description: string
+  icon?: string
+  /** Ссылка на проект — карточка становится кликабельной */
+  url?: string
+  /** Теги/стек проекта */
+  tags?: string[]
+}
+
 export interface CardSection {
   title: string
   content: string
+  /** Тип секции — определяется автоматически по содержимому */
+  type: SectionType
+  /** Заполняется при type: 'table' */
+  table?: TableData
+  /** Заполняется при type: 'accordion' */
+  accordion?: AccordionItem[]
+  /** Заполняется при type: 'code-block' */
+  code?: CodeBlockData
+  /** Заполняется при type: 'card-grid' */
+  cards?: CardGridItem[]
 }
 
 export interface CardData {

@@ -45,6 +45,7 @@ const THEME_KEYWORDS: Record<ThemeName, string[]> = {
   glass: ['design', 'designer', 'creative', 'art', 'ui', 'ux', 'illustrat', 'brand', 'дизайн', 'креатив', 'architect', 'data', 'scientist', 'research', 'аналит', 'архитект'],
   noir: ['developer', 'engineer', 'program', 'code', 'dev', 'backend', 'frontend', 'fullstack', 'разработ', 'инженер'],
   minimal: ['manager', 'director', 'lead', 'consult', 'analyst', 'product', 'менедж', 'директор', 'консульт'],
+  vercel: ['vercel', 'next.js', 'nextjs', 'geist', 'monochrome', 'монохром', 'serverless'],
 }
 
 function detectTheme(data: CardData): ThemeName {
@@ -68,6 +69,9 @@ function detectTheme(data: CardData): ThemeName {
 
   return bestScore > 0 ? best : 'glass'
 }
+
+/** Темы, которые всегда остаются чёрно-белыми: пользовательский accent к ним не применяется. */
+const MONOCHROME_THEMES: ThemeName[] = ['vercel']
 
 function paletteForTheme(theme: ThemeName, seed: string): ThemeColors {
   const base = generatePalette(seed)
@@ -97,6 +101,18 @@ function paletteForTheme(theme: ThemeName, seed: string): ThemeColors {
         text: '#1a1a2e',
         textMuted: '#555570',
       }
+    case 'vercel':
+      // Монохромная тема: акцент всегда белый, цвета из имени/accent: не используются
+      return {
+        ...base,
+        accent: '#ffffff',
+        accentLight: '#d4d4d4',
+        accentDark: '#8f8f8f',
+        background: '#000000',
+        surface: '#0a0a0a',
+        text: '#ededed',
+        textMuted: '#8f8f8f',
+      }
     default:
       return base
   }
@@ -110,10 +126,11 @@ export function resolveTheme(data: CardData | null | undefined, overrideTheme?: 
     (safe.theme === 'auto' ? detectTheme(safe) : safe.theme)
 
   const seed = safe.name
-  const colors =
-    safe.accent !== 'auto'
-      ? { ...paletteForTheme(theme, seed), accent: safe.accent, accentLight: safe.accent, accentDark: safe.accent }
-      : paletteForTheme(theme, seed)
+  // Монохромные темы (Vercel) не принимают пользовательский accent — иначе пропадает их чёрно-белый стиль
+  const useCustomAccent = safe.accent !== 'auto' && !MONOCHROME_THEMES.includes(theme)
+  const colors = useCustomAccent
+    ? { ...paletteForTheme(theme, seed), accent: safe.accent, accentLight: safe.accent, accentDark: safe.accent }
+    : paletteForTheme(theme, seed)
 
   return { theme, colors }
 }
@@ -122,4 +139,5 @@ export const THEME_LABELS: Record<ThemeName, string> = {
   glass: 'Glass',
   minimal: 'Minimal',
   noir: 'Noir',
+  vercel: 'Vercel',
 }

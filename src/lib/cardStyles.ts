@@ -115,5 +115,13 @@ export function getCardExportCss(): string {
     .transition-opacity { transition: opacity 0.2s; }
     .hover\\:opacity-80:hover { opacity: 0.8; }
     .last\\:mb-0:last-child { margin-bottom: 0; }
+
+    .md-accordion summary { list-style: none; cursor: pointer; }
+    .md-accordion summary::-webkit-details-marker { display: none; }
+    .md-accordion .md-accordion-caret { display: inline-block; transition: transform 0.2s ease; }
+    .md-accordion details[open] .md-accordion-caret { transform: rotate(90deg); }
+
+    .md-card { transition: transform 0.2s ease, filter 0.2s ease; }
+    a.md-card:hover { transform: translateY(-2px); filter: brightness(1.15); }
   `
 }

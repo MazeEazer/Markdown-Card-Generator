@@ -35,6 +35,8 @@ export default function App() {
   const [parseError, setParseError] = useState<string | null>(null)
   const [mobileTab, setMobileTab] = useState<MobileTab>('editor')
   const [saving, setSaving] = useState(false)
+  const [lastSaved, setLastSaved] = useState(defaultTemplate)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   // === ПАРСИНГ И ТЕМА ===
   const parsed = useMemo(() => parseCardMarkdown(markdown), [markdown])
@@ -58,24 +60,56 @@ export default function App() {
     [displayCard, themeOverride],
   )
 
-  // === МГНОВЕННОЕ АВТОСОХРАНЕНИЕ (300мс) ===
+  // === СОХРАНЕНИЕ ПО КНОПКЕ ===
   // Название сайта НЕ перезаписывается — сохраняется только markdown
+  const dirty = markdown !== lastSaved
+  const canSave = Boolean(currentSiteId) && dirty && !saving
+
+  const handleSave = useCallback(async () => {
+    if (!currentSiteId || saving || markdown === lastSaved) return
+
+    setSaving(true)
+    setSaveError(null)
+
+    const { error } = await saveSite(currentSiteId, markdown)
+
+    setSaving(false)
+    if (error) {
+      console.error('❌ Ошибка сохранения:', error)
+      setSaveError(`Не удалось сохранить: ${error.message ?? 'неизвестная ошибка'}`)
+    } else {
+      console.log('✅ Сохранено:', currentSite?.name)
+      setLastSaved(markdown)
+    }
+  }, [currentSite, currentSiteId, lastSaved, markdown, saveSite, saving])
+
+  // Ctrl/Cmd + S — сохранить
   useEffect(() => {
-    if (!currentSiteId || !currentSite) return
+    if (view !== 'editor') return
 
-    const timer = setTimeout(async () => {
-      setSaving(true)
-      const { error } = await saveSite(currentSiteId, markdown)
-      if (error) {
-        console.error('❌ Ошибка сохранения:', error)
-      } else {
-        console.log('✅ Сохранено:', currentSite.name)
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault()
+        void handleSave()
       }
-      setSaving(false)
-    }, 300) // 300мс — ощущается как мгновенное сохранение
+    }
 
-    return () => clearTimeout(timer)
-  }, [markdown, currentSiteId, currentSite, saveSite])
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [view, handleSave])
+
+  // Предупреждаем браузер, если есть несохранённые изменения
+  useEffect(() => {
+    if (view !== 'editor' || !dirty) return
+
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [view, dirty])
 
   // === ОБРАБОТЧИКИ ===
   const handleExportHtml = useCallback(() => {
@@ -101,15 +135,31 @@ export default function App() {
     setCurrentSiteId(site.id) // ВАЖНО: сообщаем хуку ID текущего сайта
     setCurrentSite(site)
     setMarkdown(site.markdown)
+    setLastSaved(site.markdown)
+    setSaveError(null)
     setView('editor')
   }, [setCurrentSiteId])
 
+  const handleLoadTemplate = useCallback(() => {
+    if (dirty && !window.confirm('Загрузить пример? Несохранённые изменения будут потеряны.')) return
+    setMarkdown(defaultTemplate)
+  }, [dirty])
+
   const handleBackToList = useCallback(() => {
+    if (dirty && !window.confirm('Есть несохранённые изменения. Выйти без сохранения?')) return
+
     setView('list')
     setCurrentSite(null)
     setCurrentSiteId(null)
     setMarkdown(defaultTemplate)
-  }, [setCurrentSiteId])
+    setLastSaved(defaultTemplate)
+    setSaveError(null)
+  }, [dirty, setCurrentSiteId])
+
+  const handleSignOut = useCallback(async () => {
+    if (dirty && !window.confirm('Есть несохранённые изменения. Выйти без сохранения?')) return
+    await signOut()
+  }, [dirty, signOut])
 
   // === РЕНДЕР: ЗАГРУЗКА ===
   if (authLoading) {
@@ -136,13 +186,17 @@ export default function App() {
       <Toolbar
         themeOverride={themeOverride}
         onThemeChange={setThemeOverride}
-        onLoadTemplate={() => setMarkdown(defaultTemplate)}
+        onLoadTemplate={handleLoadTemplate}
         onExportHtml={handleExportHtml}
         parseError={parseError}
-        onSignOut={signOut}
-userEmail={user.email ?? null}
+        onSignOut={handleSignOut}
+        userEmail={user.email ?? null}
         onBackToList={handleBackToList}
         saving={saving}
+        dirty={dirty}
+        canSave={canSave}
+        saveError={saveError}
+        onSave={handleSave}
         siteName={currentSite?.name} // Название сайта из БД, а не из Markdown
       />
       <div className="md:hidden flex border-b border-zinc-200 dark:border-zinc-800 shrink-0">

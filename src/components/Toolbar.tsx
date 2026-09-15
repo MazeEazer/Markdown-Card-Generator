@@ -11,6 +11,12 @@ interface ToolbarProps {
   userEmail: string | null
   onBackToList: () => void
   saving: boolean
+  /** Есть несохранённые изменения */
+  dirty: boolean
+  /** Можно ли сохранять прямо сейчас */
+  canSave: boolean
+  onSave: () => void
+  saveError: string | null
   siteName?: string
 }
 
@@ -24,6 +30,10 @@ export function Toolbar({
   userEmail,
   onBackToList,
   saving,
+  dirty,
+  canSave,
+  onSave,
+  saveError,
   siteName,
 }: ToolbarProps) {
   return (
@@ -42,11 +52,24 @@ export function Toolbar({
               {siteName}
             </span>
           )}
-          {saving && (
+          {saving ? (
             <span className="text-xs text-zinc-500 animate-pulse">Сохранение...</span>
+          ) : dirty ? (
+            <span className="text-xs text-amber-600 dark:text-amber-400">● не сохранено</span>
+          ) : (
+            <span className="text-xs text-zinc-400 dark:text-zinc-600">сохранено</span>
           )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={!canSave}
+            title="Сохранить (Ctrl/Cmd + S)"
+            className="text-sm px-4 py-1.5 rounded-lg font-medium transition-colors bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-zinc-200 disabled:text-zinc-400 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500 disabled:cursor-not-allowed"
+          >
+            {saving ? 'Сохранение...' : 'Сохранить'}
+          </button>
           {userEmail && (
             <span className="text-xs text-zinc-500 hidden sm:inline">{userEmail}</span>
           )}
@@ -88,6 +111,11 @@ export function Toolbar({
       {parseError && (
         <div className="text-xs px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
           {parseError}
+        </div>
+      )}
+      {saveError && (
+        <div className="text-xs px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800">
+          {saveError}
         </div>
       )}
     </header>

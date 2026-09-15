@@ -1,5 +1,6 @@
 import type { ThemeProps } from './shared/ThemeParts'
-import { Avatar, isSkillsSection, LinksList, SectionContent, SkillsTags } from './shared/ThemeParts'
+import { Avatar, LinksList } from './shared/ThemeParts'
+import { SectionBody } from './shared/SectionBlocks'
 
 export function GlassTheme({ data, colors }: ThemeProps) {
   return (
@@ -47,7 +48,7 @@ export function GlassTheme({ data, colors }: ThemeProps) {
 
         {data.sections.map((section, i) => (
           <section
-            key={section.title}
+            key={section.title || `piece-${i}`}
             className="rounded-2xl p-6 animate-fade-in"
             style={{
               background: 'rgba(255,255,255,0.2)',
@@ -57,16 +58,14 @@ export function GlassTheme({ data, colors }: ThemeProps) {
               animationDelay: `${(i + 1) * 100}ms`,
             }}
           >
-            <h2 className="text-sm font-bold uppercase tracking-widest mb-3" style={{ color: colors.accent }}>
-              {section.title}
-            </h2>
-            {isSkillsSection(section.title) ? (
-              <SkillsTags content={section.content} accent={colors.accent} />
-            ) : (
-              <div style={{ color: colors.textMuted }}>
-                <SectionContent content={section.content} />
-              </div>
+            {section.title && (
+              <h2 className="text-sm font-bold uppercase tracking-widest mb-3" style={{ color: colors.accent }}>
+                {section.title}
+              </h2>
             )}
+            <div style={{ color: colors.textMuted }}>
+              <SectionBody section={section} colors={colors} />
+            </div>
           </section>
         ))}
       </div>

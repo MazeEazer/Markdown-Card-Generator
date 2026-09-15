@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Алексей Иванов — Frontend-разработчик</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --accent: #ffffff;
+      --accent-light: #d4d4d4;
+      --accent-dark: #8f8f8f;
+    }
+    
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { -webkit-font-smoothing: antialiased; }
+    a { text-decoration: none; color: inherit; }
+    img { display: block; max-width: 100%; }
+
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.6; }
+    }
+    .animate-fade-in { animation: fade-in 0.6s ease forwards; opacity: 0; }
+    .animate-pulse { animation: pulse 4s ease-in-out infinite; }
+
+    .min-h-full { min-height: 100%; }
+    .w-full { width: 100%; }
+    .overflow-auto { overflow: auto; }
+    .overflow-hidden { overflow: hidden; }
+    .relative { position: relative; }
+    .absolute { position: absolute; }
+    .inset-0 { inset: 0; }
+    .pointer-events-none { pointer-events: none; }
+    .max-w-2xl { max-width: 42rem; }
+    .max-w-xl { max-width: 36rem; }
+    .mx-auto { margin-left: auto; margin-right: auto; }
+    .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+    .px-8 { padding-left: 2rem; padding-right: 2rem; }
+    .py-12 { padding-top: 3rem; padding-bottom: 3rem; }
+    .py-16 { padding-top: 4rem; padding-bottom: 4rem; }
+    .p-8 { padding: 2rem; }
+    .p-6 { padding: 1.5rem; }
+    .p-5 { padding: 1.25rem; }
+    .p-1 { padding: 0.25rem; }
+    .p-0\.5 { padding: 0.125rem; }
+    .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+    .px-4 { padding-left: 1rem; padding-right: 1rem; }
+    .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+    .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+    .pl-4 { padding-left: 1rem; }
+    .pl-5 { padding-left: 1.25rem; }
+    .pb-2 { padding-bottom: 0.5rem; }
+    .pt-6 { padding-top: 1.5rem; }
+    .mb-1 { margin-bottom: 0.25rem; }
+    .mb-2 { margin-bottom: 0.5rem; }
+    .mb-3 { margin-bottom: 0.75rem; }
+    .mb-4 { margin-bottom: 1rem; }
+    .mb-6 { margin-bottom: 1.5rem; }
+    .mb-8 { margin-bottom: 2rem; }
+    .mb-10 { margin-bottom: 2.5rem; }
+    .mb-12 { margin-bottom: 3rem; }
+    .mt-1 { margin-top: 0.25rem; }
+    .mt-2 { margin-top: 0.5rem; }
+    .mt-4 { margin-top: 1rem; }
+    .mt-10 { margin-top: 2.5rem; }
+    .mt-16 { margin-top: 4rem; }
+    .space-y-4 > * + * { margin-top: 1rem; }
+    .space-y-5 > * + * { margin-top: 1.25rem; }
+    .space-y-6 > * + * { margin-top: 1.5rem; }
+    .space-y-10 > * + * { margin-top: 2.5rem; }
+    .space-y-1 > * + * { margin-top: 0.25rem; }
+    .gap-2 { gap: 0.5rem; }
+    .gap-3 { gap: 0.75rem; }
+    .gap-5 { gap: 1.25rem; }
+    .gap-6 { gap: 1.5rem; }
+    .rounded-full { border-radius: 9999px; }
+    .rounded-lg { border-radius: 0.5rem; }
+    .rounded-2xl { border-radius: 1rem; }
+    .rounded-3xl { border-radius: 1.5rem; }
+    .text-xs { font-size: 0.75rem; line-height: 1rem; }
+    .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+    .text-base { font-size: 1rem; line-height: 1.5rem; }
+    .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+    .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+    .text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+    .text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+    .font-bold { font-weight: 700; }
+    .font-semibold { font-weight: 600; }
+    .font-medium { font-weight: 500; }
+    .font-serif { font-family: 'Playfair Display', serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .text-center { text-align: center; }
+    .leading-tight { line-height: 1.25; }
+    .leading-relaxed { line-height: 1.625; }
+    .tracking-tight { letter-spacing: -0.025em; }
+    .tracking-wide { letter-spacing: 0.025em; }
+    .tracking-widest { letter-spacing: 0.1em; }
+    .uppercase { text-transform: uppercase; }
+    .flex { display: flex; }
+    .inline-flex { display: inline-flex; }
+    .flex-wrap { flex-wrap: wrap; }
+    .items-center { align-items: center; }
+    .items-start { align-items: flex-start; }
+    .justify-center { justify-content: center; }
+    .border-b { border-bottom-width: 1px; border-bottom-style: solid; }
+    .border-l-2 { border-left-width: 2px; border-left-style: solid; }
+    .border-t { border-top-width: 1px; border-top-style: solid; }
+    .list-disc { list-style-type: disc; }
+    .object-cover { object-fit: cover; }
+    .blur-3xl { filter: blur(64px); }
+    .opacity-40 { opacity: 0.4; }
+    .opacity-30 { opacity: 0.3; }
+    .w-96 { width: 24rem; }
+    .h-96 { height: 24rem; }
+    .w-80 { width: 20rem; }
+    .h-80 { height: 20rem; }
+    .-top-32 { top: -8rem; }
+    .-right-32 { right: -8rem; }
+    .-bottom-32 { bottom: -8rem; }
+    .-left-32 { left: -8rem; }
+    .transition-opacity { transition: opacity 0.2s; }
+    .hover\:opacity-80:hover { opacity: 0.8; }
+    .last\:mb-0:last-child { margin-bottom: 0; }
+
+    .md-accordion summary { list-style: none; cursor: pointer; }
+    .md-accordion summary::-webkit-details-marker { display: none; }
+    .md-accordion .md-accordion-caret { display: inline-block; transition: transform 0.2s ease; }
+    .md-accordion details[open] .md-accordion-caret { transform: rotate(90deg); }
+
+    .md-card { transition: transform 0.2s ease, filter 0.2s ease; }
+    a.md-card:hover { transform: translateY(-2px); filter: brightness(1.15); }
+  
+  </style>
+</head>
+<body>
+  <link rel="preload" as="image" href="https://api.dicebear.com/7.x/avataaars/svg?seed=Alexey" crossorigin=""/><div class="min-h-full w-full overflow-auto relative" style="background:#000000;color:#ededed;font-family:&#x27;Geist&#x27;, &#x27;Inter&#x27;, ui-sans-serif, system-ui, sans-serif;--accent:#ffffff"><div class="absolute inset-0 pointer-events-none" style="background-image:radial-gradient(120% 55% at 50% 0%, #ffffff14 0%, transparent 65%)"></div><div class="relative max-w-2xl mx-auto px-6 py-16"><header class="mb-12 animate-fade-in"><div class="flex items-center gap-5 mb-6"><div style="padding:4px;border-radius:16px;border:1px solid #262626;background:#0a0a0a"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alexey" alt="Алексей Иванов" crossorigin="anonymous" width="72" height="72" class="object-cover" style="width:72px;height:72px;border-radius:13px"/></div><div><p class="text-xs uppercase tracking-widest mb-2" style="font-family:&#x27;Geist Mono&#x27;, &#x27;JetBrains Mono&#x27;, ui-monospace, monospace;color:#ffffff">▲ Москва</p><h1 class="text-4xl font-semibold tracking-tight">Алексей Иванов</h1><p class="text-base mt-2" style="color:#8f8f8f">Frontend-разработчик</p></div></div><div class="flex flex-wrap gap-3 "><a href="https://github.com" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-opacity hover:opacity-80" style="background-color:#ededed0a;border:1px solid #8f8f8f44;color:#ededed"><svg width="20" height="20" viewBox="0 0 24 24" fill="#ededed"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"></path></svg><span class="text-sm font-medium">GitHuba</span></a><a href="mailto:hello@example.com" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-opacity hover:opacity-80" style="background-color:#ededed0a;border:1px solid #8f8f8f44;color:#ededed"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ededed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M22 7l-10 7L2 7"></path></svg><span class="text-sm font-medium">Email</span></a><a href="https://t.me" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-opacity hover:opacity-80" style="background-color:#ededed0a;border:1px solid #8f8f8f44;color:#ededed"><svg width="20" height="20" viewBox="0 0 24 24" fill="#ededed"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0a12 12 0 00-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"></path></svg><span class="text-sm font-medium">Telegram</span></a></div></header><div class="space-y-4"><section class="animate-fade-in" style="background:#0a0a0a;border:1px solid #262626;border-radius:12px;padding:1.5rem;animation-delay:100ms"><h2 class="text-xs uppercase tracking-widest mb-4" style="font-family:&#x27;Geist Mono&#x27;, &#x27;JetBrains Mono&#x27;, ui-monospace, monospace;color:#ffffff">О себе</h2><div class="text-sm leading-relaxed" style="color:#8f8f8f"><div><p class="mb-3 last:mb-0">Создаю быстрые и красивые веб-приложения. Люблю чистый код, продуманный UX и современные технологии.</p></div></div></section><section class="animate-fade-in" style="background:#0a0a0a;border:1px solid #262626;border-radius:12px;padding:1.5rem;animation-delay:200ms"><h2 class="text-xs uppercase tracking-widest mb-4" style="font-family:&#x27;Geist Mono&#x27;, &#x27;JetBrains Mono&#x27;, ui-monospace, monospace;color:#ffffff">Навыки</h2><div class="text-sm leading-relaxed" style="color:#8f8f8f"><div class="flex flex-wrap gap-2"><span class="px-3 py-1 rounded-full text-sm font-medium" style="background-color:#ffffff22;color:#ffffff">React</span><span class="px-3 py-1 rounded-full text-sm font-medium" style="background-color:#ffffff22;color:#ffffff">TypeScript</span><span class="px-3 py-1 rounded-full text-sm font-medium" style="background-color:#ffffff22;color:#ffffff">Node.js</span><span class="px-3 py-1 rounded-full text-sm font-medium" style="background-color:#ffffff22;color:#ffffff">Vite</span><span class="px-3 py-1 rounded-full text-sm font-medium" style="background-color:#ffffff22;color:#ffffff">Tailwind CSS</span><span class="px-3 py-1 rounded-full text-sm font-medium" style="background-color:#ffffff22;color:#ffffff">Figma</span></div></div></section><section class="animate-fade-in" style="background:#0a0a0a;border:1px solid #262626;border-radius:12px;padding:1.5rem;animation-delay:300ms"><h2 class="text-xs uppercase tracking-widest mb-4" style="font-family:&#x27;Geist Mono&#x27;, &#x27;JetBrains Mono&#x27;, ui-monospace, monospace;color:#ffffff">Опыт</h2><div class="text-sm leading-relaxed" style="color:#8f8f8f"><div><p class="mb-3 last:mb-0"><strong class="font-semibold">Senior Frontend Developer</strong> — Acme Inc, 2022–2026</p>
+<p class="mb-3 last:mb-0">Разработал дизайн-систему и ускорил загрузку приложения на 40%.</p>
+<hr style="border:none;height:1px;margin:1rem 0;opacity:0.3;background:#ffffff"/>
+<p class="mb-3 last:mb-0"><strong class="font-semibold">Frontend Developer</strong> — Startup Lab, 2020–2022</p>
+<p class="mb-3 last:mb-0">Запустил MVP за 3 месяца, привлёк 10 000 пользователей.</p></div></div></section><section class="animate-fade-in" style="background:#0a0a0a;border:1px solid #262626;border-radius:12px;padding:1.5rem;animation-delay:400ms"><h2 class="text-xs uppercase tracking-widest mb-4" style="font-family:&#x27;Geist Mono&#x27;, &#x27;JetBrains Mono&#x27;, ui-monospace, monospace;color:#ffffff">Проекты</h2><div class="text-sm leading-relaxed" style="color:#8f8f8f"><div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:0.75rem"><a class="md-card" href="https://github.com/example/design-system" target="_blank" rel="noopener noreferrer" style="display:block;padding:1rem;border-radius:0.75rem;background:#ffffff0f;border:1px solid #ffffff26;color:inherit;text-decoration:none"><div style="margin-bottom:0.6rem;line-height:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="#ffffff"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg></div><div style="display:flex;align-items:center;gap:0.35rem;margin-bottom:0.35rem"><span style="font-size:0.95rem;font-weight:600;line-height:1.3">Дизайн-система</span><span aria-hidden="true" style="font-size:0.85rem;line-height:1;color:#ffffff">↗</span></div><div style="font-size:0.8rem;line-height:1.5;color:#8f8f8f;margin-bottom:0.6rem">36 компонентов для продуктов компании</div><div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin-bottom:0.6rem"><span style="padding:0.15rem 0.5rem;border-radius:9999px;font-size:0.7rem;white-space:nowrap;background:#ffffff18;color:#ffffff">React</span><span style="padding:0.15rem 0.5rem;border-radius:9999px;font-size:0.7rem;white-space:nowrap;background:#ffffff18;color:#ffffff">Storybook</span><span style="padding:0.15rem 0.5rem;border-radius:9999px;font-size:0.7rem;white-space:nowrap;background:#ffffff18;color:#ffffff">Tokens</span></div><div style="font-size:0.7rem;font-family:&#x27;JetBrains Mono&#x27;, monospace;color:#8f8f8f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">github.com/example/design-system</div></a><a class="md-card" href="https://github.com/example/realtime-dashboard" target="_blank" rel="noopener noreferrer" style="display:block;padding:1rem;border-radius:0.75rem;background:#ffffff0f;border:1px solid #ffffff26;color:inherit;text-decoration:none"><div style="margin-bottom:0.6rem;line-height:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"></path><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"></path></svg></div><div style="display:flex;align-items:center;gap:0.35rem;margin-bottom:0.35rem"><span style="font-size:0.95rem;font-weight:600;line-height:1.3">Realtime-дашборд</span><span aria-hidden="true" style="font-size:0.85rem;line-height:1;color:#ffffff">↗</span></div><div style="font-size:0.8rem;line-height:1.5;color:#8f8f8f;margin-bottom:0.6rem">Аналитика в реальном времени на WebSocket</div><div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin-bottom:0.6rem"><span style="padding:0.15rem 0.5rem;border-radius:9999px;font-size:0.7rem;white-space:nowrap;background:#ffffff18;color:#ffffff">TypeScript</span><span style="padding:0.15rem 0.5rem;border-radius:9999px;font-size:0.7rem;white-space:nowrap;background:#ffffff18;color:#ffffff">WebSocket</span><span style="padding:0.15rem 0.5rem;border-radius:9999px;font-size:0.7rem;white-space:nowrap;background:#ffffff18;color:#ffffff">D3</span></div><div style="font-size:0.7rem;font-family:&#x27;JetBrains Mono&#x27;, monospace;color:#8f8f8f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">github.com/example/realtime-dashboard</div></a></div></div></section><section class="animate-fade-in" style="background:#0a0a0a;border:1px solid #262626;border-radius:12px;padding:1.5rem;animation-delay:500ms"><h2 class="text-xs uppercase tracking-widest mb-4" style="font-family:&#x27;Geist Mono&#x27;, &#x27;JetBrains Mono&#x27;, ui-monospace, monospace;color:#ffffff">Технологии</h2><div class="text-sm leading-relaxed" style="color:#8f8f8f"><div style="overflow-x:auto;border:1px solid #ffffff33;border-radius:0.5rem"><table style="width:100%;border-collapse:collapse;font-size:0.875rem;line-height:1.5"><thead><tr style="background:#ffffff18"><th style="padding:0.5rem 0.75rem;text-align:left;font-weight:600;white-space:nowrap;color:#ffffff;border-bottom:1px solid #ffffff33">Технология</th><th style="padding:0.5rem 0.75rem;text-align:left;font-weight:600;white-space:nowrap;color:#ffffff;border-bottom:1px solid #ffffff33">Опыт</th><th style="padding:0.5rem 0.75rem;text-align:left;font-weight:600;white-space:nowrap;color:#ffffff;border-bottom:1px solid #ffffff33">Уровень</th></tr></thead><tbody><tr><td style="padding:0.5rem 0.75rem;vertical-align:top;border-bottom:1px solid #8f8f8f22">React</td><td style="padding:0.5rem 0.75rem;vertical-align:top;border-bottom:1px solid #8f8f8f22">6 лет</td><td style="padding:0.5rem 0.75rem;vertical-align:top;border-bottom:1px solid #8f8f8f22">Expert</td></tr><tr><td style="padding:0.5rem 0.75rem;vertical-align:top;border-bottom:1px solid #8f8f8f22">TypeScript</td><td style="padding:0.5rem 0.75rem;vertical-align:top;border-bottom:1px solid #8f8f8f22">4 года</td><td style="padding:0.5rem 0.75rem;vertical-align:top;border-bottom:1px solid #8f8f8f22">Advanced</td></tr><tr><td style="padding:0.5rem 0.75rem;vertical-align:top;border-bottom:none">Node.js</td><td style="padding:0.5rem 0.75rem;vertical-align:top;border-bottom:none">3 года</td><td style="padding:0.5rem 0.75rem;vertical-align:top;border-bottom:none">Intermediate</td></tr></tbody></table></div></div></section><section class="animate-fade-in" style="background:#0a0a0a;border:1px solid #262626;border-radius:12px;padding:1.5rem;animation-delay:600ms"><h2 class="text-xs uppercase tracking-widest mb-4" style="font-family:&#x27;Geist Mono&#x27;, &#x27;JetBrains Mono&#x27;, ui-monospace, monospace;color:#ffffff">Пример кода</h2><div class="text-sm leading-relaxed" style="color:#8f8f8f"><div style="border-radius:0.5rem;overflow:hidden;border:1px solid #ffffff33;background:#0d0d0d"><div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;padding:0.4rem 0.75rem;background:#1a1a1a;border-bottom:1px solid rgba(255, 255, 255, 0.12)"><span style="font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;font-family:&#x27;JetBrains Mono&#x27;, monospace;color:#ffffff">typescript</span><span style="display:flex;gap:0.3rem" aria-hidden="true"><span style="width:9px;height:9px;border-radius:9999px;background:#3f3f3f"></span><span style="width:9px;height:9px;border-radius:9999px;background:#525252"></span><span style="width:9px;height:9px;border-radius:9999px;background:#6f6f6f"></span></span></div><pre style="margin:0;padding:0.9rem 1rem;overflow-x:auto;white-space:pre;font-size:0.8rem;line-height:1.6;font-family:&#x27;JetBrains Mono&#x27;, monospace;color:#e6edf3"><code><span style="color:#ff7b72">export</span><span style="color:#e6edf3"> </span><span style="color:#ff7b72">function</span><span style="color:#e6edf3"> </span><span style="color:#d2a8ff">greet</span><span style="color:#c9d1d9">(</span><span style="color:#e6edf3">name</span><span style="color:#ff7b72">:</span><span style="color:#e6edf3"> </span><span style="color:#ff7b72">string</span><span style="color:#c9d1d9">)</span><span style="color:#ff7b72">:</span><span style="color:#e6edf3"> </span><span style="color:#ff7b72">string</span><span style="color:#e6edf3"> </span><span style="color:#c9d1d9">{</span><span style="color:#e6edf3">
+  </span><span style="color:#8b949e">// Приветствие пользователя</span><span style="color:#e6edf3">
+  </span><span style="color:#ff7b72">return</span><span style="color:#e6edf3"> </span><span style="color:#a5d6ff">&#x27;Привет, &#x27;</span><span style="color:#e6edf3"> </span><span style="color:#ff7b72">+</span><span style="color:#e6edf3"> name </span><span style="color:#ff7b72">+</span><span style="color:#e6edf3"> </span><span style="color:#a5d6ff">&#x27;!&#x27;</span><span style="color:#e6edf3">
+</span><span style="color:#c9d1d9">}</span><span style="color:#e6edf3">
+
+console</span><span style="color:#c9d1d9">.</span><span style="color:#d2a8ff">log</span><span style="color:#c9d1d9">(</span><span style="color:#d2a8ff">greet</span><span style="color:#c9d1d9">(</span><span style="color:#a5d6ff">&#x27;мир&#x27;</span><span style="color:#c9d1d9">))</span></code></pre></div></div></section><section class="animate-fade-in" style="background:#0a0a0a;border:1px solid #262626;border-radius:12px;padding:1.5rem;animation-delay:700ms"><h2 class="text-xs uppercase tracking-widest mb-4" style="font-family:&#x27;Geist Mono&#x27;, &#x27;JetBrains Mono&#x27;, ui-monospace, monospace;color:#ffffff">FAQ</h2><div class="text-sm leading-relaxed" style="color:#8f8f8f"><div class="md-accordion" style="display:flex;flex-direction:column;gap:0.5rem"><details style="background:#ffffff0f;border:1px solid #ffffff26;border-radius:0.5rem;overflow:hidden"><summary style="display:flex;align-items:center;gap:0.5rem;padding:0.6rem 0.85rem;font-size:0.875rem;font-weight:600;color:#ffffff"><span class="md-accordion-caret" aria-hidden="true">▸</span><span>С какими технологиями вы работаете?</span></summary><div style="padding:0 0.85rem 0.75rem;font-size:0.875rem;line-height:1.6"><div><p class="mb-3 last:mb-0">React, TypeScript, Node.js и Vite — мой основной стек.</p></div></div></details><details style="background:#ffffff0f;border:1px solid #ffffff26;border-radius:0.5rem;overflow:hidden"><summary style="display:flex;align-items:center;gap:0.5rem;padding:0.6rem 0.85rem;font-size:0.875rem;font-weight:600;color:#ffffff"><span class="md-accordion-caret" aria-hidden="true">▸</span><span>Как со мной связаться?</span></summary><div style="padding:0 0.85rem 0.75rem;font-size:0.875rem;line-height:1.6"><div><p class="mb-3 last:mb-0">Напишите на email или в Telegram — отвечаю в течение дня.</p></div></div></details></div></div></section><section class="animate-fade-in" style="background:#0a0a0a;border:1px solid #262626;border-radius:12px;padding:1.5rem;animation-delay:800ms"><h2 class="text-xs uppercase tracking-widest mb-4" style="font-family:&#x27;Geist Mono&#x27;, &#x27;JetBrains Mono&#x27;, ui-monospace, monospace;color:#ffffff">Контакты</h2><div class="text-sm leading-relaxed" style="color:#8f8f8f"><div><p class="mb-3 last:mb-0">Напишите на email или в Telegram — отвечаю в течение дня.</p></div></div></section></div><footer class="mt-16 pt-6 text-xs text-center" style="font-family:&#x27;Geist Mono&#x27;, &#x27;JetBrains Mono&#x27;, ui-monospace, monospace;border-top:1px solid #262626;color:#8f8f8f">▲ Алексей Иванов · 2026</footer></div></div>
+</body>
+</html>

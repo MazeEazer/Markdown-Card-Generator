@@ -1,5 +1,6 @@
 import type { ThemeProps } from './shared/ThemeParts'
-import { Avatar, isSkillsSection, LinksList, SectionContent, SkillsTags } from './shared/ThemeParts'
+import { Avatar, LinksList } from './shared/ThemeParts'
+import { SectionBody } from './shared/SectionBlocks'
 
 export function NoirTheme({ data, colors }: ThemeProps) {
   return (
@@ -51,7 +52,7 @@ export function NoirTheme({ data, colors }: ThemeProps) {
         <div className="space-y-4">
           {data.sections.map((section, i) => (
             <section
-              key={section.title}
+              key={section.title || `piece-${i}`}
               className="rounded-lg p-5 animate-fade-in"
               style={{
                 background: colors.surface,
@@ -60,18 +61,16 @@ export function NoirTheme({ data, colors }: ThemeProps) {
                 animationDelay: `${(i + 1) * 100}ms`,
               }}
             >
-              <h2
-                className="text-xs font-bold uppercase tracking-widest mb-3 font-mono"
-                style={{ color: colors.accent }}
-              >
-                {'>'} {section.title}
-              </h2>
+              {section.title && (
+                <h2
+                  className="text-xs font-bold uppercase tracking-widest mb-3 font-mono"
+                  style={{ color: colors.accent }}
+                >
+                  {'>'} {section.title}
+                </h2>
+              )}
               <div className="text-sm leading-relaxed" style={{ color: colors.textMuted }}>
-                {isSkillsSection(section.title) ? (
-                  <SkillsTags content={section.content} accent={colors.accent} />
-                ) : (
-                  <SectionContent content={section.content} />
-                )}
+                <SectionBody section={section} colors={colors} />
               </div>
             </section>
           ))}
