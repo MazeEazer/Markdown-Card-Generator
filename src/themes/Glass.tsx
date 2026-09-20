@@ -48,7 +48,7 @@ export function GlassTheme({ data, colors }: ThemeProps) {
 
         {data.sections.map((section, i) => (
           <section
-            key={section.title || `piece-${i}`}
+            key={i}
             className="rounded-2xl p-6 animate-fade-in"
             style={{
               background: 'rgba(255,255,255,0.2)',

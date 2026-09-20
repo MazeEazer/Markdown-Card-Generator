@@ -42,7 +42,7 @@ export function MinimalTheme({ data, colors }: ThemeProps) {
         <div className="space-y-10">
           {data.sections.map((section, i) => (
             <section
-              key={section.title || `piece-${i}`}
+              key={i}
               className="animate-fade-in"
               style={{ animationDelay: `${(i + 1) * 100}ms` }}
             >

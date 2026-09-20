@@ -241,9 +241,9 @@ export function CardGridBlock({ cards, colors }: { cards: CardGridItem[]; colors
 
             {card.tags && card.tags.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginBottom: card.url ? '0.6rem' : 0 }}>
-                {card.tags.map((tag) => (
+                {card.tags.map((tag, i) => (
                   <span
-                    key={tag}
+                    key={i}
                     style={{
                       padding: '0.15rem 0.5rem',
                       borderRadius: '9999px',

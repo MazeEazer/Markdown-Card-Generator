@@ -8,16 +8,17 @@ interface ToolbarProps {
   onExportHtml: () => void
   parseError: string | null
   onSignOut: () => void
-  userEmail: string | null
+  userEmail: string | null | undefined
   onBackToList: () => void
   saving: boolean
-  /** Есть несохранённые изменения */
   dirty: boolean
-  /** Можно ли сохранять прямо сейчас */
   canSave: boolean
   onSave: () => void
   saveError: string | null
   siteName?: string
+  onPublish?: () => void
+  publishUrl?: string | null
+  publishing?: boolean
 }
 
 export function Toolbar({
@@ -35,6 +36,9 @@ export function Toolbar({
   onSave,
   saveError,
   siteName,
+  onPublish,
+  publishUrl,
+  publishing = false,
 }: ToolbarProps) {
   return (
     <header className="flex flex-col gap-2 px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shrink-0">
@@ -60,7 +64,9 @@ export function Toolbar({
             <span className="text-xs text-zinc-400 dark:text-zinc-600">сохранено</span>
           )}
         </div>
+
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Кнопка Сохранить */}
           <button
             type="button"
             onClick={onSave}
@@ -70,9 +76,37 @@ export function Toolbar({
           >
             {saving ? 'Сохранение...' : 'Сохранить'}
           </button>
+
+          {/* Кнопка Опубликовать на Vercel */}
+          {onPublish && (
+            <button
+              type="button"
+              onClick={onPublish}
+              disabled={publishing || dirty}
+              title={dirty ? 'Сначала сохраните изменения' : 'Опубликовать на Vercel'}
+              className="text-sm px-4 py-1.5 rounded-lg font-medium transition-colors bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-zinc-200 disabled:text-zinc-400 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500 disabled:cursor-not-allowed"
+            >
+              {publishing ? 'Публикация...' : publishUrl ? 'Обновить' : 'Опубликовать'}
+            </button>
+          )}
+
+          {/* Ссылка на опубликованный сайт */}
+          {publishUrl && (
+            <a
+              href={publishUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+              title="Открыть опубликованный сайт"
+            >
+              ↗ Открыть сайт
+            </a>
+          )}
+
           {userEmail && (
             <span className="text-xs text-zinc-500 hidden sm:inline">{userEmail}</span>
           )}
+
           <select
             value={themeOverride}
             onChange={(e) => onThemeChange(e.target.value as ThemeName | 'auto')}
@@ -85,6 +119,7 @@ export function Toolbar({
               </option>
             ))}
           </select>
+
           <button
             type="button"
             onClick={onLoadTemplate}
@@ -92,6 +127,7 @@ export function Toolbar({
           >
             Загрузить пример
           </button>
+
           <button
             type="button"
             onClick={onExportHtml}
@@ -99,6 +135,7 @@ export function Toolbar({
           >
             Экспорт HTML
           </button>
+
           <button
             type="button"
             onClick={onSignOut}
@@ -108,11 +145,13 @@ export function Toolbar({
           </button>
         </div>
       </div>
+
       {parseError && (
         <div className="text-xs px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
           {parseError}
         </div>
       )}
+
       {saveError && (
         <div className="text-xs px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800">
           {saveError}

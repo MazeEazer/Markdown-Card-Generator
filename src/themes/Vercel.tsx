@@ -59,7 +59,7 @@ export function VercelTheme({ data, colors }: ThemeProps) {
         <div className="space-y-4">
           {data.sections.map((section, i) => (
             <section
-              key={section.title || `piece-${i}`}
+              key={i}
               className="animate-fade-in"
               style={{
                 background: colors.surface,

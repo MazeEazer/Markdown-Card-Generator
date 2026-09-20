@@ -4,6 +4,7 @@ import { defaultTemplate } from './data/defaultTemplate'
 import { exportHtml } from './lib/exportHtml'
 import { parseCardMarkdown, FALLBACK_CARD } from './lib/parser'
 import { resolveTheme } from './lib/themeEngine'
+import { persistTheme, resolveInitialTheme, type ThemePreference } from './lib/themePreference'
 import type { CardData, ThemeName } from './types/card'
 import { EditorPane } from './components/EditorPane'
 import { PreviewPane } from './components/PreviewPane'
@@ -12,7 +13,8 @@ import { SitesList } from './components/SitesList'
 import { useAuth } from './contexts/AuthContext'
 import { AuthPage } from './components/auth/AuthPage'
 import { useSites, type Site } from './hooks/useSites'
-
+// Импортируем функцию деплоя (убедись, что файл src/lib/vercelDeploy.ts создан)
+import { deployToVercel } from './lib/vercelDeploy'
 type MobileTab = 'editor' | 'preview'
 type View = 'list' | 'editor'
 
@@ -30,13 +32,20 @@ export default function App() {
   const [view, setView] = useState<View>('list')
   const [currentSite, setCurrentSite] = useState<Site | null>(null)
   const [markdown, setMarkdown] = useState(defaultTemplate)
-  const [themeOverride, setThemeOverride] = useState<ThemeName | 'auto'>('auto')
+  const [themeOverride, setThemeOverride] = useState<ThemePreference>('auto')
+  const [lastTheme, setLastTheme] = useState<ThemePreference>('auto')
   const [lastValidCard, setLastValidCard] = useState<CardData>(getInitialCard)
   const [parseError, setParseError] = useState<string | null>(null)
   const [mobileTab, setMobileTab] = useState<MobileTab>('editor')
+  
+  // Состояния сохранения
   const [saving, setSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState(defaultTemplate)
   const [saveError, setSaveError] = useState<string | null>(null)
+  
+  // Состояния публикации на Vercel
+  const [publishUrl, setPublishUrl] = useState<string | null>(null)
+  const [publishing, setPublishing] = useState(false)
 
   // === ПАРСИНГ И ТЕМА ===
   const parsed = useMemo(() => parseCardMarkdown(markdown), [markdown])
@@ -60,18 +69,27 @@ export default function App() {
     [displayCard, themeOverride],
   )
 
+  // === СИНХРОНИЗАЦИЯ URL ПУБЛИКАЦИИ ===
+  useEffect(() => {
+    if (currentSite?.public_url) {
+      setPublishUrl(currentSite.public_url)
+    } else {
+      setPublishUrl(null)
+    }
+  }, [currentSite])
+
   // === СОХРАНЕНИЕ ПО КНОПКЕ ===
-  // Название сайта НЕ перезаписывается — сохраняется только markdown
-  const dirty = markdown !== lastSaved
+  const dirty = markdown !== lastSaved || themeOverride !== lastTheme
   const canSave = Boolean(currentSiteId) && dirty && !saving
 
   const handleSave = useCallback(async () => {
-    if (!currentSiteId || saving || markdown === lastSaved) return
+    if (!currentSiteId || saving) return
+    if (markdown === lastSaved && themeOverride === lastTheme) return
 
     setSaving(true)
     setSaveError(null)
 
-    const { error } = await saveSite(currentSiteId, markdown)
+    const { error } = await saveSite(currentSiteId, markdown, themeOverride)
 
     setSaving(false)
     if (error) {
@@ -80,8 +98,10 @@ export default function App() {
     } else {
       console.log('✅ Сохранено:', currentSite?.name)
       setLastSaved(markdown)
+      setLastTheme(themeOverride)
+      persistTheme(currentSiteId, themeOverride)
     }
-  }, [currentSite, currentSiteId, lastSaved, markdown, saveSite, saving])
+  }, [currentSite?.name, currentSiteId, lastSaved, lastTheme, markdown, saveSite, saving, themeOverride])
 
   // Ctrl/Cmd + S — сохранить
   useEffect(() => {
@@ -132,13 +152,23 @@ export default function App() {
   }, [])
 
   const handleEditSite = useCallback((site: Site) => {
-    setCurrentSiteId(site.id) // ВАЖНО: сообщаем хуку ID текущего сайта
+    setCurrentSiteId(site.id)
     setCurrentSite(site)
     setMarkdown(site.markdown)
     setLastSaved(site.markdown)
+    // Восстанавливаем тему сайта: локально сохранённый выбор важнее значения из БД
+    const theme = resolveInitialTheme(site.id, site.theme)
+    setThemeOverride(theme)
+    setLastTheme(theme)
     setSaveError(null)
     setView('editor')
   }, [setCurrentSiteId])
+
+  const handleThemeChange = useCallback((theme: ThemePreference) => {
+    setThemeOverride(theme)
+    // Сразу запоминаем выбор локально, чтобы он выжил перезагрузку даже без сохранения
+    persistTheme(currentSiteId, theme)
+  }, [currentSiteId])
 
   const handleLoadTemplate = useCallback(() => {
     if (dirty && !window.confirm('Загрузить пример? Несохранённые изменения будут потеряны.')) return
@@ -153,6 +183,8 @@ export default function App() {
     setCurrentSiteId(null)
     setMarkdown(defaultTemplate)
     setLastSaved(defaultTemplate)
+    setThemeOverride('auto')
+    setLastTheme('auto')
     setSaveError(null)
   }, [dirty, setCurrentSiteId])
 
@@ -161,7 +193,51 @@ export default function App() {
     await signOut()
   }, [dirty, signOut])
 
-  // === РЕНДЕР: ЗАГРУЗКА ===
+  // === ПУБЛИКАЦИЯ НА VERCEL ===
+// В App.tsx найди handlePublish и измени так:
+
+const handlePublish = useCallback(async () => {
+  if (!currentSiteId || !currentSite) { // Убрали проверку !user
+    alert('Выберите сайт для публикации')
+    return
+  }
+
+  if (!parsed.data) {
+    alert('Не удалось сгенерировать HTML для публикации.')
+    return
+  }
+
+  if (!confirm(`Опубликовать сайт "${currentSite.name}"?`)) return
+
+  setPublishing(true)
+  try {
+    const { html } = exportHtml(parsed.data, resolved)
+    
+    // Передаём только html, siteId и name
+    const { url, error } = await deployToVercel(html, currentSiteId, currentSite.name)
+
+    if (error) {
+      alert(`❌ Ошибка публикации: ${error.message}`)
+    } else if (url) {
+      setPublishUrl(url)
+      
+      // Обновляем текущий сайт в состоянии
+      setCurrentSite(prev => prev ? { ...prev, public_url: url } : null)
+      
+      try {
+        await navigator.clipboard.writeText(url)
+      } catch (err) {
+        console.warn('Не удалось скопировать:', err)
+      }
+      
+      alert(`✅ Сайт опубликован!\n\n${url}\n\nСсылка скопирована.`)
+    }
+  } catch (err: any) {
+    alert(`Ошибка: ${err.message || err}`)
+  } finally {
+    setPublishing(false)
+  }
+}, [currentSiteId, currentSite, parsed.data, resolved])  // === РЕНДЕР: ЗАГРУЗКА ===
   if (authLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-zinc-100 dark:bg-zinc-950">
@@ -185,7 +261,7 @@ export default function App() {
     <div className="h-screen flex flex-col bg-zinc-100 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
       <Toolbar
         themeOverride={themeOverride}
-        onThemeChange={setThemeOverride}
+        onThemeChange={handleThemeChange}
         onLoadTemplate={handleLoadTemplate}
         onExportHtml={handleExportHtml}
         parseError={parseError}
@@ -197,7 +273,11 @@ export default function App() {
         canSave={canSave}
         saveError={saveError}
         onSave={handleSave}
-        siteName={currentSite?.name} // Название сайта из БД, а не из Markdown
+        siteName={currentSite?.name}
+        // Новые пропсы для публикации:
+        onPublish={handlePublish}
+        publishUrl={publishUrl}
+        publishing={publishing}
       />
       <div className="md:hidden flex border-b border-zinc-200 dark:border-zinc-800 shrink-0">
         {(['editor', 'preview'] as MobileTab[]).map((tab) => (

@@ -57,9 +57,9 @@ export function SkillsTags({ content, accent }: { content: string; accent: strin
 
   return (
     <div className="flex flex-wrap gap-2">
-      {skills.map((skill) => (
+      {skills.map((skill, i) => (
         <span
-          key={skill}
+          key={i}
           className="px-3 py-1 rounded-full text-sm font-medium"
           style={{ backgroundColor: `${accent}22`, color: accent }}
         >
@@ -91,9 +91,9 @@ export function LinksList({
 
   return (
     <div className={`flex flex-wrap gap-3 ${className ?? ''}`}>
-      {links.map((link) => (
+      {links.map((link, i) => (
         <a
-          key={link.url}
+          key={i}
           href={link.url}
           target="_blank"
           rel="noopener noreferrer"
