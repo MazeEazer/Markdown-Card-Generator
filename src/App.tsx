@@ -5,7 +5,7 @@ import { exportHtml } from './lib/exportHtml'
 import { parseCardMarkdown, FALLBACK_CARD } from './lib/parser'
 import { resolveTheme } from './lib/themeEngine'
 import { persistTheme, resolveInitialTheme, type ThemePreference } from './lib/themePreference'
-import type { CardData, ThemeName } from './types/card'
+import type { CardData } from './types/card'
 import { EditorPane } from './components/EditorPane'
 import { PreviewPane } from './components/PreviewPane'
 import { Toolbar } from './components/Toolbar'
@@ -214,8 +214,7 @@ const handlePublish = useCallback(async () => {
     const { html } = exportHtml(parsed.data, resolved)
     
     // Передаём только html, siteId и name
-    const { url, error } = await deployToVercel(html, currentSiteId, currentSite.name)
-
+const { url, error } = await deployToVercel(html, currentSiteId)
     if (error) {
       alert(`❌ Ошибка публикации: ${error.message}`)
     } else if (url) {

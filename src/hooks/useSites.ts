@@ -137,7 +137,7 @@ async function publishSite(siteId: string, html: string): Promise<{ url: string 
     return { url: null, error: new Error('Site or user not found') }
   }
 
-  return await deployToVercel(html, siteId, site.name, user.id)
+  return await deployToVercel(html, siteId)
 }
 
   return {
