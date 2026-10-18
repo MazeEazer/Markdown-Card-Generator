@@ -1,4 +1,4 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
+import { type Ref, useCallback, useDeferredValue, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { EditorState, Transaction } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
 import type { Diagnostic } from '../dsl/types'
@@ -9,12 +9,18 @@ import { baseExtensions } from '../editor/setup'
 import { AddBlockDialog } from './AddBlockDialog'
 import { ProblemsPanel } from './ProblemsPanel'
 
+/** Что редактор умеет по просьбе снаружи: перевести курсор к позиции (клик по превью). */
+export interface EditorHandle {
+  jumpTo: (offset: number) => void
+}
+
 interface EditorPaneProps {
   value: string
   onChange: (value: string) => void
+  ref?: Ref<EditorHandle>
 }
 
-export function EditorPane({ value, onChange }: EditorPaneProps) {
+export function EditorPane({ value, onChange, ref }: EditorPaneProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   // Слушатель CodeMirror создаётся один раз, поэтому свежий onChange берём из ref
@@ -61,13 +67,18 @@ export function EditorPane({ value, onChange }: EditorPaneProps) {
   const checkedText = useDeferredValue(value)
   const diagnostics = useMemo(() => validate(checkedText), [checkedText])
 
-  const jumpTo = useCallback((diagnostic: Diagnostic) => {
+  const jumpToOffset = useCallback((offset: number) => {
     const view = viewRef.current
     if (!view) return
-    const anchor = Math.min(diagnostic.from, view.state.doc.length)
-    view.dispatch({ selection: { anchor }, scrollIntoView: true })
+    const anchor = Math.min(Math.max(offset, 0), view.state.doc.length)
+    // Строку ставим в середину экрана, а не к краю: так видно и её, и что вокруг
+    view.dispatch({ selection: { anchor }, effects: EditorView.scrollIntoView(anchor, { y: 'center' }) })
     view.focus()
   }, [])
+
+  useImperativeHandle(ref, () => ({ jumpTo: jumpToOffset }), [jumpToOffset])
+
+  const jumpTo = useCallback((diagnostic: Diagnostic) => jumpToOffset(diagnostic.from), [jumpToOffset])
 
   const fix = useCallback(
     (diagnostic: Diagnostic) => {

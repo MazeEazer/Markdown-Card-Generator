@@ -76,3 +76,17 @@ a.md-card:hover {
     display: flex;
   }
 }
+
+/* Превью: блоки и шапка кликабельны — клик переводит курсор редактора к их строке (только в приложении, не в экспорте) */
+.preview-locate .md-site section,
+.preview-locate .md-site header {
+  cursor: pointer;
+  transition: outline-color 0.15s ease;
+  outline: 2px dashed transparent;
+  outline-offset: 4px;
+}
+
+.preview-locate .md-site section:hover,
+.preview-locate .md-site header:hover {
+  outline-color: rgb(99 102 241 / 0.6);
+}

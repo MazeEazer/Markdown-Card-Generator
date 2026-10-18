@@ -76,6 +76,14 @@ rating: 4
 `
 
 describe.each(THEME_NAMES)('тема %s', (theme) => {
+  it('одна <section> на секцию и один <header> — по ним превью находит строку в редакторе', async () => {
+    const { barbershop } = await import('../data/templates/barbershop')
+    const sections = parseCardMarkdown(barbershop).data!.sections.length
+    const html = render(barbershop, theme)
+    expect(html.match(/<section[\s>]/g)).toHaveLength(sections)
+    expect(html.match(/<header[\s>]/g)).toHaveLength(1)
+  })
+
   it(':::map — адрес, карта Яндекса и кнопки', () => {
     const html = render(business.replace(':::contacts', ':::map'), theme)
     expect(html).toContain('Самара, ул. Ленина, 10')

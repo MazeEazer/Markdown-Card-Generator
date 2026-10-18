@@ -1,6 +1,6 @@
 // Обёртка для фронтенда: разбор DSL живёт в src/dsl/ (общий код с Edge Functions).
 import type { ParseResult } from '../types/card'
-import { toCardData } from '../dsl/cardData'
+import { previewTargets, toCardData } from '../dsl/cardData'
 import { parseDocument } from '../dsl/parser'
 
 export { FALLBACK_CARD } from '../dsl/cardData'
@@ -20,4 +20,9 @@ export function parseCardMarkdown(markdown: string): ParseResult {
     const message = err instanceof Error ? err.message : 'Ошибка парсинга Markdown'
     return { data: null, error: message }
   }
+}
+
+/** Позиции в тексте для клика по превью: шапка сайта и секции по порядку (см. previewTargets). */
+export function previewTargetsFor(markdown: string): { header: number; sections: number[] } {
+  return previewTargets(parseDocument(markdown))
 }

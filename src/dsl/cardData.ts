@@ -2,7 +2,7 @@
 // без изменений; новые поля бизнеса (phone, contacts, ...) читаются из исходного текста YAML.
 import { isMap, isScalar, type Document } from 'yaml'
 import type { CardContacts, CardData, CardLink, ParseResult, ThemeName } from '../types/card.ts'
-import type { DocumentNode } from './ast.ts'
+import type { DocumentNode, SectionNode } from './ast.ts'
 import { CONTACT_NAMES, THEME_NAMES } from './schema/frontmatter.ts'
 import { buildSection } from './sections.ts'
 
@@ -96,7 +96,7 @@ export function toCardData(ast: DocumentNode): ParseResult {
     avatar: data.avatar ? String(data.avatar) : undefined,
     location: data.location ? String(data.location) : undefined,
     links: parseLinks(data.links),
-    sections: ast.sections.filter((section) => section.content).map((section) => buildSection(section.title, section.content)),
+    sections: visibleSections(ast).map((section) => buildSection(section.title, section.content)),
     business: scalarText(yaml, ['business']),
     phone: scalarText(yaml, ['phone']),
     address: scalarText(yaml, ['address']),
@@ -115,4 +115,21 @@ export const FALLBACK_CARD: CardData = {
   accent: 'auto',
   links: [],
   sections: [],
+}
+
+/** Секции, которые попадают на сайт: пустые пропускаются. Один фильтр для CardData и для связи превью с редактором. */
+export function visibleSections(ast: DocumentNode): SectionNode[] {
+  return ast.sections.filter((section) => section.content)
+}
+
+/**
+ * Куда перевести курсор редактора при клике по превью: шапка сайта → поле name,
+ * i-я секция на сайте → начало i-й видимой секции в тексте.
+ */
+export function previewTargets(ast: DocumentNode): { header: number; sections: number[] } {
+  const name = ast.frontmatter?.fields.find((field) => field.key === 'name')
+  return {
+    header: name?.keyRange.from ?? ast.frontmatter?.from ?? 0,
+    sections: visibleSections(ast).map((section) => section.from),
+  }
 }

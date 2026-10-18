@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { saveAs } from 'file-saver'
 import { DEFAULT_TEMPLATE } from './data/templates'
 import { exportHtml } from './lib/exportHtml'
-import { parseCardMarkdown, FALLBACK_CARD } from './lib/parser'
+import { parseCardMarkdown, previewTargetsFor, FALLBACK_CARD } from './lib/parser'
 import { resolveTheme } from './lib/themeEngine'
 import { persistTheme, resolveInitialTheme, type ThemePreference } from './lib/themePreference'
 import type { CardData } from './types/card'
-import { EditorPane } from './components/EditorPane'
+import { EditorPane, type EditorHandle } from './components/EditorPane'
 import { PreviewPane } from './components/PreviewPane'
 import { Toolbar } from './components/Toolbar'
 import { SitesList } from './components/SitesList'
@@ -54,6 +54,23 @@ export default function App() {
     if (parsed.data) return parsed.data
     return lastValidCard ?? FALLBACK_CARD
   }, [parsed.data, lastValidCard])
+
+  // === СВЯЗЬ ПРЕВЬЮ → РЕДАКТОР ===
+  const editorRef = useRef<EditorHandle>(null)
+  // Позиции секций нужны, только когда превью показывает текущий текст (а не последний удачный разбор)
+  const previewTargets = useMemo(() => (parsed.data ? previewTargetsFor(markdown) : null), [parsed.data, markdown])
+
+  const handleLocate = useCallback(
+    (target: { kind: 'header' } | { kind: 'section'; index: number }) => {
+      if (!previewTargets) return
+      const offset = target.kind === 'header' ? previewTargets.header : previewTargets.sections[target.index]
+      if (offset === undefined) return
+      // На телефоне редактор на соседней вкладке: сначала показываем его, переходим после отрисовки
+      setMobileTab('editor')
+      requestAnimationFrame(() => editorRef.current?.jumpTo(offset))
+    },
+    [previewTargets],
+  )
 
   useEffect(() => {
     if (parsed.data) {
@@ -296,13 +313,14 @@ const { url, error } = await deployToVercel(html, currentSiteId)
       </div>
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 min-h-0 overflow-hidden">
         <div className={`h-full min-h-0 ${mobileTab === 'editor' ? 'block' : 'hidden'} md:block`}>
-          <EditorPane value={markdown} onChange={setMarkdown} />
+          <EditorPane ref={editorRef} value={markdown} onChange={setMarkdown} />
         </div>
         <div className={`h-full min-h-0 border-t md:border-t-0 md:border-l border-zinc-200 dark:border-zinc-800 ${mobileTab === 'preview' ? 'block' : 'hidden'} md:block`}>
           <PreviewPane
             data={displayCard}
             resolved={resolved}
             onImageUpload={handleImageUpload}
+            onLocate={previewTargets ? handleLocate : undefined}
           />
         </div>
       </div>
