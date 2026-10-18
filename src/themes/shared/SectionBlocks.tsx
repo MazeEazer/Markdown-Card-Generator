@@ -13,6 +13,7 @@ import type {
 } from '../../types/card'
 import { contactLinks, primaryLink, type ContactLink } from '../../dsl/contactLinks'
 import { formatDays, formatHoursTime, hoursStatus } from '../../dsl/hours'
+import { mapLinks, mapQuery } from '../../dsl/mapLinks'
 import { formatPrice } from '../../dsl/price'
 import { TOKEN_COLORS, highlightCode } from '../../lib/highlight'
 import { Icon } from './Icons'
@@ -572,6 +573,45 @@ export function ReviewsBlock({ reviews, colors }: { reviews: ReviewItem[]; color
   )
 }
 
+/** Блок :::map — карта Яндекса по адресу (загружается лениво) и кнопки «Яндекс Карты» / «2ГИС». */
+export function MapBlock({ address, card, colors }: { address?: string; card: CardData; colors: ThemeColors }) {
+  const query = mapQuery(card, address)
+  if (!query) return null
+  const links = mapLinks(query)
+  const button: CSSProperties = {
+    padding: '0.4rem 0.9rem',
+    borderRadius: '9999px',
+    fontSize: '0.8rem',
+    fontWeight: 600,
+    textDecoration: 'none',
+    color: colors.accent,
+    border: `1.5px solid ${colors.accent}`,
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem', color: colors.text }}>
+        <Icon icon="map-pin" color={colors.accent} size={20} />
+        {query}
+      </div>
+      <iframe
+        src={links.widget}
+        title={`Карта: ${query}`}
+        loading="lazy"
+        style={{ width: '100%', height: 300, border: `1px solid ${colors.accent}26`, borderRadius: '0.75rem', display: 'block' }}
+      />
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <a className="md-card" href={links.yandex} target="_blank" rel="noopener noreferrer" style={button}>
+          Яндекс Карты
+        </a>
+        <a className="md-card" href={links.twoGis} target="_blank" rel="noopener noreferrer" style={button}>
+          2ГИС
+        </a>
+      </div>
+    </div>
+  )
+}
+
 /** Рендерит тело секции в зависимости от её типа. Данные сайта (card) нужны блокам, которые показывают контакты. */
 export function SectionBody({ section, card, colors }: { section: CardSection; card: CardData; colors: ThemeColors }) {
   switch (section.type) {
@@ -589,6 +629,8 @@ export function SectionBody({ section, card, colors }: { section: CardSection; c
       return <HoursBlock hours={section.hours ?? []} colors={colors} />
     case 'reviews':
       return <ReviewsBlock reviews={section.reviews ?? []} colors={colors} />
+    case 'map':
+      return <MapBlock address={section.map?.address} card={card} colors={colors} />
     case 'services':
       return <ServicesBlock services={section.services ?? []} card={card} colors={colors} />
     default:

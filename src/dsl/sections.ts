@@ -204,6 +204,13 @@ export function parseReviews(content: string): ReviewItem[] {
     .filter((review) => review.author || review.text)
 }
 
+/** Парсит блок :::map: необязательный свой адрес. */
+export function parseMap(content: string): { address?: string } {
+  const fence = extractFence(content, 'map')
+  const address = fence ? parseFields(fence.body).address : undefined
+  return address ? { address } : {}
+}
+
 /** Парсит блок :::hours в часы работы. */
 export function parseHours(content: string): HoursRow[] {
   const fence = extractFence(content, 'hours')
@@ -221,6 +228,7 @@ export function detectSectionType(content: string): SectionType {
   if (extractFence(content, 'services')) return 'services'
   if (extractFence(content, 'hours')) return 'hours'
   if (extractFence(content, 'reviews')) return 'reviews'
+  if (extractFence(content, 'map')) return 'map'
   if (extractFence(content, 'contacts')) return 'contacts'
   if (isTableContent(content)) return 'table'
   return 'text'
@@ -238,6 +246,7 @@ export function buildSection(title: string, content: string): CardSection {
   else if (type === 'services') section.services = parseServices(content)
   else if (type === 'hours') section.hours = parseHours(content)
   else if (type === 'reviews') section.reviews = parseReviews(content)
+  else if (type === 'map') section.map = parseMap(content)
 
   return section
 }

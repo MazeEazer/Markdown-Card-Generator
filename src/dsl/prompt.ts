@@ -30,6 +30,9 @@ ${BLOCKS.hours.example}
 ## Вопросы
 ${BLOCKS.accordion.example}
 
+## Как добраться
+${BLOCKS.map.example}
+
 ## Контакты
 ${BLOCKS.contacts.example}
 `
@@ -65,6 +68,7 @@ export const EXAMPLE_JSON: DocumentJson = {
         { title: 'Можно ли оплатить картой?', content: 'Да, принимаем карты и СБП' },
       ],
     },
+    { type: 'map', title: 'Как добраться' },
     { type: 'contacts', title: 'Контакты' },
   ],
 }

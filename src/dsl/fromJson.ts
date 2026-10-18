@@ -61,6 +61,8 @@ function section(json: SectionJson): CardSection {
           date: item.date?.trim() || undefined,
         })),
       }
+    case 'map':
+      return { ...base, type: 'map', map: json.address?.trim() ? { address: json.address.trim() } : {} }
     case 'contacts':
       return { ...base, type: 'contacts' }
   }

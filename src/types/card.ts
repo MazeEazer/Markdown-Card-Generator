@@ -6,7 +6,7 @@ export interface CardLink {
   icon?: string
 }
 
-export type SectionType = 'text' | 'table' | 'accordion' | 'code-block' | 'card-grid' | 'contacts' | 'services' | 'hours' | 'reviews'
+export type SectionType = 'text' | 'table' | 'accordion' | 'code-block' | 'card-grid' | 'contacts' | 'services' | 'hours' | 'reviews' | 'map'
 
 export interface TableData {
   headers: string[]
@@ -84,6 +84,8 @@ export interface CardSection {
   hours?: HoursRow[]
   /** Заполняется при type: 'reviews' */
   reviews?: ReviewItem[]
+  /** Заполняется при type: 'map': свой адрес блока; без него — адрес из шапки */
+  map?: { address?: string }
 }
 
 /** Контакты бизнеса: имена пользователей и номера, ссылки строит генератор. */

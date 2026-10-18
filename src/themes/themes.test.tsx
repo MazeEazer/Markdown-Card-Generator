@@ -76,6 +76,14 @@ rating: 4
 `
 
 describe.each(THEME_NAMES)('тема %s', (theme) => {
+  it(':::map — адрес, карта Яндекса и кнопки', () => {
+    const html = render(business.replace(':::contacts', ':::map'), theme)
+    expect(html).toContain('Самара, ул. Ленина, 10')
+    expect(html).toMatch(/<iframe src="https:\/\/yandex\.ru\/map-widget\/v1\/\?text=[^"]+&amp;z=16" title="Карта: Самара, ул\. Ленина, 10" loading="lazy"/)
+    expect(html).toContain('href="https://yandex.ru/maps/?text=')
+    expect(html).toContain('href="https://2gis.ru/search/')
+  })
+
   it(':::reviews — средняя оценка, звёзды, автор и дата', () => {
     const html = render(reviews, theme)
     expect(html).toContain('4,5')

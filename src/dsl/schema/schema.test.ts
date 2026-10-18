@@ -64,7 +64,7 @@ describe('схема: шапка', () => {
 
 describe('схема: блоки', () => {
   it('список блоков', () => {
-    expect(BLOCK_NAMES).toEqual(['cards', 'accordion', 'code', 'services', 'hours', 'reviews', 'contacts'])
+    expect(BLOCK_NAMES).toEqual(['cards', 'accordion', 'code', 'services', 'hours', 'reviews', 'map', 'contacts'])
   })
 
   it.each(BLOCK_NAMES)('%s: у блока и каждого поля есть описание', (name) => {
@@ -81,7 +81,9 @@ describe('схема: блоки', () => {
     expect(blocks.map((b) => [b.name, b.closeRange !== null])).toEqual([[name, true]])
 
     if (!block.item) return
-    expect(blocks[0].items.length).toBeGreaterThan(0)
+    // Блоку с обязательными полями нужен хотя бы один элемент в примере; у :::map все поля необязательны
+    const required = Object.values(block.item.shape).some((field) => !(field instanceof z.ZodOptional))
+    if (required) expect(blocks[0].items.length).toBeGreaterThan(0)
     for (const item of blocks[0].items) {
       const value = Object.fromEntries(item.fields.map((field) => [field.key, field.value]))
       expect(block.item.safeParse(value).error).toBeUndefined()

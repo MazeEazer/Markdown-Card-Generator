@@ -125,6 +125,8 @@ function sectionBody(section: CardSection): string {
       return `:::hours\n${(section.hours ?? []).map(formatHoursLine).join('\n')}\n:::`
     case 'reviews':
       return reviews(section.reviews ?? [])
+    case 'map':
+      return section.map?.address ? `:::map\naddress: ${oneLine(section.map.address)}\n:::` : ':::map\n:::'
     case 'contacts':
       return ':::contacts\n:::'
     default:
