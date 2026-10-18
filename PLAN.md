@@ -309,6 +309,7 @@ contacts:
 ## Этап 4. Редактор с подсказками на CodeMirror 6 (2 недели)
 
 **Первым делом — миграция безопасности** (решение автора 18.10.2026; найдено при выгрузке схемы, см. заметки этапа 0): отдельная миграция в `supabase/migrations/` — удалить три правила Storage без ограничения `bucket_id` (`Users can delete own sites 1t5udo_0`, `Users can delete own sites 1t5udo_1`, `Users can upload own sites 1t5udo_0`) и зафиксировать `search_path` у `public.handle_new_user()` (`ALTER FUNCTION … SET search_path = ''`). **Применять в Supabase — только после подтверждения автора.** Проверить, что загрузка/удаление сайта в Storage и регистрация нового пользователя работают как прежде.
+✅ *Выполнено 18.10.2026:* миграция `20261018160000_security_fixes.sql` применена автором (`npx supabase db push`). В `pg_policies` для `storage` осталось 5 правил, у `handle_new_user` — `search_path=""`. Публикация, снятие с публикации, регистрация и сохранение сайта новым пользователем проверены вручную.
 
 Заменить `@uiw/react-textarea-code-editor` на CodeMirror 6 (`@uiw/react-codemirror` или напрямую `@codemirror/*`). Всё строится на схеме и валидаторе из этапа 2.
 
