@@ -1,7 +1,7 @@
 // Общие помощники правил: строки текста, поля YAML с позициями, схема Zod.
 import { isMap, isScalar, isSeq, type Node } from 'yaml'
 import { z } from 'zod'
-import type { FrontmatterNode } from '../ast.ts'
+import type { BlockNode, FrontmatterNode } from '../ast.ts'
 import type { Range } from '../types.ts'
 
 /** Диапазон строки, в которой находится смещение (без перевода строки и `\r`). */
@@ -20,6 +20,17 @@ export function lineAt(text: string, offset: number): Range {
  */
 export function indentBeforeFrontmatter(text: string): number {
   return text.match(/^(?:[^\S\n]*\n)*[^\S\n]*(?=---\r?\n)/)?.[0].length ?? 0
+}
+
+/** Строки тела блока `:::` с позицией начала каждой (без `\r` в конце). */
+export function blockLines(text: string, block: BlockNode): { from: number; text: string }[] {
+  const lines: { from: number; text: string }[] = []
+  let offset = block.bodyRange.from
+  for (const line of text.slice(block.bodyRange.from, block.bodyRange.to).split('\n')) {
+    lines.push({ from: offset, text: line.replace(/\r$/, '') })
+    offset += line.length + 1
+  }
+  return lines
 }
 
 /** Пара `ключ: значение` в YAML-отображении с позициями в исходном тексте. */

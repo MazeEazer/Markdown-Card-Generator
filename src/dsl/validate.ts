@@ -7,6 +7,7 @@ import { contactsBlockRule } from './rules/contactsBlock.ts'
 import { contactUsernameRule } from './rules/contactUsername.ts'
 import { frontmatterSyntaxRule } from './rules/frontmatterSyntax.ts'
 import { headingsRule } from './rules/headings.ts'
+import { hoursRule } from './rules/hours.ts'
 import { invalidValueRule } from './rules/invalidValue.ts'
 import { missingRequiredRule } from './rules/missingRequired.ts'
 import { noContactsRule } from './rules/noContacts.ts'
@@ -40,6 +41,7 @@ export const RULES: Rule[] = [
   addressRule,
   contactsBlockRule,
   servicesRule,
+  hoursRule,
   unclosedFenceRule,
   unknownBlockRule,
   strayTextRule,

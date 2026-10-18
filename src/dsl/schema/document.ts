@@ -48,6 +48,15 @@ const sectionSchema = z.discriminatedUnion('type', [
   z
     .strictObject({ type: z.literal('services'), title, items: z.array(BLOCKS.services.item) })
     .meta({ description: BLOCKS.services.description }),
+  z
+    .strictObject({
+      type: z.literal('hours'),
+      title,
+      lines: z
+        .array(z.string())
+        .meta({ description: BLOCKS.hours.body, examples: [['пн–пт: 10:00–20:00', 'сб: 11:00–18:00', 'вс: выходной']] }),
+    })
+    .meta({ description: BLOCKS.hours.description }),
   z.strictObject({ type: z.literal('contacts'), title }).meta({ description: BLOCKS.contacts.description }),
 ])
 

@@ -46,7 +46,28 @@ price: от 800
 :::
 `
 
+const hours = `---
+name: Барбершоп «Борода»
+phone: +7 999 123-45-67
+---
+## Часы работы
+:::hours
+пн–пт: 10:00–20:00
+сб: 11:00–18:00
+вс: выходной
+:::
+`
+
 describe.each(THEME_NAMES)('тема %s', (theme) => {
+  it(':::hours — таблица часов и бейдж со статусом', () => {
+    const html = render(hours, theme)
+    expect(html).toContain('Пн–пт')
+    expect(html).toContain('10:00–20:00')
+    expect(html).toContain('выходной')
+    expect(html).toContain('data-md-hours="[{&quot;days&quot;:[0,1,2,3,4]')
+    expect(html).toMatch(/data-md-hours-text="">(Открыто до|Закрыто)/)
+  })
+
   it(':::services — цены с ₽ и кнопка «Записаться» на главный контакт', () => {
     const html = render(services, theme)
     expect(html).toContain('Мужская стрижка')

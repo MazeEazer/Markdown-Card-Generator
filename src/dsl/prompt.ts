@@ -24,6 +24,9 @@ export const EXAMPLE_DOCUMENT = `${FRONTMATTER_EXAMPLE}
 ## Услуги и цены
 ${BLOCKS.services.example}
 
+## Часы работы
+${BLOCKS.hours.example}
+
 ## Вопросы
 ${BLOCKS.accordion.example}
 
@@ -53,6 +56,7 @@ export const EXAMPLE_JSON: DocumentJson = {
         { title: 'Оформление бороды', price: 'от 800', duration: '30 мин', description: 'Моделирование, горячее полотенце' },
       ],
     },
+    { type: 'hours', title: 'Часы работы', lines: ['пн–пт: 10:00–20:00', 'сб: 11:00–18:00', 'вс: выходной'] },
     {
       type: 'accordion',
       title: 'Вопросы',

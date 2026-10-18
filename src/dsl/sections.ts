@@ -6,10 +6,12 @@ import type {
   CardGridItem,
   CardSection,
   CodeBlockData,
+  HoursRow,
   SectionType,
   ServiceItem,
   TableData,
 } from '../types/card.ts'
+import { parseHoursBody } from './hours.ts'
 
 export const FENCE_OPEN = /^:::\s*([A-Za-z][\w-]*)\s*(.*)$/
 export const FENCE_CLOSE = /^:::\s*$/
@@ -182,6 +184,12 @@ export function parseServices(content: string): ServiceItem[] {
     .filter((service) => service.title || service.price || service.description)
 }
 
+/** Парсит блок :::hours в часы работы. */
+export function parseHours(content: string): HoursRow[] {
+  const fence = extractFence(content, 'hours')
+  return fence ? parseHoursBody(fence.body) : []
+}
+
 /** Синоним parseCardGrid — блок называется :::cards. */
 export const parseCards = parseCardGrid
 
@@ -191,6 +199,7 @@ export function detectSectionType(content: string): SectionType {
   if (extractFence(content, 'accordion')) return 'accordion'
   if (extractFence(content, 'cards')) return 'card-grid'
   if (extractFence(content, 'services')) return 'services'
+  if (extractFence(content, 'hours')) return 'hours'
   if (extractFence(content, 'contacts')) return 'contacts'
   if (isTableContent(content)) return 'table'
   return 'text'
@@ -206,6 +215,7 @@ export function buildSection(title: string, content: string): CardSection {
   else if (type === 'code-block') section.code = parseCodeBlock(content)
   else if (type === 'card-grid') section.cards = parseCardGrid(content)
   else if (type === 'services') section.services = parseServices(content)
+  else if (type === 'hours') section.hours = parseHours(content)
 
   return section
 }

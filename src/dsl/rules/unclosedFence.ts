@@ -2,6 +2,7 @@
 import { FENCE_OPEN } from '../sections.ts'
 import type { Diagnostic } from '../types.ts'
 import type { Rule } from '../validate.ts'
+import { blockLines } from './helpers.ts'
 
 const HEADING = /^##(\s|$)/
 
@@ -10,13 +11,7 @@ export const unclosedFenceRule: Rule = ({ text, ast }) => {
 
   for (const section of ast.sections) {
     for (const block of section.blocks) {
-      // Строки тела блока с позициями
-      const lines: { from: number; text: string }[] = []
-      let offset = block.bodyRange.from
-      for (const line of text.slice(block.bodyRange.from, block.bodyRange.to).split('\n')) {
-        lines.push({ from: offset, text: line })
-        offset += line.length + 1
-      }
+      const lines = blockLines(text, block)
 
       if (!block.closeRange) {
         // Закрываем перед первым «проглоченным» заголовком, иначе — в конце документа

@@ -6,7 +6,7 @@ export interface CardLink {
   icon?: string
 }
 
-export type SectionType = 'text' | 'table' | 'accordion' | 'code-block' | 'card-grid' | 'contacts' | 'services'
+export type SectionType = 'text' | 'table' | 'accordion' | 'code-block' | 'card-grid' | 'contacts' | 'services' | 'hours'
 
 export interface TableData {
   headers: string[]
@@ -21,6 +21,18 @@ export interface AccordionItem {
 export interface CodeBlockData {
   lang: string
   code: string
+}
+
+/** Строка часов работы из блока :::hours */
+export interface HoursRow {
+  /** Дни недели: 0 — понедельник … 6 — воскресенье */
+  days: number[]
+  /** «10:00» — с ведущим нулём, как в Schema.org */
+  open?: string
+  /** «20:00»; «24:00» — до полуночи */
+  close?: string
+  closed?: boolean
+  allDay?: boolean
 }
 
 /** Услуга из блока :::services */
@@ -58,6 +70,8 @@ export interface CardSection {
   cards?: CardGridItem[]
   /** Заполняется при type: 'services' */
   services?: ServiceItem[]
+  /** Заполняется при type: 'hours' */
+  hours?: HoursRow[]
 }
 
 /** Контакты бизнеса: имена пользователей и номера, ссылки строит генератор. */

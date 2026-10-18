@@ -1,15 +1,17 @@
-import { useMemo, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import type {
   AccordionItem,
   CardData,
   CardGridItem,
   CardSection,
   CodeBlockData,
+  HoursRow,
   ServiceItem,
   TableData,
   ThemeColors,
 } from '../../types/card'
 import { contactLinks, primaryLink, type ContactLink } from '../../dsl/contactLinks'
+import { formatDays, formatHoursTime, hoursStatus } from '../../dsl/hours'
 import { formatPrice } from '../../dsl/price'
 import { TOKEN_COLORS, highlightCode } from '../../lib/highlight'
 import { Icon } from './Icons'
@@ -440,6 +442,71 @@ export function ServicesBlock({ services, card, colors }: { services: ServiceIte
   )
 }
 
+/** День недели (0 — понедельник) и минуты от полуночи по часам посетителя. */
+function weekTime(date: Date): { weekday: number; minutes: number } {
+  return { weekday: (date.getDay() + 6) % 7, minutes: date.getHours() * 60 + date.getMinutes() }
+}
+
+/**
+ * Блок :::hours — часы по дням и бейдж «Открыто до 20:00». В превью статус пересчитывается раз в минуту;
+ * в экспортированном HTML его пересчитывает встроенный скрипт (src/lib/hoursScript.ts) по атрибутам data-md-*.
+ */
+export function HoursBlock({ hours, colors }: { hours: HoursRow[]; colors: ThemeColors }) {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60_000)
+    return () => clearInterval(timer)
+  }, [])
+  if (!hours.length) return null
+
+  const { weekday, minutes } = weekTime(now)
+  const status = hoursStatus(hours, weekday, minutes)
+  const badgeColor = status.open ? colors.accent : colors.textMuted
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      <span
+        data-md-hours={JSON.stringify(hours)}
+        data-open-color={colors.accent}
+        data-closed-color={colors.textMuted}
+        style={{
+          alignSelf: 'flex-start',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.45rem',
+          padding: '0.3rem 0.75rem',
+          borderRadius: '9999px',
+          fontSize: '0.8rem',
+          fontWeight: 600,
+          color: badgeColor,
+          background: `${badgeColor}18`,
+          border: `1px solid ${badgeColor}44`,
+        }}
+      >
+        <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '9999px', background: 'currentColor' }} />
+        <span data-md-hours-text="">{status.text}</span>
+      </span>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.35rem 1.5rem', fontSize: '0.9rem', lineHeight: 1.5 }}>
+        {hours.map((row, i) => {
+          const today = row.days.includes(weekday)
+          const style: CSSProperties = { fontWeight: today ? 600 : 400, color: today ? colors.text : colors.textMuted }
+          const days = formatDays(row.days)
+          const attrs = { 'data-md-days': row.days.join(','), 'data-color': colors.textMuted, 'data-today-color': colors.text }
+          return [
+            <span key={`d${i}`} {...attrs} style={style}>
+              {days.charAt(0).toUpperCase() + days.slice(1)}
+            </span>,
+            <span key={`t${i}`} {...attrs} style={{ ...style, fontVariantNumeric: 'tabular-nums' }}>
+              {formatHoursTime(row)}
+            </span>,
+          ]
+        })}
+      </div>
+    </div>
+  )
+}
+
 /** Рендерит тело секции в зависимости от её типа. Данные сайта (card) нужны блокам, которые показывают контакты. */
 export function SectionBody({ section, card, colors }: { section: CardSection; card: CardData; colors: ThemeColors }) {
   switch (section.type) {
@@ -453,6 +520,8 @@ export function SectionBody({ section, card, colors }: { section: CardSection; c
       return <CardGridBlock cards={section.cards ?? []} colors={colors} />
     case 'contacts':
       return <ContactsBlock card={card} colors={colors} />
+    case 'hours':
+      return <HoursBlock hours={section.hours ?? []} colors={colors} />
     case 'services':
       return <ServicesBlock services={section.services ?? []} card={card} colors={colors} />
     default:

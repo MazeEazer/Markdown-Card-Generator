@@ -2,6 +2,7 @@
 // Проверку JSON схемой делает вызывающий код (documentSchema.safeParse); здесь — только перенос полей.
 import type { CardData, CardSection } from '../types/card.ts'
 import { parseAccent } from './cardData.ts'
+import { parseHoursBody } from './hours.ts'
 import type { DocumentJson, SectionJson } from './schema/document.ts'
 
 function section(json: SectionJson): CardSection {
@@ -45,6 +46,8 @@ function section(json: SectionJson): CardSection {
           description: item.description?.trim() || undefined,
         })),
       }
+    case 'hours':
+      return { ...base, type: 'hours', hours: parseHoursBody(json.lines.join('\n')) }
     case 'contacts':
       return { ...base, type: 'contacts' }
   }

@@ -3,6 +3,7 @@
 // (для блоков — те же данные блока; текст секции `content` у блоков на сайте не показывается).
 import { stringify } from 'yaml'
 import type { AccordionItem, CardData, CardGridItem, CardSection, CodeBlockData, ServiceItem, TableData } from '../types/card.ts'
+import { formatHoursLine } from './hours.ts'
 import { CONTACT_NAMES } from './schema/frontmatter.ts'
 
 /** Значение поля блока — одной строкой: строки-продолжения парсер всё равно склеивает пробелом. */
@@ -99,6 +100,8 @@ function sectionBody(section: CardSection): string {
       return cards(section.cards ?? [])
     case 'services':
       return services(section.services ?? [])
+    case 'hours':
+      return `:::hours\n${(section.hours ?? []).map(formatHoursLine).join('\n')}\n:::`
     case 'contacts':
       return ':::contacts\n:::'
     default:
