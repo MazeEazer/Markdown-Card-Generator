@@ -1,4 +1,4 @@
-// Базовая настройка CodeMirror 6 для редактора DSL. Подсветка, линтер и подсказки добавляются следующими шагами.
+// Настройка CodeMirror 6 для редактора DSL: базовые возможности, тема и линтер.
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
 import { bracketMatching, indentOnInput } from '@codemirror/language'
 import type { Extension } from '@codemirror/state'
@@ -11,6 +11,7 @@ import {
   lineNumbers,
   placeholder,
 } from '@codemirror/view'
+import { dslLinter } from './lint'
 
 /** Тёмная тема в цветах интерфейса (zinc из Tailwind), как у прежнего редактора. */
 const darkTheme = EditorView.theme(
@@ -40,6 +41,21 @@ const darkTheme = EditorView.theme(
       backgroundColor: '#3730a3 !important',
     },
     '.cm-placeholder': { color: '#52525b' },
+    // Подсказка с сообщением валидатора: шрифт интерфейса, а не моноширинный, и ограниченная ширина
+    '.cm-tooltip': {
+      backgroundColor: '#18181b',
+      border: '1px solid #3f3f46',
+      borderRadius: '6px',
+      color: '#e4e4e7',
+    },
+    '.cm-tooltip-lint': { maxWidth: '420px' },
+    '.cm-diagnostic': {
+      fontFamily: 'system-ui, sans-serif',
+      fontSize: '13px',
+      lineHeight: '1.45',
+      padding: '6px 10px 6px 8px',
+      whiteSpace: 'normal',
+    },
   },
   { dark: true },
 )
@@ -57,5 +73,6 @@ export function baseExtensions(): Extension[] {
     placeholder('Введите Markdown...'),
     keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
     darkTheme,
+    dslLinter(),
   ]
 }
