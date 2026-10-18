@@ -294,7 +294,7 @@ const { url, error } = await deployToVercel(html, currentSiteId)
           </button>
         ))}
       </div>
-      <div className="flex-1 grid md:grid-cols-2 min-h-0 overflow-hidden">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 min-h-0 overflow-hidden">
         <div className={`h-full min-h-0 ${mobileTab === 'editor' ? 'block' : 'hidden'} md:block`}>
           <EditorPane value={markdown} onChange={setMarkdown} />
         </div>

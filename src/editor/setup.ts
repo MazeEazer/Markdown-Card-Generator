@@ -26,6 +26,8 @@ const darkTheme = EditorView.theme(
     '.cm-scroller': {
       fontFamily: "'JetBrains Mono', monospace",
       lineHeight: '1.6',
+      // Без лигатур JetBrains Mono: иначе «---» во frontmatter рисуется как « --»
+      fontVariantLigatures: 'none',
     },
     '.cm-content': { padding: '16px 0', caretColor: '#e4e4e7' },
     '.cm-line': { padding: '0 16px 0 8px' },
