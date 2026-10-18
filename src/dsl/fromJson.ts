@@ -34,6 +34,17 @@ function section(json: SectionJson): CardSection {
       return { ...base, type: 'accordion', accordion: json.items }
     case 'code':
       return { ...base, type: 'code-block', code: { lang: (json.lang ?? '').toLowerCase(), code: json.code.trim() } }
+    case 'services':
+      return {
+        ...base,
+        type: 'services',
+        services: json.items.map((item) => ({
+          title: item.title.trim(),
+          price: item.price?.trim() || undefined,
+          duration: item.duration?.trim() || undefined,
+          description: item.description?.trim() || undefined,
+        })),
+      }
     case 'contacts':
       return { ...base, type: 'contacts' }
   }

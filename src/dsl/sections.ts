@@ -7,6 +7,7 @@ import type {
   CardSection,
   CodeBlockData,
   SectionType,
+  ServiceItem,
   TableData,
 } from '../types/card.ts'
 
@@ -163,6 +164,24 @@ export function parseCardGrid(content: string): CardGridItem[] {
     .filter((card) => card.title || card.description || card.url)
 }
 
+/** Парсит блок :::services в список услуг. */
+export function parseServices(content: string): ServiceItem[] {
+  const fence = extractFence(content, 'services')
+  if (!fence) return []
+
+  return splitBlocks(fence.body)
+    .map((block) => {
+      const fields = parseFields(block)
+      return {
+        title: fields.title ?? '',
+        price: fields.price || undefined,
+        duration: fields.duration || undefined,
+        description: fields.description || undefined,
+      }
+    })
+    .filter((service) => service.title || service.price || service.description)
+}
+
 /** Синоним parseCardGrid — блок называется :::cards. */
 export const parseCards = parseCardGrid
 
@@ -171,6 +190,7 @@ export function detectSectionType(content: string): SectionType {
   if (extractFence(content, 'code')) return 'code-block'
   if (extractFence(content, 'accordion')) return 'accordion'
   if (extractFence(content, 'cards')) return 'card-grid'
+  if (extractFence(content, 'services')) return 'services'
   if (extractFence(content, 'contacts')) return 'contacts'
   if (isTableContent(content)) return 'table'
   return 'text'
@@ -185,6 +205,7 @@ export function buildSection(title: string, content: string): CardSection {
   else if (type === 'accordion') section.accordion = parseAccordion(content)
   else if (type === 'code-block') section.code = parseCodeBlock(content)
   else if (type === 'card-grid') section.cards = parseCardGrid(content)
+  else if (type === 'services') section.services = parseServices(content)
 
   return section
 }

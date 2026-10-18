@@ -2,7 +2,7 @@
 // а разметку для редактора строим мы. Гарантия: parseDocument(serialize(card)) даёт тот же CardData
 // (для блоков — те же данные блока; текст секции `content` у блоков на сайте не показывается).
 import { stringify } from 'yaml'
-import type { AccordionItem, CardData, CardGridItem, CardSection, CodeBlockData, TableData } from '../types/card.ts'
+import type { AccordionItem, CardData, CardGridItem, CardSection, CodeBlockData, ServiceItem, TableData } from '../types/card.ts'
 import { CONTACT_NAMES } from './schema/frontmatter.ts'
 
 /** Значение поля блока — одной строкой: строки-продолжения парсер всё равно склеивает пробелом. */
@@ -71,6 +71,18 @@ function cards(list: CardGridItem[]): string {
   return `:::cards\n${body}\n:::`
 }
 
+function services(list: ServiceItem[]): string {
+  const body = items(
+    list.map((service) => [
+      ['title', service.title],
+      ['price', service.price],
+      ['duration', service.duration],
+      ['description', service.description],
+    ]),
+  )
+  return `:::services\n${body}\n:::`
+}
+
 function code({ lang, code }: CodeBlockData): string {
   return `:::code${lang ? ` lang="${lang}"` : ''}\n${code}\n:::`
 }
@@ -85,6 +97,8 @@ function sectionBody(section: CardSection): string {
       return code(section.code ?? { lang: '', code: section.content })
     case 'card-grid':
       return cards(section.cards ?? [])
+    case 'services':
+      return services(section.services ?? [])
     case 'contacts':
       return ':::contacts\n:::'
     default:

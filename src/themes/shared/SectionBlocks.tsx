@@ -5,10 +5,12 @@ import type {
   CardGridItem,
   CardSection,
   CodeBlockData,
+  ServiceItem,
   TableData,
   ThemeColors,
 } from '../../types/card'
-import { contactLinks, type ContactLink } from '../../dsl/contactLinks'
+import { contactLinks, primaryLink, type ContactLink } from '../../dsl/contactLinks'
+import { formatPrice } from '../../dsl/price'
 import { TOKEN_COLORS, highlightCode } from '../../lib/highlight'
 import { Icon } from './Icons'
 import { SectionContent, SkillsTags, isMonochromeAccent, isSkillsSection } from './ThemeParts'
@@ -371,6 +373,73 @@ export function ContactsBlock({ card, colors }: { card: CardData; colors: ThemeC
   )
 }
 
+/** Блок :::services — услуги с ценой и кнопкой «Записаться» на главный контакт. */
+export function ServicesBlock({ services, card, colors }: { services: ServiceItem[]; card: CardData; colors: ThemeColors }) {
+  if (!services.length) return null
+  const contact = primaryLink(card)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      {services.map((service, i) => (
+        <div
+          key={i}
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: '0.75rem 1rem',
+            padding: '1rem',
+            borderRadius: '0.75rem',
+            background: `${colors.accent}0f`,
+            border: `1px solid ${colors.accent}26`,
+          }}
+        >
+          <div style={{ flex: '1 1 220px', minWidth: 0 }}>
+            <div style={{ fontSize: '1rem', fontWeight: 600, lineHeight: 1.3, color: colors.text }}>{service.title}</div>
+            {service.duration && (
+              <div style={{ fontSize: '0.75rem', marginTop: '0.2rem', color: colors.textMuted }}>{service.duration}</div>
+            )}
+            {service.description && (
+              <div style={{ fontSize: '0.85rem', lineHeight: 1.5, marginTop: '0.4rem', color: colors.textMuted }}>
+                {service.description}
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+            {service.price && (
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, whiteSpace: 'nowrap', color: colors.accent }}>
+                {formatPrice(service.price, card.currency)}
+              </div>
+            )}
+            {contact?.href && (
+              <a
+                className="md-card"
+                href={contact.href}
+                title={contact.action}
+                {...(/^https?:/.test(contact.href) ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                style={{
+                  padding: '0.4rem 0.9rem',
+                  borderRadius: '9999px',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                  textDecoration: 'none',
+                  color: colors.accent,
+                  border: `1.5px solid ${colors.accent}`,
+                }}
+              >
+                Записаться
+              </a>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 /** Рендерит тело секции в зависимости от её типа. Данные сайта (card) нужны блокам, которые показывают контакты. */
 export function SectionBody({ section, card, colors }: { section: CardSection; card: CardData; colors: ThemeColors }) {
   switch (section.type) {
@@ -384,6 +453,8 @@ export function SectionBody({ section, card, colors }: { section: CardSection; c
       return <CardGridBlock cards={section.cards ?? []} colors={colors} />
     case 'contacts':
       return <ContactsBlock card={card} colors={colors} />
+    case 'services':
+      return <ServicesBlock services={section.services ?? []} card={card} colors={colors} />
     default:
       return isSkillsSection(section.title) ? (
         <SkillsTags content={section.content} accent={colors.accent} />

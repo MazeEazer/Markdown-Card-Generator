@@ -6,7 +6,7 @@ export interface CardLink {
   icon?: string
 }
 
-export type SectionType = 'text' | 'table' | 'accordion' | 'code-block' | 'card-grid' | 'contacts'
+export type SectionType = 'text' | 'table' | 'accordion' | 'code-block' | 'card-grid' | 'contacts' | 'services'
 
 export interface TableData {
   headers: string[]
@@ -21,6 +21,16 @@ export interface AccordionItem {
 export interface CodeBlockData {
   lang: string
   code: string
+}
+
+/** Услуга из блока :::services */
+export interface ServiceItem {
+  title: string
+  /** Как написал владелец: «1500», «от 1500», «1500–2000», «бесплатно» */
+  price?: string
+  /** «60 мин», «1 ч 30 мин» */
+  duration?: string
+  description?: string
 }
 
 export interface CardGridItem {
@@ -46,6 +56,8 @@ export interface CardSection {
   code?: CodeBlockData
   /** Заполняется при type: 'card-grid' */
   cards?: CardGridItem[]
+  /** Заполняется при type: 'services' */
+  services?: ServiceItem[]
 }
 
 /** Контакты бизнеса: имена пользователей и номера, ссылки строит генератор. */

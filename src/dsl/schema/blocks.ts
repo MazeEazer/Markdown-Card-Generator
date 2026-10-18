@@ -78,6 +78,31 @@ content: Да, принимаем карты и СБП
 console.log('Привет!')
 :::`,
   },
+  services: {
+    name: 'services',
+    label: 'Услуги',
+    description: 'Услуги с ценами и кнопкой «Записаться», которая ведёт на главный контакт (contacts.primary)',
+    attrs: z.strictObject({}),
+    item: z
+      .strictObject({
+        title: text('Название услуги', 'Мужская стрижка'),
+        price: text('Цена числом, без ₽: 1500, «от 1500» или «1500–2000»; валюта — в шапке (currency)', '1500').optional(),
+        duration: text('Сколько длится', '60 мин').optional(),
+        description: text('Что входит в услугу', 'Машинкой и ножницами, мытьё головы и укладка').optional(),
+      })
+      .meta({ description: 'Услуга' }),
+    example: `:::services
+title: Мужская стрижка
+price: 1500
+duration: 60 мин
+description: Машинкой и ножницами, мытьё головы и укладка
+
+title: Оформление бороды
+price: от 800
+duration: 30 мин
+description: Моделирование, горячее полотенце
+:::`,
+  },
   contacts: {
     name: 'contacts',
     label: 'Контакты',

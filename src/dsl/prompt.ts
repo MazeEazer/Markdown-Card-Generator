@@ -21,17 +21,14 @@ export const EXAMPLE_DOCUMENT = `${FRONTMATTER_EXAMPLE}
 ## О нас
 Стрижём бороды и мужские головы с 2015 года. Работаем без спешки.
 
-## Цены
-| Услуга | Цена |
-| --- | --- |
-| Мужская стрижка | 1500 |
-| Оформление бороды | 800 |
-
-## Услуги
-${BLOCKS.cards.example}
+## Услуги и цены
+${BLOCKS.services.example}
 
 ## Вопросы
 ${BLOCKS.accordion.example}
+
+## Контакты
+${BLOCKS.contacts.example}
 `
 
 /** Тот же пример в виде JSON — для режима «JSON по схеме». */
@@ -49,20 +46,11 @@ export const EXAMPLE_JSON: DocumentJson = {
   sections: [
     { type: 'text', title: 'О нас', content: 'Стрижём бороды и мужские головы с 2015 года. Работаем без спешки.' },
     {
-      type: 'table',
-      title: 'Цены',
-      headers: ['Услуга', 'Цена'],
-      rows: [
-        ['Мужская стрижка', '1500'],
-        ['Оформление бороды', '800'],
-      ],
-    },
-    {
-      type: 'cards',
-      title: 'Услуги',
+      type: 'services',
+      title: 'Услуги и цены',
       items: [
-        { title: 'Мужская стрижка', description: 'Машинкой и ножницами, мытьё головы', icon: 'star', tags: 'мужская, классика' },
-        { title: 'Оформление бороды', description: 'Моделирование, горячее полотенце', icon: 'zap' },
+        { title: 'Мужская стрижка', price: '1500', duration: '60 мин', description: 'Машинкой и ножницами, мытьё головы и укладка' },
+        { title: 'Оформление бороды', price: 'от 800', duration: '30 мин', description: 'Моделирование, горячее полотенце' },
       ],
     },
     {
@@ -73,6 +61,7 @@ export const EXAMPLE_JSON: DocumentJson = {
         { title: 'Можно ли оплатить картой?', content: 'Да, принимаем карты и СБП' },
       ],
     },
+    { type: 'contacts', title: 'Контакты' },
   ],
 }
 

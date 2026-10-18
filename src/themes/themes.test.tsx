@@ -28,7 +28,37 @@ contacts:
 :::
 `
 
+const services = `---
+name: Барбершоп «Борода»
+contacts:
+  telegram: barber_ivan
+  primary: telegram
+---
+## Услуги
+:::services
+title: Мужская стрижка
+price: 1500
+duration: 60 мин
+description: С мытьём головы
+
+title: Борода
+price: от 800
+:::
+`
+
 describe.each(THEME_NAMES)('тема %s', (theme) => {
+  it(':::services — цены с ₽ и кнопка «Записаться» на главный контакт', () => {
+    const html = render(services, theme)
+    expect(html).toContain('Мужская стрижка')
+    expect(html).toContain('1\u00a0500\u00a0₽')
+    expect(html).toContain('от\u00a0800\u00a0₽')
+    expect(html.match(/href="https:\/\/t\.me\/barber_ivan"[^>]*>Записаться/g)).toHaveLength(2)
+  })
+
+  it(':::services без контактов — без кнопки', () => {
+    expect(render(services.replace(/contacts:\n {2}telegram: barber_ivan\n {2}primary: telegram\n/, ''), theme)).not.toContain('Записаться')
+  })
+
   it(':::contacts — телефон, адрес и ссылки на мессенджеры', () => {
     const html = render(business, theme)
     expect(html).toContain('href="tel:+79991234567"')

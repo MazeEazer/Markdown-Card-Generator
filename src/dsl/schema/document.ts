@@ -45,6 +45,9 @@ const sectionSchema = z.discriminatedUnion('type', [
       code: z.string().meta({ description: 'Текст кода' }),
     })
     .meta({ description: BLOCKS.code.description }),
+  z
+    .strictObject({ type: z.literal('services'), title, items: z.array(BLOCKS.services.item) })
+    .meta({ description: BLOCKS.services.description }),
   z.strictObject({ type: z.literal('contacts'), title }).meta({ description: BLOCKS.contacts.description }),
 ])
 

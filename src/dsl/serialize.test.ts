@@ -125,7 +125,7 @@ describe('serialize: случайные документы', () => {
   const pieces = [
     '## О себе', '##', '## Цены', 'Текст', '', ':::cards', ':::accordion', ':::code lang="js"', ':::faq', ':::',
     'title: A', 'content: ответ', 'description: d', 'Note: n', 'url: https://a.ru', 'link: https://l.ru', 'icon: star',
-    'tags: a, b; c', ':::contacts', '| a | b |', '|---|---|', '| 1 | 2 |', 'a | b', '    отступ', 'Важно: да', '***',
+    'tags: a, b; c', ':::contacts', ':::services', 'price: 1500р', 'duration: 60 мин', '| a | b |', '|---|---|', '| 1 | 2 |', 'a | b', '    отступ', 'Важно: да', '***',
   ]
   const heads = [
     '---\nname: Тест\n---\n',
