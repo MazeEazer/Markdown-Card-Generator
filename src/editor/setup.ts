@@ -56,6 +56,18 @@ const darkTheme = EditorView.theme(
       padding: '6px 10px 6px 8px',
       whiteSpace: 'normal',
     },
+    // Кнопка автоисправления — в цвет основных кнопок интерфейса, отдельной строкой под сообщением
+    '.cm-diagnosticAction': {
+      display: 'block',
+      margin: '6px 0 2px',
+      padding: '3px 10px',
+      borderRadius: '4px',
+      backgroundColor: '#4f46e5',
+      color: '#ffffff',
+      font: 'inherit',
+      cursor: 'pointer',
+    },
+    '.cm-diagnosticAction:hover': { backgroundColor: '#4338ca' },
   },
   { dark: true },
 )

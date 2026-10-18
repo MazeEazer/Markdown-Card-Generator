@@ -1,27 +1,48 @@
-// Линтер редактора: диагностики валидатора DSL (этап 2) → подчёркивания CodeMirror.
+// Линтер редактора: диагностики валидатора DSL (этап 2) → подчёркивания CodeMirror с кнопками автоисправления.
 import { type Diagnostic as EditorDiagnostic, linter, lintGutter } from '@codemirror/lint'
-import type { Extension } from '@codemirror/state'
+import type { Extension, Text } from '@codemirror/state'
+import type { EditorView } from '@codemirror/view'
+import { fixChange } from '../dsl/fix'
 import type { Diagnostic } from '../dsl/types'
 import { validate } from '../dsl/validate'
 
 /**
  * Переводит диагностики валидатора в формат CodeMirror. Форматы почти совпадают (from/to/severity/message);
  * диапазон прижимается к длине документа, чтобы устаревшая позиция не сломала редактор.
+ * Автоисправление (`fix`) становится кнопкой в подсказке.
  */
-export function toEditorDiagnostics(diagnostics: Diagnostic[], docLength: number): EditorDiagnostic[] {
+export function toEditorDiagnostics(diagnostics: Diagnostic[], doc: Text): EditorDiagnostic[] {
   return diagnostics.map((d) => {
-    const from = Math.min(Math.max(d.from, 0), docLength)
-    const to = Math.min(Math.max(d.to, from), docLength)
-    return { from, to, severity: d.severity, message: d.message }
+    const from = Math.min(Math.max(d.from, 0), doc.length)
+    const to = Math.min(Math.max(d.to, from), doc.length)
+    const result: EditorDiagnostic = { from, to, severity: d.severity, message: d.message }
+    if (d.fix) {
+      result.actions = [{ name: d.fix.label, apply: (view, currentFrom) => applyFixInView(view, d, doc, currentFrom) }]
+    }
+    return result
   })
+}
+
+/**
+ * Применяет исправление. Если текст успели изменить после проверки, позиции исправления устарели —
+ * тогда проверяем текст заново и берём ту же проблему на её новом месте (`currentFrom` CodeMirror уже сдвинул).
+ */
+export function applyFixInView(view: EditorView, diagnostic: Diagnostic, linted: Text, currentFrom: number): void {
+  let target: Diagnostic | undefined = diagnostic
+  if (view.state.doc !== linted) {
+    target = validate(view.state.doc.toString()).find(
+      (d) => d.code === diagnostic.code && d.from === currentFrom && d.fix,
+    )
+  }
+  const change = target && fixChange(target)
+  if (!change) return
+  view.dispatch({ changes: change, userEvent: 'input.fix' })
 }
 
 /** Проверка текста после паузы в наборе + значки у номеров строк. */
 export function dslLinter(): Extension[] {
   return [
-    linter((view) => toEditorDiagnostics(validate(view.state.doc.toString()), view.state.doc.length), {
-      delay: 300,
-    }),
+    linter((view) => toEditorDiagnostics(validate(view.state.doc.toString()), view.state.doc), { delay: 300 }),
     lintGutter(),
   ]
 }
