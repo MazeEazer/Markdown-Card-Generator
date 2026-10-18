@@ -26,6 +26,15 @@ function describe(code: string, text: string, range: Range): { message: string; 
       }
     case 'MISSING_CHAR':
       return { message: 'Не хватает закрывающей кавычки или скобки' }
+    case 'BAD_SCALAR_START':
+      // Частый случай: «telegram: @ivan» — @ в начале значения в YAML запрещён
+      if (text[range.from] === '@') {
+        return {
+          message: 'Имя пользователя пишется без @',
+          fix: { label: 'Убрать @', replace: '', from: range.from, to: range.from + 1 },
+        }
+      }
+      return { message: 'Значение начинается с особого символа — возьмите его в кавычки' }
     case 'MULTIPLE_DOCS':
       return { message: 'Лишняя строка --- внутри шапки: шапка должна быть одна' }
     case 'BLOCK_AS_IMPLICIT_KEY': {

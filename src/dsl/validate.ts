@@ -2,10 +2,15 @@
 import type { DocumentNode } from './ast.ts'
 import { parseDocument } from './parser.ts'
 import { accentRule } from './rules/accent.ts'
+import { addressRule } from './rules/address.ts'
+import { contactUsernameRule } from './rules/contactUsername.ts'
 import { frontmatterSyntaxRule } from './rules/frontmatterSyntax.ts'
 import { headingsRule } from './rules/headings.ts'
 import { invalidValueRule } from './rules/invalidValue.ts'
 import { missingRequiredRule } from './rules/missingRequired.ts'
+import { noContactsRule } from './rules/noContacts.ts'
+import { phoneRule } from './rules/phone.ts'
+import { primaryRule } from './rules/primary.ts'
 import { strayTextRule } from './rules/strayText.ts'
 import { unclosedFenceRule } from './rules/unclosedFence.ts'
 import { unknownBlockRule } from './rules/unknownBlock.ts'
@@ -26,6 +31,11 @@ export const RULES: Rule[] = [
   unknownFieldRule,
   invalidValueRule,
   accentRule,
+  noContactsRule,
+  phoneRule,
+  contactUsernameRule,
+  primaryRule,
+  addressRule,
   unclosedFenceRule,
   unknownBlockRule,
   strayTextRule,

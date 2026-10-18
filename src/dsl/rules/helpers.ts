@@ -65,6 +65,36 @@ export function yamlValue(node: Node | null): unknown {
   return node.toJSON()
 }
 
+/** Поле со строковым значением и его позицией — для правил о контактах. */
+export interface TextField {
+  key: string
+  value: string
+  valueRange: Range
+}
+
+/** Непустые строковые поля отображения YAML (корень шапки или contacts). */
+export function textFields(frontmatter: FrontmatterNode, node: unknown): TextField[] {
+  return yamlPairs(frontmatter, node).flatMap((pair) => {
+    const value = yamlValue(pair.value)
+    if (!pair.valueRange || value === undefined || typeof value === 'object') return []
+    const text = String(value).trim()
+    return text ? [{ key: pair.key, value: text, valueRange: pair.valueRange }] : []
+  })
+}
+
+/** Поля шапки и contacts по ключу; пусто, если шапки нет или в ней ошибка YAML. */
+export function businessFields(frontmatter: FrontmatterNode | null): {
+  root: Map<string, TextField>
+  contacts: Map<string, TextField>
+} {
+  if (!frontmatter || frontmatter.errors.length) return { root: new Map(), contacts: new Map() }
+  const byKey = (fields: TextField[]) => new Map(fields.map((field) => [field.key, field]))
+  return {
+    root: byKey(textFields(frontmatter, frontmatter.yaml.contents)),
+    contacts: byKey(textFields(frontmatter, frontmatter.yaml.get('contacts', true))),
+  }
+}
+
 /** Снимает обёртку .optional(). */
 export function unwrap(schema: z.ZodType): z.ZodType {
   return schema instanceof z.ZodOptional ? (schema.unwrap() as z.ZodType) : schema

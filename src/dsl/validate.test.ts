@@ -16,10 +16,10 @@ describe('validate', () => {
   })
 
   it('диагностики отсортированы по позиции и знают строку', () => {
-    const text = '---\nname: A\ntheme: neon\n---\n:::faq\n:::\n##Цены'
+    const text = '---\nname: A\nphone: +7 999 123-45-67\ntheme: neon\n---\n:::prices\n:::\n##Цены'
     const found = validate(text)
     expect(found.map((d) => d.code)).toEqual(['invalid-value', 'unknown-block', 'heading-no-space'])
-    expect(found.map((d) => offsetToLineCol(text, d.from).line)).toEqual([3, 5, 7])
+    expect(found.map((d) => offsetToLineCol(text, d.from).line)).toEqual([4, 6, 8])
   })
 
   it('у каждой диагностики сообщение по-русски', () => {
