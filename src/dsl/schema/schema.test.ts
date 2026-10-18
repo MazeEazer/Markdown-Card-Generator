@@ -64,7 +64,7 @@ describe('схема: шапка', () => {
 
 describe('схема: блоки', () => {
   it('список блоков', () => {
-    expect(BLOCK_NAMES).toEqual(['cards', 'accordion', 'code', 'services', 'hours', 'contacts'])
+    expect(BLOCK_NAMES).toEqual(['cards', 'accordion', 'code', 'services', 'hours', 'reviews', 'contacts'])
   })
 
   it.each(BLOCK_NAMES)('%s: у блока и каждого поля есть описание', (name) => {
@@ -117,6 +117,9 @@ describe('JSON Schema (для режима «JSON по схеме» в этап�
   it.each(BLOCK_NAMES)('строится для блока %s', (name) => {
     const block = BLOCKS[name]
     expect(() => z.toJSONSchema(block.attrs)).not.toThrow()
-    if (block.item) expect(z.toJSONSchema(block.item)).toHaveProperty('properties.title.description')
+    if (block.item) {
+      const first = Object.keys(block.item.shape)[0]
+      expect(z.toJSONSchema(block.item)).toHaveProperty(`properties.${first}.description`)
+    }
   })
 })

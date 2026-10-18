@@ -6,7 +6,7 @@ export interface CardLink {
   icon?: string
 }
 
-export type SectionType = 'text' | 'table' | 'accordion' | 'code-block' | 'card-grid' | 'contacts' | 'services' | 'hours'
+export type SectionType = 'text' | 'table' | 'accordion' | 'code-block' | 'card-grid' | 'contacts' | 'services' | 'hours' | 'reviews'
 
 export interface TableData {
   headers: string[]
@@ -33,6 +33,16 @@ export interface HoursRow {
   close?: string
   closed?: boolean
   allDay?: boolean
+}
+
+/** Отзыв из блока :::reviews */
+export interface ReviewItem {
+  author: string
+  text: string
+  /** 1–5; неправильная запись оценки не попадает сюда (валидатор предложит исправить) */
+  rating?: number
+  /** Как написал владелец: «март 2026» */
+  date?: string
 }
 
 /** Услуга из блока :::services */
@@ -72,6 +82,8 @@ export interface CardSection {
   services?: ServiceItem[]
   /** Заполняется при type: 'hours' */
   hours?: HoursRow[]
+  /** Заполняется при type: 'reviews' */
+  reviews?: ReviewItem[]
 }
 
 /** Контакты бизнеса: имена пользователей и номера, ссылки строит генератор. */

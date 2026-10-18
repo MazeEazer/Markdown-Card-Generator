@@ -6,6 +6,7 @@ import type {
   CardSection,
   CodeBlockData,
   HoursRow,
+  ReviewItem,
   ServiceItem,
   TableData,
   ThemeColors,
@@ -507,6 +508,70 @@ export function HoursBlock({ hours, colors }: { hours: HoursRow[]; colors: Theme
   )
 }
 
+/** «1 отзыв», «3 отзыва», «5 отзывов». */
+function reviewsCount(count: number): string {
+  const mod10 = count % 10
+  const mod100 = count % 100
+  const word = mod10 === 1 && mod100 !== 11 ? 'отзыв' : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? 'отзыва' : 'отзывов'
+  return `${count} ${word}`
+}
+
+function Stars({ rating, colors, size = '0.95rem' }: { rating: number; colors: ThemeColors; size?: string }) {
+  return (
+    <span aria-label={`Оценка ${rating} из 5`} style={{ fontSize: size, letterSpacing: '0.1em', lineHeight: 1 }}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span key={star} style={{ color: star <= Math.round(rating) ? colors.accent : `${colors.textMuted}55` }}>
+          ★
+        </span>
+      ))}
+    </span>
+  )
+}
+
+/** Блок :::reviews — средняя оценка и карточки отзывов со звёздами. */
+export function ReviewsBlock({ reviews, colors }: { reviews: ReviewItem[]; colors: ThemeColors }) {
+  if (!reviews.length) return null
+  const rated = reviews.filter((review) => review.rating)
+  const average = rated.length ? rated.reduce((sum, review) => sum + review.rating!, 0) / rated.length : null
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      {average !== null && reviews.length > 1 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '1.5rem', fontWeight: 700, color: colors.text }}>{average.toFixed(1).replace('.', ',')}</span>
+          <Stars rating={average} colors={colors} size="1.1rem" />
+          <span style={{ fontSize: '0.8rem', color: colors.textMuted }}>{reviewsCount(reviews.length)}</span>
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
+        {reviews.map((review, i) => (
+          <figure
+            key={i}
+            style={{
+              margin: 0,
+              padding: '1rem',
+              borderRadius: '0.75rem',
+              background: `${colors.accent}0f`,
+              border: `1px solid ${colors.accent}26`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+            }}
+          >
+            {review.rating && <Stars rating={review.rating} colors={colors} />}
+            <blockquote style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.55, color: colors.text }}>«{review.text}»</blockquote>
+            <figcaption style={{ fontSize: '0.8rem', color: colors.textMuted }}>
+              <span style={{ fontWeight: 600 }}>{review.author}</span>
+              {review.date && <span> · {review.date}</span>}
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /** Рендерит тело секции в зависимости от её типа. Данные сайта (card) нужны блокам, которые показывают контакты. */
 export function SectionBody({ section, card, colors }: { section: CardSection; card: CardData; colors: ThemeColors }) {
   switch (section.type) {
@@ -522,6 +587,8 @@ export function SectionBody({ section, card, colors }: { section: CardSection; c
       return <ContactsBlock card={card} colors={colors} />
     case 'hours':
       return <HoursBlock hours={section.hours ?? []} colors={colors} />
+    case 'reviews':
+      return <ReviewsBlock reviews={section.reviews ?? []} colors={colors} />
     case 'services':
       return <ServicesBlock services={section.services ?? []} card={card} colors={colors} />
     default:

@@ -7,11 +7,13 @@ import type {
   CardSection,
   CodeBlockData,
   HoursRow,
+  ReviewItem,
   SectionType,
   ServiceItem,
   TableData,
 } from '../types/card.ts'
 import { parseHoursBody } from './hours.ts'
+import { parseRating } from './rating.ts'
 
 export const FENCE_OPEN = /^:::\s*([A-Za-z][\w-]*)\s*(.*)$/
 export const FENCE_CLOSE = /^:::\s*$/
@@ -184,6 +186,24 @@ export function parseServices(content: string): ServiceItem[] {
     .filter((service) => service.title || service.price || service.description)
 }
 
+/** Парсит блок :::reviews в список отзывов. */
+export function parseReviews(content: string): ReviewItem[] {
+  const fence = extractFence(content, 'reviews')
+  if (!fence) return []
+
+  return splitBlocks(fence.body)
+    .map((block) => {
+      const fields = parseFields(block)
+      return {
+        author: fields.author ?? '',
+        text: fields.text ?? '',
+        rating: parseRating(fields.rating ?? '') ?? undefined,
+        date: fields.date || undefined,
+      }
+    })
+    .filter((review) => review.author || review.text)
+}
+
 /** Парсит блок :::hours в часы работы. */
 export function parseHours(content: string): HoursRow[] {
   const fence = extractFence(content, 'hours')
@@ -200,6 +220,7 @@ export function detectSectionType(content: string): SectionType {
   if (extractFence(content, 'cards')) return 'card-grid'
   if (extractFence(content, 'services')) return 'services'
   if (extractFence(content, 'hours')) return 'hours'
+  if (extractFence(content, 'reviews')) return 'reviews'
   if (extractFence(content, 'contacts')) return 'contacts'
   if (isTableContent(content)) return 'table'
   return 'text'
@@ -216,6 +237,7 @@ export function buildSection(title: string, content: string): CardSection {
   else if (type === 'card-grid') section.cards = parseCardGrid(content)
   else if (type === 'services') section.services = parseServices(content)
   else if (type === 'hours') section.hours = parseHours(content)
+  else if (type === 'reviews') section.reviews = parseReviews(content)
 
   return section
 }

@@ -116,6 +116,30 @@ description: Моделирование, горячее полотенце
 вс: выходной
 :::`,
   },
+  reviews: {
+    name: 'reviews',
+    label: 'Отзывы',
+    description: 'Отзывы клиентов со звёздами. Только настоящие отзывы — придумывать их нельзя',
+    attrs: z.strictObject({}),
+    item: z
+      .strictObject({
+        author: text('Имя клиента', 'Алексей'),
+        text: text('Текст отзыва', 'Лучший фейд в городе, мастер не торопится'),
+        rating: text('Оценка от 1 до 5', '5').optional(),
+        date: text('Когда оставлен отзыв', 'март 2026').optional(),
+      })
+      .meta({ description: 'Отзыв' }),
+    example: `:::reviews
+author: Алексей
+text: Лучший фейд в городе, мастер не торопится
+rating: 5
+date: март 2026
+
+author: Ольга
+text: Привожу сына уже год, всегда аккуратно
+rating: 5
+:::`,
+  },
   contacts: {
     name: 'contacts',
     label: 'Контакты',

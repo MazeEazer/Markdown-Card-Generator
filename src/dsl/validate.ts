@@ -13,6 +13,7 @@ import { missingRequiredRule } from './rules/missingRequired.ts'
 import { noContactsRule } from './rules/noContacts.ts'
 import { phoneRule } from './rules/phone.ts'
 import { primaryRule } from './rules/primary.ts'
+import { reviewsRule } from './rules/reviews.ts'
 import { servicesRule } from './rules/services.ts'
 import { strayTextRule } from './rules/strayText.ts'
 import { unclosedFenceRule } from './rules/unclosedFence.ts'
@@ -42,6 +43,7 @@ export const RULES: Rule[] = [
   contactsBlockRule,
   servicesRule,
   hoursRule,
+  reviewsRule,
   unclosedFenceRule,
   unknownBlockRule,
   strayTextRule,

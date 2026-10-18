@@ -3,6 +3,7 @@
 import type { CardData, CardSection } from '../types/card.ts'
 import { parseAccent } from './cardData.ts'
 import { parseHoursBody } from './hours.ts'
+import { normalizeRating, parseRating } from './rating.ts'
 import type { DocumentJson, SectionJson } from './schema/document.ts'
 
 function section(json: SectionJson): CardSection {
@@ -48,6 +49,18 @@ function section(json: SectionJson): CardSection {
       }
     case 'hours':
       return { ...base, type: 'hours', hours: parseHoursBody(json.lines.join('\n')) }
+    case 'reviews':
+      return {
+        ...base,
+        type: 'reviews',
+        reviews: json.items.map((item) => ({
+          author: item.author.trim(),
+          text: item.text.trim(),
+          // Нейросеть может ответить «5/5» — приводим так же, как исправил бы валидатор
+          rating: item.rating ? (parseRating(item.rating) ?? normalizeRating(item.rating) ?? undefined) : undefined,
+          date: item.date?.trim() || undefined,
+        })),
+      }
     case 'contacts':
       return { ...base, type: 'contacts' }
   }

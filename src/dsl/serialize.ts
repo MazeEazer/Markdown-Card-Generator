@@ -2,7 +2,16 @@
 // а разметку для редактора строим мы. Гарантия: parseDocument(serialize(card)) даёт тот же CardData
 // (для блоков — те же данные блока; текст секции `content` у блоков на сайте не показывается).
 import { stringify } from 'yaml'
-import type { AccordionItem, CardData, CardGridItem, CardSection, CodeBlockData, ServiceItem, TableData } from '../types/card.ts'
+import type {
+  AccordionItem,
+  CardData,
+  CardGridItem,
+  CardSection,
+  CodeBlockData,
+  ReviewItem,
+  ServiceItem,
+  TableData,
+} from '../types/card.ts'
 import { formatHoursLine } from './hours.ts'
 import { CONTACT_NAMES } from './schema/frontmatter.ts'
 
@@ -84,6 +93,18 @@ function services(list: ServiceItem[]): string {
   return `:::services\n${body}\n:::`
 }
 
+function reviews(list: ReviewItem[]): string {
+  const body = items(
+    list.map((review) => [
+      ['author', review.author],
+      ['text', review.text],
+      ['rating', review.rating?.toString()],
+      ['date', review.date],
+    ]),
+  )
+  return `:::reviews\n${body}\n:::`
+}
+
 function code({ lang, code }: CodeBlockData): string {
   return `:::code${lang ? ` lang="${lang}"` : ''}\n${code}\n:::`
 }
@@ -102,6 +123,8 @@ function sectionBody(section: CardSection): string {
       return services(section.services ?? [])
     case 'hours':
       return `:::hours\n${(section.hours ?? []).map(formatHoursLine).join('\n')}\n:::`
+    case 'reviews':
+      return reviews(section.reviews ?? [])
     case 'contacts':
       return ':::contacts\n:::'
     default:

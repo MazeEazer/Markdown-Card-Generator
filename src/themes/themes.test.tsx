@@ -58,7 +58,34 @@ phone: +7 999 123-45-67
 :::
 `
 
+const reviews = `---
+name: Барбершоп «Борода»
+phone: +7 999 123-45-67
+---
+## Отзывы
+:::reviews
+author: Алексей
+text: Лучший фейд в городе
+rating: 5
+date: март 2026
+
+author: Ольга
+text: Аккуратно и быстро
+rating: 4
+:::
+`
+
 describe.each(THEME_NAMES)('тема %s', (theme) => {
+  it(':::reviews — средняя оценка, звёзды, автор и дата', () => {
+    const html = render(reviews, theme)
+    expect(html).toContain('4,5')
+    expect(html).toContain('2 отзыва')
+    expect(html).toContain('«Лучший фейд в городе»')
+    expect(html).toContain('Алексей')
+    expect(html).toContain('март 2026')
+    expect(html).toContain('aria-label="Оценка 4 из 5"')
+  })
+
   it(':::hours — таблица часов и бейдж со статусом', () => {
     const html = render(hours, theme)
     expect(html).toContain('Пн–пт')
