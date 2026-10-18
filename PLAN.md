@@ -42,7 +42,7 @@
 
 **Проверка критериев (18.10.2026)**
 - ✅ `npm test` зелёный — 86 тестов.
-- ✅ `supabase/migrations/` в репозитории — сделано позже, перед этапом 4, **без Docker**: `pg_dump` из `brew install libpq`, только схема `public` + отдельно выгруженные объекты вне неё (см. заметки ниже). Файл `supabase/migrations/20261018150251_remote_schema.sql`.
+- ✅ `supabase/migrations/` в репозитории — сделано позже, перед этапом 4, **без Docker**: `pg_dump` из `brew install libpq`, только схема `public` + отдельно выгруженные объекты вне неё (см. заметки ниже). Файл `supabase/migrations/20261018150251_remote_schema.sql`. На сервере отмечена как уже применённая (`npx supabase migration repair --status applied 20261018150251`, выполнил автор; в `migration list` заполнены колонки Local и Remote) — `db push` не будет пытаться создать существующие таблицы заново.
 - ✅ В `dist/` нет токена Vercel — после `rm -rf dist && npm run build` нет ни значения токена, ни `VITE_VERCEL`, ни `api.vercel.com`; в коде `VITE_VERCEL_TOKEN` не читается нигде.
 - ✅ Публикация на Vercel работает через Edge Function `deploy-vercel` (проверено автором вручную).
 
