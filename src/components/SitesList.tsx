@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { templateMarkdown, TEMPLATES, type SiteTemplate } from '../data/templates'
 import { useSites, type Site } from '../hooks/useSites'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -13,38 +14,15 @@ export function SitesList({ onEditSite, onSignOut }: SitesListProps) {
   const [showCreate, setShowCreate] = useState(false)
   const [newSiteName, setNewSiteName] = useState('')
   const [creating, setCreating] = useState(false)
+  const [templateId, setTemplateId] = useState<SiteTemplate['id']>('barbershop')
 
  async function handleCreate() {
   if (!newSiteName.trim()) return
   
   setCreating(true)
   
-  // Название сайта в БД = то, что ввёл пользователь
-  // Но в Markdown оставляем шаблон "Ваше имя", чтобы пользователь сам заполнил
-  const defaultMarkdown = `---
-name: Ваше имя
-title: Ваша должность
-theme: auto
-accent: auto
-avatar: https://api.dicebear.com/7.x/avataaars/svg?seed=NewUser
-location: Город
-links:
-  - label: GitHub
-    url: https://github.com
-    icon: github
-  - label: Email
-    url: mailto:email@example.com
-    icon: mail
----
-
-## О себе
-Расскажите о себе...
-
-## Навыки
-Навык 1, Навык 2, Навык 3
-`
-  
-  const { data, error } = await createSite(newSiteName.trim(), defaultMarkdown)
+  // Название сайта в БД = то, что ввёл пользователь; оно же подставляется в шаблон как name
+  const { data, error } = await createSite(newSiteName.trim(), templateMarkdown(templateId, newSiteName))
   
   if (!error && data) {
     onEditSite(data)
@@ -112,6 +90,26 @@ links:
                     className="w-full px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 mb-4"
                     autoFocus
                   />
+                  <p className="text-sm font-medium mb-2">Шаблон</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 mb-4" role="radiogroup" aria-label="Шаблон сайта">
+                    {TEMPLATES.map(template => (
+                      <button
+                        key={template.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={templateId === template.id}
+                        onClick={() => setTemplateId(template.id)}
+                        className={`text-left px-3 py-2 rounded-lg border transition-colors ${
+                          templateId === template.id
+                            ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950'
+                            : 'border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                        }`}
+                      >
+                        <span className="block font-medium">{template.label}</span>
+                        <span className="block text-xs text-zinc-500">{template.description}</span>
+                      </button>
+                    ))}
+                  </div>
                   <div className="flex gap-2">
                     <button
                       onClick={handleCreate}

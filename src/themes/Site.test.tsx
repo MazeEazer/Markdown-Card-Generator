@@ -4,6 +4,7 @@ import { THEME_NAMES } from '../dsl/schema/frontmatter'
 import { getCardExportCss } from '../lib/cardStyles'
 import { parseCardMarkdown } from '../lib/parser'
 import { resolveTheme } from '../lib/themeEngine'
+import { readableOn } from './shared/colors'
 import { Site } from './Site'
 
 function render(frontmatter: string, theme: (typeof THEME_NAMES)[number] = 'minimal'): string {
@@ -44,5 +45,17 @@ describe('панель связи', () => {
     expect(css).toContain('.md-site { container: md-site / inline-size; }')
     expect(css).toContain('.md-contact-bar { display: none; }')
     expect(css).toContain('@container md-site (max-width: 640px) { .md-contact-bar { display: flex; } }')
+  })
+})
+
+describe('readableOn', () => {
+  it.each([
+    ['#ffffff', '#111111'],
+    ['#e6e63a', '#111111'],
+    ['#2563eb', '#ffffff'],
+    ['#c0392b', '#ffffff'],
+    ['linear-gradient(…)', '#ffffff'],
+  ])('%s → %s', (color, text) => {
+    expect(readableOn(color)).toBe(text)
   })
 })

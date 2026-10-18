@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { saveAs } from 'file-saver'
-import { defaultTemplate } from './data/defaultTemplate'
+import { DEFAULT_TEMPLATE } from './data/templates'
 import { exportHtml } from './lib/exportHtml'
 import { parseCardMarkdown, FALLBACK_CARD } from './lib/parser'
 import { resolveTheme } from './lib/themeEngine'
@@ -19,7 +19,7 @@ type MobileTab = 'editor' | 'preview'
 type View = 'list' | 'editor'
 
 function getInitialCard(): CardData {
-  const result = parseCardMarkdown(defaultTemplate)
+  const result = parseCardMarkdown(DEFAULT_TEMPLATE)
   return result.data ?? FALLBACK_CARD
 }
 
@@ -31,7 +31,7 @@ export default function App() {
   // === СОСТОЯНИЕ ИНТЕРФЕЙСА ===
   const [view, setView] = useState<View>('list')
   const [currentSite, setCurrentSite] = useState<Site | null>(null)
-  const [markdown, setMarkdown] = useState(defaultTemplate)
+  const [markdown, setMarkdown] = useState(DEFAULT_TEMPLATE)
   const [themeOverride, setThemeOverride] = useState<ThemePreference>('auto')
   const [lastTheme, setLastTheme] = useState<ThemePreference>('auto')
   const [lastValidCard, setLastValidCard] = useState<CardData>(getInitialCard)
@@ -40,7 +40,7 @@ export default function App() {
   
   // Состояния сохранения
   const [saving, setSaving] = useState(false)
-  const [lastSaved, setLastSaved] = useState(defaultTemplate)
+  const [lastSaved, setLastSaved] = useState(DEFAULT_TEMPLATE)
   const [saveError, setSaveError] = useState<string | null>(null)
   
   // Состояния публикации на Vercel
@@ -172,7 +172,7 @@ export default function App() {
 
   const handleLoadTemplate = useCallback(() => {
     if (dirty && !window.confirm('Загрузить пример? Несохранённые изменения будут потеряны.')) return
-    setMarkdown(defaultTemplate)
+    setMarkdown(DEFAULT_TEMPLATE)
   }, [dirty])
 
   const handleBackToList = useCallback(() => {
@@ -181,8 +181,8 @@ export default function App() {
     setView('list')
     setCurrentSite(null)
     setCurrentSiteId(null)
-    setMarkdown(defaultTemplate)
-    setLastSaved(defaultTemplate)
+    setMarkdown(DEFAULT_TEMPLATE)
+    setLastSaved(DEFAULT_TEMPLATE)
     setThemeOverride('auto')
     setLastTheme('auto')
     setSaveError(null)
