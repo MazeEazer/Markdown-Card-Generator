@@ -1,4 +1,4 @@
-// Настройка CodeMirror 6 для редактора DSL: базовые возможности, тема, подсветка, автодополнение и линтер.
+// Настройка CodeMirror 6 для редактора DSL: базовые возможности, тема, подсветка, автодополнение, справка и линтер.
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
 import { bracketMatching, indentOnInput } from '@codemirror/language'
 import type { Extension } from '@codemirror/state'
@@ -12,6 +12,7 @@ import {
   placeholder,
 } from '@codemirror/view'
 import { dslAutocomplete } from './complete'
+import { dslHover } from './hover'
 import { dslHighlighting } from './language'
 import { dslLinter } from './lint'
 
@@ -88,6 +89,18 @@ const darkTheme = EditorView.theme(
     },
     'li[aria-selected] .cm-completionDetail': { color: '#e0e7ff' },
     '.cm-completionMatchedText': { textDecoration: 'none', color: '#fde68a' },
+    // Справка при наведении: описание блока или поля из схемы
+    '.cm-dsl-hover': {
+      maxWidth: '440px',
+      padding: '8px 12px',
+      fontFamily: 'system-ui, sans-serif',
+      fontSize: '13px',
+      lineHeight: '1.45',
+    },
+    '.cm-dsl-hover-title': { fontWeight: '600', color: '#a5b4fc', marginBottom: '4px' },
+    '.cm-dsl-hover p': { margin: '4px 0 0' },
+    '.cm-dsl-hover ul': { margin: '2px 0 0', paddingLeft: '16px', listStyle: 'disc', color: '#d4d4d8' },
+    '.cm-dsl-hover code': { fontFamily: "'JetBrains Mono', monospace", color: '#7dd3fc' },
     'li[aria-selected] .cm-completionMatchedText': { color: '#ffffff' },
   },
   { dark: true },
@@ -108,6 +121,7 @@ export function baseExtensions(): Extension[] {
     darkTheme,
     dslHighlighting(),
     dslAutocomplete(),
+    dslHover(),
     dslLinter(),
   ]
 }

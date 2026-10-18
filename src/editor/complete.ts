@@ -5,9 +5,9 @@ import type { Extension } from '@codemirror/state'
 import type { z } from 'zod'
 import { unwrap } from '../dsl/rules/helpers'
 import { BLOCK_NAMES, BLOCKS, type BlockName } from '../dsl/schema/blocks'
-import { BUSINESSES, CONTACTS, FRONTMATTER_ALIASES, frontmatterSchema, PRIMARY_TARGETS, THEMES } from '../dsl/schema/frontmatter'
+import { BUSINESSES, CONTACTS, frontmatterSchema, PRIMARY_TARGETS, THEMES } from '../dsl/schema/frontmatter'
 import { ICONS } from '../dsl/schema/icons'
-import { stateAfterLines } from './language'
+import { canonical, fieldMeta, lineContext, parentKey, TOP_KEY } from './context'
 
 export interface ValueOption {
   label: string
@@ -45,22 +45,6 @@ const ICON_OPTIONS = fromRecord(ICONS)
 const KEY_VALUE = /^(\s*)(?:-\s+)?([A-Za-zА-Яа-яЁё][\wА-Яа-яЁё-]*)\s*:[ \t]*(\S*)$/
 /** Начатый ключ с отступом (внутри contacts:) */
 const INDENTED_KEY = /^(\s+)([A-Za-z]*)$/
-/** Ключ верхнего уровня шапки */
-const TOP_KEY = /^([A-Za-zА-Яа-яЁё][\wА-Яа-яЁё-]*)\s*:/
-
-const canonical = (key: string) => FRONTMATTER_ALIASES[key.toLowerCase()] ?? key
-
-/** Ближайший сверху ключ шапки без отступа — родитель для вложенных строк (contacts:, links:). */
-function parentKey(lines: string[]): string | null {
-  for (let i = lines.length - 1; i >= 0; i--) {
-    const line = lines[i]
-    if (line.trim() === '' || /^\s/.test(line)) continue
-    const match = line.match(TOP_KEY)
-    return match ? canonical(match[1]) : null
-  }
-  return null
-}
-
 /** Уже заполненные ключи внутри contacts: (вниз и вверх от текущей строки). */
 function filledContacts(allLines: string[], lineIndex: number): Set<string> {
   const keys = new Set<string>()
@@ -73,14 +57,6 @@ function filledContacts(allLines: string[], lineIndex: number): Set<string> {
   for (let i = lineIndex + 1; i < allLines.length && allLines[i] !== '---' && collect(allLines[i]); i++);
   return keys
 }
-
-interface FieldMeta {
-  description?: string
-  examples?: unknown[]
-  deprecated?: boolean
-}
-
-const fieldMeta = (schema: z.ZodType) => (unwrap(schema).meta() ?? {}) as FieldMeta
 
 /** Поля объекта схемы, кроме устаревших и уже заполненных. Вставляется «ключ: ». */
 function fieldOptions(schema: z.ZodObject, filled: Set<string>, applyFor: (key: string) => string): ValueOption[] {
@@ -158,13 +134,7 @@ const LINE_START_KEY = /^([A-Za-z][\w-]*)?$/
 
 /** Что предложить в позиции `pos` текста `text`; null — подсказывать нечего. */
 export function completionsAt(text: string, pos: number): ValueCompletion | null {
-  const lineStart = text.lastIndexOf('\n', pos - 1) + 1
-  const before = text.slice(lineStart, pos)
-  const allLines = text.split('\n')
-  const lineIndex = text.slice(0, lineStart).split('\n').length - 1
-  const state = stateAfterLines(allLines.slice(0, lineIndex))
-  // Первая строка документа: шапка (`---`) или сразу тело
-  const zone = state.zone === 'start' ? 'body' : state.zone
+  const { lineStart, before, allLines, lineIndex, state, zone } = lineContext(text, pos)
 
   if (zone === 'body' && state.block === null && FENCE_START.test(before)) {
     return { from: lineStart, options: BLOCK_OPTIONS, validFor: FENCE_START }
