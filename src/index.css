@@ -31,14 +31,6 @@ body {
   margin: 0;
 }
 
-.editor-scroll .w-tc-editor {
-  min-height: 100%;
-}
-
-.editor-scroll .w-tc-editor-text {
-  overflow: visible !important;
-}
-
 /* Аккордеон (секция :::accordion) — своя иконка вместо нативного маркера */
 .md-accordion summary {
   list-style: none;
