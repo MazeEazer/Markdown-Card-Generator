@@ -115,7 +115,10 @@ export const frontmatterSchema = z
       .meta({ description: 'Основной цвет в формате "#rrggbb" (в кавычках!) или auto', examples: ['#c0392b'] })
       .optional(),
     avatar: z.url().meta({ description: 'Ссылка на фото или логотип', examples: ['https://example.ru/logo.png'] }).optional(),
-    location: text('Город или район одной строкой (устаревшее, лучше address и city)', 'Самара').optional(),
+    location: z
+      .string()
+      .meta({ description: 'Город или район одной строкой (устаревшее, лучше address и city)', deprecated: true })
+      .optional(),
     links: z.array(linkSchema).meta({ description: 'Дополнительные ссылки в шапке сайта' }).optional(),
     business: z
       .enum(BUSINESS_NAMES)

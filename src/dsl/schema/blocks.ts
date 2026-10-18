@@ -29,7 +29,7 @@ export const BLOCKS = {
         description: text('Текст карточки', 'Машинкой и ножницами, мытьё головы').optional(),
         icon: iconSchema.optional(),
         url: z.url().meta({ description: 'Ссылка — карточка становится кликабельной', examples: ['https://t.me/barber_ivan'] }).optional(),
-        link: z.url().meta({ description: 'То же, что url (устаревшее)' }).optional(),
+        link: z.url().meta({ description: 'То же, что url (устаревшее)', deprecated: true }).optional(),
         tags: text('Метки через запятую', 'мужская, детская').optional(),
       })
       .meta({ description: 'Карточка' }),
