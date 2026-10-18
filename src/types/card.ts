@@ -48,6 +48,19 @@ export interface CardSection {
   cards?: CardGridItem[]
 }
 
+/** Контакты бизнеса: имена пользователей и номера, ссылки строит генератор. */
+export interface CardContacts {
+  telegram?: string
+  whatsapp?: string
+  vk?: string
+  max?: string
+  instagram?: string
+  email?: string
+  website?: string
+  /** Куда ведёт главная кнопка «Записаться / Связаться» — имя одного из контактов или phone */
+  primary?: string
+}
+
 export interface CardData {
   name: string
   title: string
@@ -57,6 +70,13 @@ export interface CardData {
   location?: string
   links: CardLink[]
   sections: CardSection[]
+  /** Поля бизнеса (этап 2): читаются парсером, на сайте появятся в этапе 3 */
+  business?: string
+  phone?: string
+  address?: string
+  city?: string
+  currency?: string
+  contacts?: CardContacts
 }
 
 export interface ThemeColors {
