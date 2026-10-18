@@ -1,4 +1,4 @@
-// Настройка CodeMirror 6 для редактора DSL: базовые возможности, тема и линтер.
+// Настройка CodeMirror 6 для редактора DSL: базовые возможности, тема, подсветка и линтер.
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
 import { bracketMatching, indentOnInput } from '@codemirror/language'
 import type { Extension } from '@codemirror/state'
@@ -11,6 +11,7 @@ import {
   lineNumbers,
   placeholder,
 } from '@codemirror/view'
+import { dslHighlighting } from './language'
 import { dslLinter } from './lint'
 
 /** Тёмная тема в цветах интерфейса (zinc из Tailwind), как у прежнего редактора. */
@@ -87,6 +88,7 @@ export function baseExtensions(): Extension[] {
     placeholder('Введите Markdown...'),
     keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
     darkTheme,
+    dslHighlighting(),
     dslLinter(),
   ]
 }
