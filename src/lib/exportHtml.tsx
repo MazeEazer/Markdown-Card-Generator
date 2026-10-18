@@ -3,6 +3,7 @@ import type { CardData, ResolvedTheme } from '../types/card'
 import { getCardExportCss } from './cardStyles'
 import { Site } from '../themes/Site'
 import { hoursScript } from './hoursScript'
+import { headTags } from './structuredData'
 
 function slugify(name: string): string {
   return name
@@ -23,6 +24,7 @@ export function exportHtml(data: CardData, resolved: ResolvedTheme): { html: str
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${escapeHtml(data.name)}${data.title ? ` — ${escapeHtml(data.title)}` : ''}</title>
+  ${headTags(data)}
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
