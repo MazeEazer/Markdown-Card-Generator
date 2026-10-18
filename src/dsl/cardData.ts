@@ -29,7 +29,7 @@ function parseTheme(raw: unknown): CardData['theme'] {
 }
 
 /** Принимаем только #hex и приводим к 6 знакам — суффиксы прозрачности требуют формата #rrggbb. */
-function parseAccent(raw: unknown): string {
+export function parseAccent(raw: unknown): string {
   if (raw === undefined || raw === null) return 'auto'
 
   const value = String(raw)
