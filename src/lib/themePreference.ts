@@ -1,3 +1,4 @@
+import { THEME_NAMES } from '../dsl/schema/frontmatter'
 import type { ThemeName } from '../types/card'
 
 /** Значение селектора темы в редакторе: конкретная тема либо автоматический выбор. */
@@ -6,7 +7,7 @@ export type ThemePreference = ThemeName | 'auto'
 const SITE_THEME_PREFIX = 'md-card:theme:'
 const LAST_THEME_KEY = 'md-card:theme:last'
 
-const THEME_PREFERENCES: ThemePreference[] = ['auto', 'glass', 'minimal', 'noir', 'vercel']
+const THEME_PREFERENCES: ThemePreference[] = ['auto', ...THEME_NAMES]
 
 export function isThemePreference(value: unknown): value is ThemePreference {
   return typeof value === 'string' && (THEME_PREFERENCES as string[]).includes(value)

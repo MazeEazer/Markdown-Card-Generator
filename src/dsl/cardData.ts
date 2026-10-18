@@ -3,11 +3,10 @@
 import { isMap, isScalar, type Document } from 'yaml'
 import type { CardContacts, CardData, CardLink, ParseResult, ThemeName } from '../types/card.ts'
 import type { DocumentNode } from './ast.ts'
+import { CONTACT_NAMES, THEME_NAMES } from './schema/frontmatter.ts'
 import { buildSection } from './sections.ts'
 
-const VALID_THEMES: ThemeName[] = ['glass', 'minimal', 'noir', 'vercel']
-
-const CONTACT_KEYS: (keyof CardContacts)[] = ['telegram', 'whatsapp', 'vk', 'max', 'instagram', 'email', 'website', 'primary']
+const CONTACT_KEYS: (keyof CardContacts)[] = [...CONTACT_NAMES, 'primary']
 
 function parseLinks(raw: unknown): CardLink[] {
   if (!Array.isArray(raw)) return []
@@ -26,7 +25,7 @@ function parseTheme(raw: unknown): CardData['theme'] {
   if (typeof raw !== 'string') return 'auto'
   const normalized = raw.split('#')[0].toLowerCase().trim()
   if (normalized === 'auto') return 'auto'
-  return VALID_THEMES.includes(normalized as ThemeName) ? (normalized as ThemeName) : 'auto'
+  return THEME_NAMES.includes(normalized as ThemeName) ? (normalized as ThemeName) : 'auto'
 }
 
 /** Принимаем только #hex и приводим к 6 знакам — суффиксы прозрачности требуют формата #rrggbb. */
