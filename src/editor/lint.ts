@@ -17,19 +17,19 @@ export function toEditorDiagnostics(diagnostics: Diagnostic[], doc: Text): Edito
     const to = Math.min(Math.max(d.to, from), doc.length)
     const result: EditorDiagnostic = { from, to, severity: d.severity, message: d.message }
     if (d.fix) {
-      result.actions = [{ name: d.fix.label, apply: (view, currentFrom) => applyFixInView(view, d, doc, currentFrom) }]
+      result.actions = [{ name: d.fix.label, apply: (view, currentFrom) => applyFixInView(view, d, view.state.doc !== doc, currentFrom) }]
     }
     return result
   })
 }
 
 /**
- * Применяет исправление. Если текст успели изменить после проверки, позиции исправления устарели —
- * тогда проверяем текст заново и берём ту же проблему на её новом месте (`currentFrom` CodeMirror уже сдвинул).
+ * Применяет исправление. Если текст успели изменить после проверки (`stale`), позиции исправления устарели —
+ * тогда проверяем текст заново и берём ту же проблему на её новом месте `currentFrom`.
  */
-export function applyFixInView(view: EditorView, diagnostic: Diagnostic, linted: Text, currentFrom: number): void {
+export function applyFixInView(view: EditorView, diagnostic: Diagnostic, stale: boolean, currentFrom: number): void {
   let target: Diagnostic | undefined = diagnostic
-  if (view.state.doc !== linted) {
+  if (stale) {
     target = validate(view.state.doc.toString()).find(
       (d) => d.code === diagnostic.code && d.from === currentFrom && d.fix,
     )

@@ -1,7 +1,11 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef } from 'react'
 import { EditorState, Transaction } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
+import type { Diagnostic } from '../dsl/types'
+import { validate } from '../dsl/validate'
+import { applyFixInView } from '../editor/lint'
 import { baseExtensions } from '../editor/setup'
+import { ProblemsPanel } from './ProblemsPanel'
 
 interface EditorPaneProps {
   value: string
@@ -51,12 +55,35 @@ export function EditorPane({ value, onChange }: EditorPaneProps) {
     }
   }, [value])
 
+  // Панель «Проблемы»: проверка с отложенным текстом, чтобы набор не тормозил
+  const checkedText = useDeferredValue(value)
+  const diagnostics = useMemo(() => validate(checkedText), [checkedText])
+
+  const jumpTo = useCallback((diagnostic: Diagnostic) => {
+    const view = viewRef.current
+    if (!view) return
+    const anchor = Math.min(diagnostic.from, view.state.doc.length)
+    view.dispatch({ selection: { anchor }, scrollIntoView: true })
+    view.focus()
+  }, [])
+
+  const fix = useCallback(
+    (diagnostic: Diagnostic) => {
+      const view = viewRef.current
+      if (!view) return
+      applyFixInView(view, diagnostic, view.state.doc.toString() !== checkedText, diagnostic.from)
+      view.focus()
+    },
+    [checkedText],
+  )
+
   return (
     <div className="h-full flex flex-col min-h-0 bg-zinc-950">
       <div className="shrink-0 px-4 py-2 border-b border-zinc-800 text-xs text-zinc-500 font-mono">
         markdown
       </div>
       <div ref={containerRef} className="flex-1 min-h-0" />
+      <ProblemsPanel text={checkedText} diagnostics={diagnostics} onJump={jumpTo} onFix={fix} />
     </div>
   )
 }
