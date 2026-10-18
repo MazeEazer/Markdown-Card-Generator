@@ -6,7 +6,8 @@ import type { Range } from '../types.ts'
 
 /** Диапазон строки, в которой находится смещение (без перевода строки и `\r`). */
 export function lineAt(text: string, offset: number): Range {
-  const from = text.lastIndexOf('\n', offset - 1) + 1
+  // lastIndexOf с отрицательным индексом ищет с позиции 0 — для начала текста строку начинаем явно
+  const from = offset > 0 ? text.lastIndexOf('\n', offset - 1) + 1 : 0
   let to = text.indexOf('\n', offset)
   if (to === -1) to = text.length
   if (text[to - 1] === '\r') to--

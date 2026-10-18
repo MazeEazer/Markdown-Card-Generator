@@ -136,7 +136,7 @@ describe('serialize: случайные документы', () => {
     let seed = 11
     const random = (n: number) => {
       seed = (seed * 1103515245 + 12345) % 2147483648
-      return seed % n
+      return (seed >>> 16) % n
     }
     for (let i = 0; i < 2000; i++) {
       const lines = Array.from({ length: 1 + random(12) }, () => pieces[random(pieces.length)])
