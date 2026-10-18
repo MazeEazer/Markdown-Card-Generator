@@ -42,9 +42,13 @@ describe('панель связи', () => {
   it('сайт обёрнут в контейнер, а CSS показывает панель только на узком экране', () => {
     expect(render(contacts)).toMatch(/^<div class="md-site">/)
     const css = getCardExportCss()
-    expect(css).toContain('.md-site { container: md-site / inline-size; }')
+    expect(css).toContain('.md-site { container: md-site / inline-size;')
     expect(css).toContain('.md-contact-bar { display: none; }')
     expect(css).toContain('@container md-site (max-width: 640px) { .md-contact-bar { display: flex; } }')
+  })
+
+  it('сплошной текст без пробелов переносится, а не вылезает за блок', () => {
+    expect(getCardExportCss()).toMatch(/\.md-site \{[^}]*overflow-wrap: anywhere;/)
   })
 })
 
