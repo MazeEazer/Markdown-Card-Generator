@@ -78,6 +78,10 @@ describe('подсветка DSL', () => {
     expect(tokens('--- \nname: Борода')).toEqual([[], []])
   })
 
+  it('пустая первая строка — шапки нет, как и в парсере', () => {
+    expect(tokens('\n---\nname: Борода\n---')).toEqual([[], [], [], []])
+  })
+
   it('без frontmatter первая строка — сразу тело', () => {
     expect(tokens('## Привет\n---')).toEqual([[['## Привет', 'heading']], []])
   })

@@ -1,4 +1,4 @@
-// Настройка CodeMirror 6 для редактора DSL: базовые возможности, тема, подсветка и линтер.
+// Настройка CodeMirror 6 для редактора DSL: базовые возможности, тема, подсветка, автодополнение и линтер.
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
 import { bracketMatching, indentOnInput } from '@codemirror/language'
 import type { Extension } from '@codemirror/state'
@@ -11,6 +11,7 @@ import {
   lineNumbers,
   placeholder,
 } from '@codemirror/view'
+import { dslAutocomplete } from './complete'
 import { dslHighlighting } from './language'
 import { dslLinter } from './lint'
 
@@ -71,6 +72,23 @@ const darkTheme = EditorView.theme(
       cursor: 'pointer',
     },
     '.cm-diagnosticAction:hover': { backgroundColor: '#4338ca' },
+    // Список автодополнения: значение моноширинным, пояснение шрифтом интерфейса
+    '.cm-tooltip.cm-tooltip-autocomplete > ul': {
+      fontFamily: "'JetBrains Mono', monospace",
+      fontSize: '13px',
+      maxHeight: '16em',
+    },
+    '.cm-tooltip.cm-tooltip-autocomplete > ul > li': { padding: '3px 10px', lineHeight: '1.5' },
+    '.cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected]': { backgroundColor: '#4f46e5', color: '#ffffff' },
+    '.cm-completionDetail': {
+      marginLeft: '12px',
+      fontFamily: 'system-ui, sans-serif',
+      fontStyle: 'normal',
+      color: '#a1a1aa',
+    },
+    'li[aria-selected] .cm-completionDetail': { color: '#e0e7ff' },
+    '.cm-completionMatchedText': { textDecoration: 'none', color: '#fde68a' },
+    'li[aria-selected] .cm-completionMatchedText': { color: '#ffffff' },
   },
   { dark: true },
 )
@@ -89,6 +107,7 @@ export function baseExtensions(): Extension[] {
     keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
     darkTheme,
     dslHighlighting(),
+    dslAutocomplete(),
     dslLinter(),
   ]
 }

@@ -1,10 +1,10 @@
 // Подсветка синтаксиса DSL: построчный разбор (StreamLanguage) по тем же правилам, что и парсер в src/dsl/.
-import { HighlightStyle, StreamLanguage, type StreamParser, syntaxHighlighting } from '@codemirror/language'
+import { HighlightStyle, StreamLanguage, type StreamParser, StringStream, syntaxHighlighting } from '@codemirror/language'
 import type { Extension } from '@codemirror/state'
 import { tags } from '@lezer/highlight'
 import { FENCE_CLOSE, FENCE_OPEN } from '../dsl/sections'
 
-interface DslState {
+export interface DslState {
   /** Где мы: до текста, во frontmatter (`---` … `---`) или в теле */
   zone: 'start' | 'frontmatter' | 'body'
   /** Имя открытого блока `:::name`, null — вне блока */
@@ -33,6 +33,10 @@ export const dslStreamParser: StreamParser<DslState> = {
   name: 'md-card-dsl',
   startState: () => ({ zone: 'start', block: null, next: null }),
   copyState: (state) => ({ ...state }),
+  // Пустая первая строка — шапки уже не будет: парсер ищет `---` с самого начала текста
+  blankLine: (state) => {
+    if (state.zone === 'start') state.zone = 'body'
+  },
 
   token(stream, state) {
     if (stream.sol()) {
@@ -103,6 +107,23 @@ export const dslStreamParser: StreamParser<DslState> = {
         return null
     }
   },
+}
+
+/** Состояние разбора перед строкой `lines.length` — где она: в шапке, в каком блоке. Для автодополнения. */
+export function stateAfterLines(lines: string[]): DslState {
+  const state = dslStreamParser.startState!(2)
+  for (const line of lines) {
+    if (line === '') {
+      dslStreamParser.blankLine!(state, 2)
+      continue
+    }
+    const stream = new StringStream(line, 2, 2)
+    while (!stream.eol()) {
+      dslStreamParser.token(stream, state)
+      stream.start = stream.pos
+    }
+  }
+  return state
 }
 
 /** Цвета на тёмном фоне редактора (палитра Tailwind). */
