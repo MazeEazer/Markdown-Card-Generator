@@ -40,6 +40,32 @@ export type ContactName = keyof typeof CONTACTS
 
 export const CONTACT_NAMES = Object.keys(CONTACTS) as ContactName[]
 
+/** Привычные названия мессенджеров и соцсетей → ключи contacts (и phone — для primary). */
+export const CONTACT_ALIASES: Record<string, string> = {
+  tg: 'telegram',
+  телеграм: 'telegram',
+  телеграмм: 'telegram',
+  телега: 'telegram',
+  wa: 'whatsapp',
+  whatsup: 'whatsapp',
+  ватсап: 'whatsapp',
+  вотсап: 'whatsapp',
+  вацап: 'whatsapp',
+  вк: 'vk',
+  vkontakte: 'vk',
+  вконтакте: 'vk',
+  макс: 'max',
+  insta: 'instagram',
+  инстаграм: 'instagram',
+  инста: 'instagram',
+  mail: 'email',
+  'e-mail': 'email',
+  почта: 'email',
+  site: 'website',
+  сайт: 'website',
+  телефон: 'phone',
+}
+
 /** Куда может вести главная кнопка: любой контакт или телефон из шапки. */
 export const PRIMARY_TARGETS = [...CONTACT_NAMES, 'phone'] as const
 
@@ -110,6 +136,25 @@ export const frontmatterSchema = z
   .meta({ description: 'Шапка документа между строками ---' })
 
 export type Frontmatter = z.infer<typeof frontmatterSchema>
+
+/** Поля шапки по-русски → ключи схемы: владелец бизнеса может написать «телефон:» вместо «phone:». */
+export const FRONTMATTER_ALIASES: Record<string, string> = {
+  имя: 'name',
+  название: 'name',
+  описание: 'title',
+  подзаголовок: 'title',
+  тема: 'theme',
+  цвет: 'accent',
+  фото: 'avatar',
+  логотип: 'avatar',
+  ссылки: 'links',
+  бизнес: 'business',
+  телефон: 'phone',
+  адрес: 'address',
+  город: 'city',
+  валюта: 'currency',
+  контакты: 'contacts',
+}
 
 /** Пример шапки — для справки в редакторе и промпта. */
 export const FRONTMATTER_EXAMPLE = `---

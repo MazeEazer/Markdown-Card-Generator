@@ -76,6 +76,14 @@ export function enumOptions(schema: z.ZodType): string[] | null {
   return inner instanceof z.ZodEnum ? (inner.options as string[]) : null
 }
 
+/** Хвост сообщения и исправление для подсказки «возможно, вы имели в виду». */
+export function didYouMean(suggestion: string): { hint: string; fix: { label: string; replace: string } } {
+  return {
+    hint: `Возможно, вы имели в виду «${suggestion}»?`,
+    fix: { label: `Заменить на ${suggestion}`, replace: suggestion },
+  }
+}
+
 /** Ключи объекта схемы. */
 export function shapeKeys(schema: z.ZodObject): string[] {
   return Object.keys(schema.shape)

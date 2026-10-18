@@ -15,6 +15,20 @@ describe('invalid-value: шапка', () => {
     expect(fixAndRecheck(text, findOne(text, 'invalid-value'))).toContain('theme: noir')
   })
 
+  it.each([
+    ['theme: noire', 'theme: noir'],
+    ['theme: minimall', 'theme: minimal'],
+    ['business: barbershopp', 'business: barbershop'],
+    ['contacts:\n  telegram: ivan\n  primary: telegramm', 'primary: telegram'],
+    ['contacts:\n  telegram: ivan\n  primary: tg', 'primary: telegram'],
+    ['contacts:\n  primary: телефон', 'primary: phone'],
+  ])('опечатка %j → %j', (frontmatter, expected) => {
+    const text = doc(frontmatter)
+    const d = findOne(text, 'invalid-value')
+    expect(d.message).toMatch(/Возможно, вы имели в виду/)
+    expect(fixAndRecheck(text, d)).toContain(expected)
+  })
+
   it('неизвестный вид бизнеса', () => {
     expect(findOne(doc('business: cafe'), 'invalid-value').message).toMatch(/barbershop/)
   })
@@ -29,7 +43,7 @@ describe('invalid-value: шапка', () => {
   })
 
   it('primary на неизвестный способ связи', () => {
-    expect(findOne(doc('contacts:\n  primary: tg'), 'invalid-value').message).toMatch(/telegram/)
+    expect(findOne(doc('contacts:\n  primary: pigeon'), 'invalid-value').message).toMatch(/Можно: telegram/)
   })
 
   it('contacts не списком', () => {
@@ -51,6 +65,11 @@ describe('invalid-value: блоки', () => {
   it('неизвестная иконка карточки', () => {
     const text = doc('', ':::cards\ntitle: A\nicon: scissors\n:::')
     expect(underlined(text, findOne(text, 'invalid-value'))).toBe('scissors')
+  })
+
+  it('опечатка в иконке', () => {
+    const text = doc('', ':::cards\ntitle: A\nicon: rocet\n:::')
+    expect(fixAndRecheck(text, findOne(text, 'invalid-value'))).toContain('icon: rocket')
   })
 
   it('ссылка карточки без https://', () => {

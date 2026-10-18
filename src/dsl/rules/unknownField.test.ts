@@ -18,10 +18,40 @@ describe('unknown-field: шапка', () => {
   })
 })
 
+describe('unknown-field: «возможно, вы имели в виду»', () => {
+  it.each([
+    ['опечатка в шапке', doc('phon: +7 999 123-45-67'), 'phone'],
+    ['поле по-русски', doc('телефон: +7 999 123-45-67'), 'phone'],
+    ['поле с заглавной буквы', doc('City: Самара'), 'city'],
+    ['опечатка в contacts', doc('contacts:\n  telegramm: ivan'), 'telegram'],
+    ['сокращение в contacts', doc('contacts:\n  tg: ivan'), 'telegram'],
+    ['мессенджер по-русски', doc('contacts:\n  ватсап: +79991234567'), 'whatsapp'],
+    ['опечатка в ссылке', doc('links:\n  - label: A\n    urll: https://a.ru'), 'url'],
+    ['опечатка в поле блока', doc('', ':::cards\ntitel: A\n:::'), 'title'],
+    ['опечатка в поле после другого поля', doc('', ':::cards\ntitle: A\ndescriptoin: Б\n:::'), 'description'],
+  ])('%s → %s', (_, text, key) => {
+    const d = findOne(text, 'unknown-field')
+    expect(d.message).toContain(`«${key}»`)
+    expect(fixAndRecheck(text, d).slice(d.from, d.from + key.length)).toBe(key)
+  })
+
+  it('мессенджер в корне шапки — подсказка про contacts', () => {
+    const d = findOne(doc('telegram: barber_ivan'), 'unknown-field')
+    expect(d.message).toMatch(/внутри contacts/)
+    expect(d.fix).toBeUndefined()
+  })
+
+  it('непохожее поле — список возможных', () => {
+    expect(findOne(doc('price: 1500'), 'unknown-field').message).toMatch(/Возможные поля/)
+  })
+})
+
 describe('unknown-field: блоки', () => {
   it('неизвестное первое поле элемента', () => {
-    const text = doc('', ':::cards\ntitel: A\n:::')
-    expect(underlined(text, findOne(text, 'unknown-field'))).toBe('titel')
+    const text = doc('', ':::cards\nprice: 1500\n:::')
+    const d = findOne(text, 'unknown-field')
+    expect(underlined(text, d)).toBe('price')
+    expect(d.message).toMatch(/Возможные поля: title/)
   })
 
   it('«Note: …» в продолжении текста — исправление присоединяет строку', () => {

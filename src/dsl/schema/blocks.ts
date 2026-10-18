@@ -80,3 +80,10 @@ console.log('Привет!')
 export type BlockName = keyof typeof BLOCKS
 
 export const BLOCK_NAMES = Object.keys(BLOCKS) as BlockName[]
+
+/** Другие привычные имена блоков. */
+export const BLOCK_ALIASES: Record<string, string> = {
+  faq: 'accordion',
+  questions: 'accordion',
+  grid: 'cards',
+}

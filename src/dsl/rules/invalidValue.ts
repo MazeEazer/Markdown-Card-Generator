@@ -4,10 +4,11 @@ import { isMap, isSeq } from 'yaml'
 import { z } from 'zod'
 import type { FrontmatterNode } from '../ast.ts'
 import { BLOCKS, type BlockName } from '../schema/blocks.ts'
-import { contactsSchema, frontmatterSchema } from '../schema/frontmatter.ts'
+import { CONTACT_ALIASES, contactsSchema, frontmatterSchema } from '../schema/frontmatter.ts'
+import { suggest } from '../suggest.ts'
 import type { Diagnostic, DiagnosticFix, Range } from '../types.ts'
 import type { Rule } from '../validate.ts'
-import { enumOptions, unwrap, yamlItems, yamlPairs, yamlValue } from './helpers.ts'
+import { didYouMean, enumOptions, unwrap, yamlItems, yamlPairs, yamlValue } from './helpers.ts'
 
 const linkSchema = (unwrap(frontmatterSchema.shape.links) as z.ZodArray<z.ZodObject>).element
 
@@ -21,10 +22,17 @@ function explain(key: string, value: unknown, schema: z.ZodType): { message: str
   if (options) {
     const shown = typeof value === 'string' ? value : JSON.stringify(value)
     const normalized = typeof value === 'string' ? value.split('#')[0].trim().toLowerCase() : ''
-    return {
-      message: `Значение «${shown}» не подходит для поля «${key}». Можно: ${options.join(', ')}`,
-      fix: options.includes(normalized) ? { label: `Заменить на ${normalized}`, replace: normalized } : undefined,
+    const message = `Значение «${shown}» не подходит для поля «${key}».`
+    if (options.includes(normalized)) {
+      return { message: `${message} Нужно писать маленькими буквами: ${normalized}`, fix: didYouMean(normalized).fix }
     }
+    // primary называет способ связи — понимаем «tg», «ватсап» и т.п.
+    const suggestion = suggest(normalized, options, key === 'primary' ? CONTACT_ALIASES : {})
+    if (suggestion) {
+      const { hint, fix } = didYouMean(suggestion)
+      return { message: `${message} ${hint}`, fix }
+    }
+    return { message: `${message} Можно: ${options.join(', ')}` }
   }
   if (typeof value === 'object') {
     return { message: `Поле «${key}» должно быть одной строкой текста` }
