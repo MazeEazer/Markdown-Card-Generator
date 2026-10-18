@@ -16,7 +16,7 @@ import { formatHoursLine } from './hours.ts'
 import { CONTACT_NAMES } from './schema/frontmatter.ts'
 
 /** Значение поля блока — одной строкой: строки-продолжения парсер всё равно склеивает пробелом. */
-function oneLine(value: string): string {
+export function oneLine(value: string): string {
   return value.replace(/\s*\r?\n\s*/g, ' ').trim()
 }
 

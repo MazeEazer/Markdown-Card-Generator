@@ -1,10 +1,12 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { EditorState, Transaction } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
 import type { Diagnostic } from '../dsl/types'
 import { validate } from '../dsl/validate'
+import { insertBlock } from '../editor/insertBlock'
 import { applyFixInView } from '../editor/lint'
 import { baseExtensions } from '../editor/setup'
+import { AddBlockDialog } from './AddBlockDialog'
 import { ProblemsPanel } from './ProblemsPanel'
 
 interface EditorPaneProps {
@@ -77,13 +79,51 @@ export function EditorPane({ value, onChange }: EditorPaneProps) {
     [checkedText],
   )
 
+  // «Добавить блок»: запоминаем текст и курсор на момент открытия — форма проверяет блок на его будущем месте
+  const [addBlock, setAddBlock] = useState<{ text: string; pos: number } | null>(null)
+
+  const openAddBlock = () => {
+    const view = viewRef.current
+    if (!view) return
+    setAddBlock({ text: view.state.doc.toString(), pos: view.state.selection.main.head })
+  }
+
+  const insert = (markup: string) => {
+    const view = viewRef.current
+    if (!view || !addBlock) return
+    // Пока окно было открыто, текст мог смениться (например, сохранение) — считаем место заново по текущему
+    const pos = Math.min(addBlock.pos, view.state.doc.length)
+    const { from, insert, blockStart } = insertBlock(view.state.doc.toString(), pos, markup)
+    view.dispatch({ changes: { from, insert }, selection: { anchor: blockStart }, scrollIntoView: true, userEvent: 'input.block' })
+    setAddBlock(null)
+    view.focus()
+  }
+
   return (
     <div className="h-full flex flex-col min-h-0 bg-zinc-950">
-      <div className="shrink-0 px-4 py-2 border-b border-zinc-800 text-xs text-zinc-500 font-mono">
+      <div className="shrink-0 flex items-center gap-2 px-4 py-1.5 border-b border-zinc-800 text-xs text-zinc-500 font-mono">
         markdown
+        <button
+          type="button"
+          onClick={openAddBlock}
+          className="ml-auto px-2.5 py-1 rounded font-sans text-xs text-zinc-200 bg-zinc-800 hover:bg-zinc-700 transition-colors"
+        >
+          + Блок
+        </button>
       </div>
       <div ref={containerRef} className="flex-1 min-h-0" />
       <ProblemsPanel text={checkedText} diagnostics={diagnostics} onJump={jumpTo} onFix={fix} />
+      {addBlock && (
+        <AddBlockDialog
+          text={addBlock.text}
+          pos={addBlock.pos}
+          onInsert={insert}
+          onClose={() => {
+            setAddBlock(null)
+            viewRef.current?.focus()
+          }}
+        />
+      )}
     </div>
   )
 }
