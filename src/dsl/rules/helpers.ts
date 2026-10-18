@@ -14,6 +14,14 @@ export function lineAt(text: string, offset: number): Range {
   return { from, to }
 }
 
+/**
+ * Длина «отступа» перед шапкой: пустые строки, пробелы, табы, BOM перед строкой `---`.
+ * 0 — шапка начинается с первой строки (или её нет вовсе).
+ */
+export function indentBeforeFrontmatter(text: string): number {
+  return text.match(/^(?:[^\S\n]*\n)*[^\S\n]*(?=---\r?\n)/)?.[0].length ?? 0
+}
+
 /** Пара `ключ: значение` в YAML-отображении с позициями в исходном тексте. */
 export interface YamlPair {
   key: string

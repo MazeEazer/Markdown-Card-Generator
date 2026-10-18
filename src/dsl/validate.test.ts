@@ -59,7 +59,8 @@ describe('validate', () => {
         ...(random(3) === 0 ? pick(brokenLines, 2) : []),
         ...(random(2) ? ['contacts:', ...pickFields(contactLines, 5)] : []),
       ]
-      const head = random(5) === 0 ? [] : ['---', ...fields, ...(random(10) ? ['---'] : [])]
+      const indent = random(8) === 0 ? ['', ' '] : []
+      const head = random(5) === 0 ? [] : [...indent, '---', ...fields, ...(random(10) ? ['---'] : [])]
       const text = [...head, ...pick(bodyLines, 12)].join(sep)
       for (const d of validate(text)) {
         codes.add(d.code)
@@ -72,7 +73,7 @@ describe('validate', () => {
         }
       }
     }
-    // Случайные документы задевают почти все правила (сейчас — все 23)
+    // Случайные документы задевают почти все правила (сейчас — все 24)
     expect(codes.size).toBeGreaterThanOrEqual(21)
   })
 

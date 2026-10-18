@@ -1,7 +1,7 @@
 // Синтаксис шапки: незакрытая шапка и ошибки YAML — с понятным сообщением вместо английского текста библиотеки.
 import type { Diagnostic, DiagnosticFix, Range } from '../types.ts'
 import type { Rule } from '../validate.ts'
-import { lineAt } from './helpers.ts'
+import { indentBeforeFrontmatter, lineAt } from './helpers.ts'
 
 /** Значение после первого `ключ: ` в строке, если в нём есть двоеточие. */
 function valueWithColon(text: string, line: Range): Range | null {
@@ -55,6 +55,21 @@ function describe(code: string, text: string, range: Range): { message: string; 
 
 export const frontmatterSyntaxRule: Rule = ({ text, ast }) => {
   const frontmatter = ast.frontmatter
+
+  // Шапка есть, но не с первой строки — парсер её не видит; остальные проблемы шапки — после исправления
+  const indent = indentBeforeFrontmatter(text)
+  if (indent > 0) {
+    return [
+      {
+        from: indent,
+        to: indent + 3,
+        severity: 'error',
+        code: 'frontmatter-not-first',
+        message: 'Шапка должна начинаться с первой строки: перед --- не должно быть пустых строк и пробелов',
+        fix: { label: 'Убрать пустые строки в начале', replace: '', from: 0, to: indent },
+      },
+    ]
+  }
 
   if (!frontmatter) {
     if (!/^---\r?\n/.test(text)) return []

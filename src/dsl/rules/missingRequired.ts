@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { BLOCKS, type BlockName } from '../schema/blocks.ts'
 import type { Diagnostic } from '../types.ts'
 import type { Rule } from '../validate.ts'
-import { lineAt } from './helpers.ts'
+import { indentBeforeFrontmatter, lineAt } from './helpers.ts'
 
 const NAME_PLACEHOLDER = 'Моё название'
 
@@ -11,7 +11,8 @@ export const missingRequiredRule: Rule = ({ text, ast }) => {
   const diagnostics: Diagnostic[] = []
   const frontmatter = ast.frontmatter
 
-  if (!frontmatter && !/^---\r?\n/.test(text)) {
+  // Шапка не с первой строки — это ошибка frontmatter-not-first, а не «нет шапки»
+  if (!frontmatter && !/^---\r?\n/.test(text) && !indentBeforeFrontmatter(text)) {
     diagnostics.push({
       ...lineAt(text, 0),
       severity: 'error',
