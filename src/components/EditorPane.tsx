@@ -6,6 +6,7 @@ import { validate } from '../dsl/validate'
 import { insertBlock } from '../editor/insertBlock'
 import { applyFixInView } from '../editor/lint'
 import { baseExtensions } from '../editor/setup'
+import { createEditorLogger } from '../lib/editorEvents'
 import { AddBlockDialog } from './AddBlockDialog'
 import { ProblemsPanel } from './ProblemsPanel'
 
@@ -18,11 +19,17 @@ interface EditorPaneProps {
   value: string
   onChange: (value: string) => void
   ref?: Ref<EditorHandle>
+  /** Открытый сайт — к нему привязываются события журнала */
+  siteId: string | null
 }
 
-export function EditorPane({ value, onChange, ref }: EditorPaneProps) {
+export function EditorPane({ value, onChange, ref, siteId }: EditorPaneProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+  // Журнал событий для эксперимента: один на открытый редактор; выключен — ничего не пишет
+  const [logger] = useState(() => createEditorLogger(siteId))
+  // Текст заменили снаружи — следующий список ошибок станет новой точкой отсчёта, а не «появившимися ошибками»
+  const externalChange = useRef(false)
   // Слушатель CodeMirror создаётся один раз, поэтому свежий onChange берём из ref
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
@@ -34,7 +41,7 @@ export function EditorPane({ value, onChange, ref }: EditorPaneProps) {
       state: EditorState.create({
         doc: value,
         extensions: [
-          baseExtensions(),
+          baseExtensions(logger),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) onChangeRef.current(update.state.doc.toString())
           }),
@@ -42,7 +49,11 @@ export function EditorPane({ value, onChange, ref }: EditorPaneProps) {
       }),
     })
     viewRef.current = view
+    // Уход со страницы или из редактора — отправляем накопленные события
+    window.addEventListener('pagehide', logger.flush)
     return () => {
+      window.removeEventListener('pagehide', logger.flush)
+      logger.flush()
       view.destroy()
       viewRef.current = null
     }
@@ -56,6 +67,7 @@ export function EditorPane({ value, onChange, ref }: EditorPaneProps) {
     if (!view) return
     const current = view.state.doc.toString()
     if (current !== value) {
+      externalChange.current = true
       view.dispatch({
         changes: { from: 0, to: current.length, insert: value },
         annotations: Transaction.addToHistory.of(false),
@@ -66,6 +78,15 @@ export function EditorPane({ value, onChange, ref }: EditorPaneProps) {
   // Панель «Проблемы»: проверка с отложенным текстом, чтобы набор не тормозил
   const checkedText = useDeferredValue(value)
   const diagnostics = useMemo(() => validate(checkedText), [checkedText])
+
+  useEffect(() => {
+    if (externalChange.current) {
+      externalChange.current = false
+      logger.resetDiagnostics(diagnostics)
+    } else {
+      logger.diagnostics(diagnostics)
+    }
+  }, [diagnostics, logger])
 
   const jumpToOffset = useCallback((offset: number) => {
     const view = viewRef.current
@@ -84,7 +105,7 @@ export function EditorPane({ value, onChange, ref }: EditorPaneProps) {
     (diagnostic: Diagnostic) => {
       const view = viewRef.current
       if (!view) return
-      applyFixInView(view, diagnostic, view.state.doc.toString() !== checkedText, diagnostic.from)
+      applyFixInView(view, diagnostic, view.state.doc.toString() !== checkedText, diagnostic.from, 'panel')
       view.focus()
     },
     [checkedText],
@@ -99,13 +120,14 @@ export function EditorPane({ value, onChange, ref }: EditorPaneProps) {
     setAddBlock({ text: view.state.doc.toString(), pos: view.state.selection.main.head })
   }
 
-  const insert = (markup: string) => {
+  const insert = (markup: string, name: string) => {
     const view = viewRef.current
     if (!view || !addBlock) return
     // Пока окно было открыто, текст мог смениться (например, сохранение) — считаем место заново по текущему
     const pos = Math.min(addBlock.pos, view.state.doc.length)
     const { from, insert, blockStart } = insertBlock(view.state.doc.toString(), pos, markup)
     view.dispatch({ changes: { from, insert }, selection: { anchor: blockStart }, scrollIntoView: true, userEvent: 'input.block' })
+    logger.log('block_inserted', name)
     setAddBlock(null)
     view.focus()
   }

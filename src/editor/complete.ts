@@ -27,6 +27,8 @@ export interface ValueCompletion {
   options: ValueOption[]
   /** Пока набранное подходит под это выражение, список фильтруется без нового запроса */
   validFor?: RegExp
+  /** Что подсказываем — для журнала событий */
+  kind: 'block' | 'field' | 'value'
 }
 
 const fromRecord = (record: Record<string, string>): ValueOption[] =>
@@ -137,18 +139,18 @@ export function completionsAt(text: string, pos: number): ValueCompletion | null
   const { lineStart, before, allLines, lineIndex, state, zone } = lineContext(text, pos)
 
   if (zone === 'body' && state.block === null && FENCE_START.test(before)) {
-    return { from: lineStart, options: BLOCK_OPTIONS, validFor: FENCE_START }
+    return { from: lineStart, options: BLOCK_OPTIONS, validFor: FENCE_START, kind: 'block' }
   }
 
   const lineKey = before.match(LINE_START_KEY)
   if (lineKey) {
     const from = pos - (lineKey[1]?.length ?? 0)
     if (zone === 'frontmatter') {
-      return { from, options: fieldOptions(frontmatterSchema, filledFrontmatter(allLines), frontmatterApply) }
+      return { from, options: fieldOptions(frontmatterSchema, filledFrontmatter(allLines), frontmatterApply), kind: 'field' }
     }
     const block = state.block && state.block in BLOCKS ? BLOCKS[state.block as BlockName] : null
     if (block?.item) {
-      return { from, options: fieldOptions(block.item, filledItem(allLines, lineIndex), (key) => `${key}: `) }
+      return { from, options: fieldOptions(block.item, filledItem(allLines, lineIndex), (key) => `${key}: `), kind: 'field' }
     }
   }
 
@@ -159,8 +161,8 @@ export function completionsAt(text: string, pos: number): ValueCompletion | null
     const from = pos - word.length
 
     if (state.zone === 'frontmatter') {
-      if (indent === '' && TOP_LEVEL_VALUES[key]) return { from, options: TOP_LEVEL_VALUES[key] }
-      if (key === 'icon') return { from, options: ICON_OPTIONS }
+      if (indent === '' && TOP_LEVEL_VALUES[key]) return { from, options: TOP_LEVEL_VALUES[key], kind: 'value' }
+      if (key === 'icon') return { from, options: ICON_OPTIONS, kind: 'value' }
       if (indent !== '' && key === 'primary' && parentKey(allLines.slice(0, lineIndex)) === 'contacts') {
         // Сначала заполненные контакты: главная кнопка должна вести туда, где есть данные
         const filled = filledContacts(allLines, lineIndex)
@@ -168,12 +170,16 @@ export function completionsAt(text: string, pos: number): ValueCompletion | null
           label,
           detail: label === 'phone' ? 'звонок по телефону из шапки' : filled.has(label) ? 'указан' : 'не указан',
         }))
-        return { from, options: options.sort((a, b) => Number(b.detail !== 'не указан') - Number(a.detail !== 'не указан')) }
+        return {
+          from,
+          options: options.sort((a, b) => Number(b.detail !== 'не указан') - Number(a.detail !== 'не указан')),
+          kind: 'value',
+        }
       }
       return null
     }
 
-    if (state.block === 'cards' && key === 'icon') return { from, options: ICON_OPTIONS }
+    if (state.block === 'cards' && key === 'icon') return { from, options: ICON_OPTIONS, kind: 'value' }
     return null
   }
 
@@ -184,7 +190,7 @@ export function completionsAt(text: string, pos: number): ValueCompletion | null
     const options = [...fromRecord(CONTACTS), { label: 'primary', detail: 'куда ведёт главная кнопка' }]
       .filter((option) => !filled.has(option.label))
       .map((option) => ({ ...option, apply: `${option.label}: ` }))
-    return { from: pos - indentedKey[2].length, options }
+    return { from: pos - indentedKey[2].length, options, kind: 'field' }
   }
 
   return null
@@ -199,6 +205,8 @@ function completionSource(context: CompletionContext): CompletionResult | null {
     options: result.options.map(({ snippet: template, ...option }, index) => ({
       ...option,
       apply: template ? snippet(template) : option.apply,
+      // type — вид подсказки для журнала событий (значки вариантов выключены, на вид не влияет)
+      type: result.kind,
       boost: -index,
     })),
     validFor: result.validFor ?? /^[\w-]*$/,

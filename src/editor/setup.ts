@@ -12,6 +12,7 @@ import {
   placeholder,
 } from '@codemirror/view'
 import { dslAutocomplete } from './complete'
+import { type EditorLogger, editorEvents, NO_LOGGER } from './events'
 import { dslHover } from './hover'
 import { dslHighlighting } from './language'
 import { dslLinter } from './lint'
@@ -106,7 +107,8 @@ const darkTheme = EditorView.theme(
   { dark: true },
 )
 
-export function baseExtensions(): Extension[] {
+/** Все расширения редактора; logger — журнал событий для эксперимента (по умолчанию ничего не пишет). */
+export function baseExtensions(logger: EditorLogger = NO_LOGGER): Extension[] {
   return [
     lineNumbers(),
     highlightActiveLineGutter(),
@@ -123,5 +125,6 @@ export function baseExtensions(): Extension[] {
     dslAutocomplete(),
     dslHover(),
     dslLinter(),
+    editorEvents(logger),
   ]
 }

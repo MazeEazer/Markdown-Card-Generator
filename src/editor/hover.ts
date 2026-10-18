@@ -1,5 +1,5 @@
 // Справка при наведении: описание блока (`:::services`) или поля (`price:`) из схемы DSL.
-import type { Extension } from '@codemirror/state'
+import { type Extension, Facet } from '@codemirror/state'
 import { hoverTooltip } from '@codemirror/view'
 import { z } from 'zod'
 import { enumOptions, unwrap } from '../dsl/rules/helpers'
@@ -7,6 +7,9 @@ import { type BlockDefinition, BLOCKS, type BlockName } from '../dsl/schema/bloc
 import { contactsSchema, frontmatterSchema } from '../dsl/schema/frontmatter'
 import { FENCE_OPEN } from '../dsl/sections'
 import { canonical, fieldMeta, lineContext, parentKey } from './context'
+
+/** Кому сообщить, что справка показана: (блок или ключ поля, вид) — для журнала событий. */
+export const hoverListener = Facet.define<(code: string, kind: 'block' | 'field') => void>()
 
 export interface HoverField {
   key: string
@@ -23,6 +26,9 @@ export interface HoverInfo {
   lines: string[]
   /** Поля блока — для справки по блоку */
   fields?: HoverField[]
+  /** Что под курсором — для журнала: имя блока или ключ поля */
+  code: string
+  kind: 'block' | 'field'
 }
 
 /** Ключ в строке: отступ, необязательный «- » (элемент списка), ключ до двоеточия. */
@@ -47,6 +53,8 @@ function blockInfo(name: BlockName, from: number, to: number): HoverInfo {
     title: `:::${name} — ${block.label}`,
     lines,
     fields: block.item ? describeFields(block.item) : undefined,
+    code: name,
+    kind: 'block',
   }
 }
 
@@ -59,7 +67,7 @@ function fieldInfo(key: string, schema: z.ZodType, from: number, to: number): Ho
   const example = meta.examples?.[0]
   if (example !== undefined && !options && !(unwrap(schema) instanceof z.ZodObject)) lines.push(`Пример: ${example}`)
   if (meta.deprecated) lines.push('Устаревшее поле — лучше не использовать.')
-  return { from, to, title: `${key} — ${isRequired(schema) ? 'обязательное' : 'необязательное'} поле`, lines }
+  return { from, to, title: `${key} — ${isRequired(schema) ? 'обязательное' : 'необязательное'} поле`, lines, code: key, kind: 'field' }
 }
 
 /** Схема поля шапки по строке: верхний уровень, внутри contacts: или в элементе links:. */
@@ -141,6 +149,14 @@ export function dslHover(): Extension {
   return hoverTooltip((view, pos) => {
     const info = hoverInfoAt(view.state.doc.toString(), pos)
     if (!info) return null
-    return { pos: info.from, end: info.to, above: true, create: () => ({ dom: render(info) }) }
+    return {
+      pos: info.from,
+      end: info.to,
+      above: true,
+      create: (view) => {
+        for (const listener of view.state.facet(hoverListener)) listener(info.code, info.kind)
+        return { dom: render(info) }
+      },
+    }
   })
 }

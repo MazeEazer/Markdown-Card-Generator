@@ -1,10 +1,13 @@
 // Линтер редактора: диагностики валидатора DSL (этап 2) → подчёркивания CodeMirror с кнопками автоисправления.
 import { type Diagnostic as EditorDiagnostic, linter, lintGutter } from '@codemirror/lint'
-import type { Extension, Text } from '@codemirror/state'
+import { Annotation, type Extension, type Text } from '@codemirror/state'
 import type { EditorView } from '@codemirror/view'
 import { fixChange } from '../dsl/fix'
 import type { Diagnostic } from '../dsl/types'
 import { validate } from '../dsl/validate'
+
+/** Метка правки «нажата кнопка исправления»: какое правило и где — в подсказке или в панели «Проблемы». */
+export const fixApplied = Annotation.define<{ code: string; source: 'tooltip' | 'panel' }>()
 
 /**
  * Переводит диагностики валидатора в формат CodeMirror. Форматы почти совпадают (from/to/severity/message);
@@ -27,7 +30,13 @@ export function toEditorDiagnostics(diagnostics: Diagnostic[], doc: Text): Edito
  * Применяет исправление. Если текст успели изменить после проверки (`stale`), позиции исправления устарели —
  * тогда проверяем текст заново и берём ту же проблему на её новом месте `currentFrom`.
  */
-export function applyFixInView(view: EditorView, diagnostic: Diagnostic, stale: boolean, currentFrom: number): void {
+export function applyFixInView(
+  view: EditorView,
+  diagnostic: Diagnostic,
+  stale: boolean,
+  currentFrom: number,
+  source: 'tooltip' | 'panel' = 'tooltip',
+): void {
   let target: Diagnostic | undefined = diagnostic
   if (stale) {
     target = validate(view.state.doc.toString()).find(
@@ -36,7 +45,7 @@ export function applyFixInView(view: EditorView, diagnostic: Diagnostic, stale: 
   }
   const change = target && fixChange(target)
   if (!change) return
-  view.dispatch({ changes: change, userEvent: 'input.fix' })
+  view.dispatch({ changes: change, userEvent: 'input.fix', annotations: fixApplied.of({ code: diagnostic.code, source }) })
 }
 
 /** Проверка текста после паузы в наборе + значки у номеров строк. */

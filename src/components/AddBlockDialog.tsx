@@ -14,7 +14,7 @@ interface AddBlockDialogProps {
   /** Текст документа и позиция курсора на момент открытия — для проверки блока на своём месте */
   text: string
   pos: number
-  onInsert: (markup: string) => void
+  onInsert: (markup: string, name: BlockName) => void
   onClose: () => void
 }
 
@@ -229,7 +229,7 @@ export function AddBlockDialog({ text, pos, onInsert, onClose }: AddBlockDialogP
             <>
               <button
                 type="button"
-                onClick={() => onInsert(markup)}
+                onClick={() => onInsert(markup, form.name)}
                 disabled={missing.length > 0 || hasErrors}
                 className="whitespace-nowrap px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors text-sm"
               >

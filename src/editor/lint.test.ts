@@ -3,7 +3,7 @@ import type { EditorView } from '@codemirror/view'
 import { describe, expect, it } from 'vitest'
 import type { Diagnostic } from '../dsl/types'
 import { validate } from '../dsl/validate'
-import { toEditorDiagnostics } from './lint'
+import { applyFixInView, fixApplied, toEditorDiagnostics } from './lint'
 
 const diagnostic = (patch: Partial<Diagnostic>): Diagnostic => ({
   from: 0,
@@ -115,5 +115,20 @@ describe('кнопка автоисправления', () => {
     const before = view.state.doc.toString()
     fix.apply(27)
     expect(view.state.doc.toString()).toBe(before)
+  })
+})
+
+describe('метка исправления для журнала событий', () => {
+  it('правка помечена кодом правила и местом нажатия', () => {
+    const view = fakeView('---\nname: Барбершоп\nphone: +79991234567\n---\n')
+    const marks: unknown[] = []
+    const dispatch = view.dispatch
+    view.dispatch = (spec) => {
+      marks.push(view.state.update(spec).annotation(fixApplied))
+      dispatch(spec)
+    }
+    const diagnostic = validate(view.state.doc.toString()).find((d) => d.code === 'phone-format')!
+    applyFixInView(view as unknown as EditorView, diagnostic, false, diagnostic.from, 'panel')
+    expect(marks).toEqual([{ code: 'phone-format', source: 'panel' }])
   })
 })
