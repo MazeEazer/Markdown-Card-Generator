@@ -85,6 +85,8 @@ function sectionBody(section: CardSection): string {
       return code(section.code ?? { lang: '', code: section.content })
     case 'card-grid':
       return cards(section.cards ?? [])
+    case 'contacts':
+      return ':::contacts\n:::'
     default:
       return section.content
   }

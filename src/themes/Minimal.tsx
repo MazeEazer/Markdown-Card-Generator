@@ -58,7 +58,7 @@ export function MinimalTheme({ data, colors }: ThemeProps) {
                 className="pl-4 border-l-2"
                 style={{ borderColor: `${colors.accent}44`, color: colors.textMuted }}
               >
-                <SectionBody section={section} colors={colors} />
+                <SectionBody section={section} card={data} colors={colors} />
               </div>
             </section>
           ))}

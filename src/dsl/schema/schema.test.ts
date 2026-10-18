@@ -63,8 +63,8 @@ describe('схема: шапка', () => {
 })
 
 describe('схема: блоки', () => {
-  it('блоки cards, accordion, code', () => {
-    expect(BLOCK_NAMES).toEqual(['cards', 'accordion', 'code'])
+  it('список блоков', () => {
+    expect(BLOCK_NAMES).toEqual(['cards', 'accordion', 'code', 'contacts'])
   })
 
   it.each(BLOCK_NAMES)('%s: у блока и каждого поля есть описание', (name) => {

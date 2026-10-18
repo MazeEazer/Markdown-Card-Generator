@@ -3,6 +3,7 @@ import type { DocumentNode } from './ast.ts'
 import { parseDocument } from './parser.ts'
 import { accentRule } from './rules/accent.ts'
 import { addressRule } from './rules/address.ts'
+import { contactsBlockRule } from './rules/contactsBlock.ts'
 import { contactUsernameRule } from './rules/contactUsername.ts'
 import { frontmatterSyntaxRule } from './rules/frontmatterSyntax.ts'
 import { headingsRule } from './rules/headings.ts'
@@ -36,6 +37,7 @@ export const RULES: Rule[] = [
   contactUsernameRule,
   primaryRule,
   addressRule,
+  contactsBlockRule,
   unclosedFenceRule,
   unknownBlockRule,
   strayTextRule,

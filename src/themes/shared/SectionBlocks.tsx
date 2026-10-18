@@ -1,12 +1,14 @@
-import { useMemo } from 'react'
+import { useMemo, type CSSProperties, type ReactNode } from 'react'
 import type {
   AccordionItem,
+  CardData,
   CardGridItem,
   CardSection,
   CodeBlockData,
   TableData,
   ThemeColors,
 } from '../../types/card'
+import { contactLinks, type ContactLink } from '../../dsl/contactLinks'
 import { TOKEN_COLORS, highlightCode } from '../../lib/highlight'
 import { Icon } from './Icons'
 import { SectionContent, SkillsTags, isMonochromeAccent, isSkillsSection } from './ThemeParts'
@@ -298,8 +300,79 @@ export function CardGridBlock({ cards, colors }: { cards: CardGridItem[]; colors
   )
 }
 
-/** Рендерит тело секции в зависимости от её типа. */
-export function SectionBody({ section, colors }: { section: CardSection; colors: ThemeColors }) {
+/** Ссылка на контакт: http(s) — в новой вкладке, tel: и mailto: — в приложении телефона. */
+function ContactAnchor({ link, style, children }: { link: ContactLink; style: CSSProperties; children: ReactNode }) {
+  if (!link.href) return <div style={style}>{children}</div>
+  const external = /^https?:/.test(link.href)
+  return (
+    <a
+      className="md-card"
+      href={link.href}
+      {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+      style={{ ...style, color: 'inherit', textDecoration: 'none' }}
+    >
+      {children}
+    </a>
+  )
+}
+
+/** Блок :::contacts — телефон, адрес и мессенджеры из шапки. */
+export function ContactsBlock({ card, colors }: { card: CardData; colors: ThemeColors }) {
+  const links = contactLinks(card)
+  const phone = links.find((link) => link.kind === 'phone')
+  const others = links.filter((link) => link.kind !== 'phone')
+  const address = [card.city, card.address].filter(Boolean).join(', ')
+  if (!links.length && !address) return null
+
+  const box: CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    padding: '0.75rem 1rem',
+    borderRadius: '0.75rem',
+    background: `${colors.accent}0f`,
+    border: `1px solid ${colors.accent}26`,
+  }
+  const muted: CSSProperties = { fontSize: '0.8rem', lineHeight: 1.4, color: colors.textMuted }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      {phone && (
+        <ContactAnchor link={phone} style={box}>
+          <Icon icon={phone.icon} color={colors.accent} size={22} />
+          <div>
+            <div style={{ fontSize: '1.15rem', fontWeight: 700, lineHeight: 1.3, color: colors.text }}>{phone.display}</div>
+            <div style={muted}>{phone.href ? phone.action : phone.label}</div>
+          </div>
+        </ContactAnchor>
+      )}
+
+      {address && (
+        <div style={{ ...box, background: 'transparent' }}>
+          <Icon icon="map-pin" color={colors.accent} size={22} />
+          <div style={{ fontSize: '0.95rem', lineHeight: 1.4, color: colors.text }}>{address}</div>
+        </div>
+      )}
+
+      {others.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+          {others.map((link) => (
+            <ContactAnchor key={link.kind} link={link} style={box}>
+              <Icon icon={link.icon} color={colors.accent} size={20} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '0.9rem', fontWeight: 600, lineHeight: 1.3, color: colors.text }}>{link.label}</div>
+                <div style={{ ...muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{link.display}</div>
+              </div>
+            </ContactAnchor>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Рендерит тело секции в зависимости от её типа. Данные сайта (card) нужны блокам, которые показывают контакты. */
+export function SectionBody({ section, card, colors }: { section: CardSection; card: CardData; colors: ThemeColors }) {
   switch (section.type) {
     case 'table':
       return <TableBlock data={section.table ?? { headers: [], rows: [] }} colors={colors} />
@@ -309,6 +382,8 @@ export function SectionBody({ section, colors }: { section: CardSection; colors:
       return <CodeBlockView data={section.code ?? { lang: '', code: section.content }} colors={colors} />
     case 'card-grid':
       return <CardGridBlock cards={section.cards ?? []} colors={colors} />
+    case 'contacts':
+      return <ContactsBlock card={card} colors={colors} />
     default:
       return isSkillsSection(section.title) ? (
         <SkillsTags content={section.content} accent={colors.accent} />

@@ -68,6 +68,46 @@ const ICONS: Record<IconName, (color: string, size: number) => ReactNode> = {
       <circle cx="12" cy="7" r="4" />
     </svg>
   ),
+  phone: (color, size) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z" />
+    </svg>
+  ),
+  whatsapp: (color, size) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 21l1.65-4.95A9 9 0 1112 21a8.96 8.96 0 01-4.5-1.2L3 21z" />
+      <path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a4 4 0 01-2-2l1-1-1-2L9 9.5z" />
+    </svg>
+  ),
+  vk: (color, size) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+      <rect x="2" y="2" width="20" height="20" rx="5" />
+      <text x="12" y="15.5" textAnchor="middle" fontSize="9" fontWeight="700" fontFamily="Arial, sans-serif" fill={color} stroke="none">
+        VK
+      </text>
+    </svg>
+  ),
+  instagram: (color, size) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="2" width="20" height="20" rx="5" />
+      <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" />
+      <path d="M17.5 6.5h.01" />
+    </svg>
+  ),
+  max: (color, size) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round">
+      <path d="M4 3h16a2 2 0 012 2v11a2 2 0 01-2 2H9l-5 4V5a2 2 0 012-2z" />
+      <text x="13" y="13.5" textAnchor="middle" fontSize="6.5" fontWeight="700" fontFamily="Arial, sans-serif" fill={color} stroke="none">
+        MAX
+      </text>
+    </svg>
+  ),
+  'map-pin': (color, size) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  ),
   zap: (color, size) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
       <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />

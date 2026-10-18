@@ -34,6 +34,8 @@ function section(json: SectionJson): CardSection {
       return { ...base, type: 'accordion', accordion: json.items }
     case 'code':
       return { ...base, type: 'code-block', code: { lang: (json.lang ?? '').toLowerCase(), code: json.code.trim() } }
+    case 'contacts':
+      return { ...base, type: 'contacts' }
   }
 }
 

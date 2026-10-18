@@ -64,7 +64,7 @@ export function GlassTheme({ data, colors }: ThemeProps) {
               </h2>
             )}
             <div style={{ color: colors.textMuted }}>
-              <SectionBody section={section} colors={colors} />
+              <SectionBody section={section} card={data} colors={colors} />
             </div>
           </section>
         ))}

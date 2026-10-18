@@ -10,8 +10,10 @@ export interface BlockDefinition {
   description: string
   /** Атрибуты строки открытия: `:::code lang="js"` */
   attrs: z.ZodObject
-  /** Поля одного элемента; null — у блока нет элементов, тело — свободный текст (code) */
+  /** Поля одного элемента; null — у блока нет элементов (code, contacts) */
   item: z.ZodObject | null
+  /** Что писать внутри блока без элементов — для справки и промпта */
+  body?: string
   example: string
 }
 
@@ -71,8 +73,20 @@ content: Да, принимаем карты и СБП
       lang: text('Язык программирования для подсветки', 'js').optional(),
     }),
     item: null,
+    body: 'Внутри — текст кода как есть.',
     example: `:::code lang="js"
 console.log('Привет!')
+:::`,
+  },
+  contacts: {
+    name: 'contacts',
+    label: 'Контакты',
+    description:
+      'Телефон, адрес и кнопки мессенджеров. Данные берутся из шапки: phone, address, city, contacts — ссылки сайт строит сам',
+    attrs: z.strictObject({}),
+    item: null,
+    body: 'Внутри ничего писать не нужно: блок показывает контакты из шапки.',
+    example: `:::contacts
 :::`,
   },
 } as const satisfies Record<string, BlockDefinition>

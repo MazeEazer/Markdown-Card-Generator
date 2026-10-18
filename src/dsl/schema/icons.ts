@@ -14,6 +14,12 @@ export const ICONS = {
   globe: 'глобус, сайт',
   user: 'человек',
   zap: 'молния',
+  phone: 'телефон',
+  whatsapp: 'WhatsApp',
+  vk: 'ВКонтакте',
+  instagram: 'Instagram',
+  max: 'MAX',
+  'map-pin': 'метка на карте, адрес',
 } as const
 
 export type IconName = keyof typeof ICONS

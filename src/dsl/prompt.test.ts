@@ -100,9 +100,9 @@ describe('getJsonSchema', () => {
     expect(schema.additionalProperties).toBe(false)
   })
 
-  it('пять видов разделов', () => {
+  it('виды разделов: текст, таблица и все блоки', () => {
     const sections = schema.properties.sections as { items: { oneOf: { properties: { type: { const: string } } }[] } }
-    expect(sections.items.oneOf.map((s) => s.properties.type.const)).toEqual(['text', 'table', 'cards', 'accordion', 'code'])
+    expect(sections.items.oneOf.map((s) => s.properties.type.const)).toEqual(['text', 'table', ...BLOCK_NAMES])
   })
 
   it('без устаревшего location', () => {

@@ -171,6 +171,7 @@ export function detectSectionType(content: string): SectionType {
   if (extractFence(content, 'code')) return 'code-block'
   if (extractFence(content, 'accordion')) return 'accordion'
   if (extractFence(content, 'cards')) return 'card-grid'
+  if (extractFence(content, 'contacts')) return 'contacts'
   if (isTableContent(content)) return 'table'
   return 'text'
 }

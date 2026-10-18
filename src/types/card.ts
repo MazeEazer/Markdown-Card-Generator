@@ -6,7 +6,7 @@ export interface CardLink {
   icon?: string
 }
 
-export type SectionType = 'text' | 'table' | 'accordion' | 'code-block' | 'card-grid'
+export type SectionType = 'text' | 'table' | 'accordion' | 'code-block' | 'card-grid' | 'contacts'
 
 export interface TableData {
   headers: string[]

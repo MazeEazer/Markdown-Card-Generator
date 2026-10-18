@@ -1,5 +1,5 @@
-// Имена пользователей в contacts: ссылка или @имя вместо имени, правила имени в Telegram.
-import { telegramUsernameProblem, USERNAME_CONTACTS, usernameFromLink } from '../contacts.ts'
+// Имена пользователей в contacts: ссылка или @имя вместо имени, правила имени в Telegram, ссылка на профиль в MAX.
+import { MAX_LINK, telegramUsernameProblem, USERNAME_CONTACTS, usernameFromLink } from '../contacts.ts'
 import type { Diagnostic } from '../types.ts'
 import type { Rule } from '../validate.ts'
 import { businessFields } from './helpers.ts'
@@ -35,6 +35,18 @@ export const contactUsernameRule: Rule = ({ ast }) => {
         })
       }
     }
+  }
+
+  // В MAX нет имён пользователей — нужна ссылка на профиль из приложения
+  const max = contacts.get('max')
+  if (max && !MAX_LINK.test(max.value)) {
+    diagnostics.push({
+      ...max.valueRange,
+      severity: 'warning',
+      code: 'max-not-link',
+      message:
+        'Для MAX нужна ссылка на профиль: в приложении откройте профиль → значок QR-кода → «Поделиться» и вставьте ссылку сюда',
+    })
   }
 
   return diagnostics

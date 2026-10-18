@@ -70,7 +70,7 @@ export function NoirTheme({ data, colors }: ThemeProps) {
                 </h2>
               )}
               <div className="text-sm leading-relaxed" style={{ color: colors.textMuted }}>
-                <SectionBody section={section} colors={colors} />
+                <SectionBody section={section} card={data} colors={colors} />
               </div>
             </section>
           ))}

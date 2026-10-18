@@ -9,8 +9,11 @@ const PROFILE_LINKS: Partial<Record<ContactName, RegExp>> = {
   instagram: /^(?:https?:\/\/)?(?:www\.)?instagram\.com\/([\w.]+)\/?(?:\?.*)?$/i,
 }
 
-/** Контакты, где нужно имя пользователя (а не номер, почта или сайт). */
-export const USERNAME_CONTACTS: ContactName[] = ['telegram', 'vk', 'max', 'instagram']
+/** Контакты, где нужно имя пользователя (а не номер, почта или сайт). В MAX имени нет — только ссылка на профиль. */
+export const USERNAME_CONTACTS: ContactName[] = ['telegram', 'vk', 'instagram']
+
+/** Ссылка на профиль в MAX: https://max.ru/u/<код> (копируется в приложении). */
+export const MAX_LINK = /^https:\/\/(?:www\.)?max\.ru\/\S+$/i
 
 /** Имя пользователя из ссылки на профиль или из «@имя». null — значение уже не ссылка и не @имя. */
 export function usernameFromLink(contact: ContactName, value: string): string | null {

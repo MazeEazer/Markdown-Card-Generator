@@ -2,7 +2,7 @@
 // Добавили поле или блок в схему — оно само появилось в промпте и в JSON Schema.
 import { z } from 'zod'
 import { enumOptions, unwrap } from './rules/helpers.ts'
-import { BLOCK_NAMES, BLOCKS } from './schema/blocks.ts'
+import { BLOCK_NAMES, BLOCKS, type BlockDefinition } from './schema/blocks.ts'
 import { type DocumentJson, documentSchema } from './schema/document.ts'
 import { BUSINESSES, type BusinessName, FRONTMATTER_EXAMPLE, frontmatterSchema } from './schema/frontmatter.ts'
 
@@ -113,7 +113,7 @@ function frontmatterReference(): string {
 
 function blocksReference(): string {
   return BLOCK_NAMES.map((name) => {
-    const block = BLOCKS[name]
+    const block: BlockDefinition = BLOCKS[name]
     const attrs = Object.entries(block.attrs.shape as Record<string, z.ZodType>).flatMap(([k, v]) => describeField(k, v, '  '))
     const fields = block.item
       ? Object.entries(block.item.shape as Record<string, z.ZodType>).flatMap(([k, v]) => describeField(k, v, '  '))
@@ -121,7 +121,7 @@ function blocksReference(): string {
     return [
       `:::${name} — ${block.label}: ${block.description}.`,
       ...(attrs.length ? ['Атрибуты в строке открытия:', ...attrs] : []),
-      ...(fields.length ? ['Поля элемента:', ...fields] : ['Внутри — текст как есть.']),
+      ...(fields.length ? ['Поля элемента:', ...fields] : [block.body ?? 'Внутри — текст как есть.']),
       `Пример:\n${block.example}`,
     ].join('\n')
   }).join('\n\n')
@@ -129,7 +129,7 @@ function blocksReference(): string {
 
 const RULES = `Правила:
 1. Используй только факты из описания пользователя. Не придумывай телефон, мессенджеры, адрес, цены, отзывы, имена, годы работы и другие факты. Если чего-то нет в описании — не пиши это поле или раздел.
-2. Телефон пиши в виде +7 999 123-45-67. В telegram, vk, instagram, max — только имя пользователя, без @ и без ссылки. В whatsapp — номер телефона.
+2. Телефон пиши в виде +7 999 123-45-67. В telegram, vk, instagram — только имя пользователя, без @ и без ссылки. В whatsapp — номер телефона. В max — ссылка на профиль https://max.ru/…, если она есть в описании.
 3. primary — только один из указанных контактов или phone (если указан телефон).
 4. Пиши по-русски, коротко и понятно для клиентов бизнеса. Разделы — о том, что важно клиенту: услуги, цены, как добраться, частые вопросы.
 5. Данные из примеров ниже вымышлены: бери из примеров только формат.`
