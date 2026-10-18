@@ -1,4 +1,5 @@
 import type { ThemeProps } from './shared/ThemeParts'
+import { THEME_FONTS } from './fonts'
 import { Avatar, LinksList } from './shared/ThemeParts'
 import { SectionBody } from './shared/SectionBlocks'
 
@@ -13,7 +14,7 @@ export function VercelTheme({ data, colors }: ThemeProps) {
       style={{
         background: '#000000',
         color: colors.text,
-        fontFamily: "'Geist', 'Inter', ui-sans-serif, system-ui, sans-serif",
+        fontFamily: THEME_FONTS.vercel,
         ['--accent' as string]: colors.accent,
       }}
     >

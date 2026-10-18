@@ -123,5 +123,9 @@ export function getCardExportCss(): string {
 
     .md-card { transition: transform 0.2s ease, filter 0.2s ease; }
     a.md-card:hover { transform: translateY(-2px); filter: brightness(1.15); }
+  
+    .md-site { container: md-site / inline-size; }
+    .md-contact-bar { display: none; }
+    @container md-site (max-width: 640px) { .md-contact-bar { display: flex; } }
   `
 }

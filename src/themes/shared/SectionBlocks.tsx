@@ -411,7 +411,8 @@ export function ServicesBlock({ services, card, colors }: { services: ServiceIte
             )}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+          {/* marginLeft: auto — на узком экране колонка переносится на новую строку и остаётся справа */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem', marginLeft: 'auto' }}>
             {service.price && (
               <div style={{ fontSize: '1.1rem', fontWeight: 700, whiteSpace: 'nowrap', color: colors.accent }}>
                 {formatPrice(service.price, card.currency)}

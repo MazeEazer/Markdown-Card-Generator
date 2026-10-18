@@ -1,4 +1,5 @@
 import type { ThemeProps } from './shared/ThemeParts'
+import { THEME_FONTS } from './fonts'
 import { Avatar, LinksList } from './shared/ThemeParts'
 import { SectionBody } from './shared/SectionBlocks'
 
@@ -9,7 +10,7 @@ export function MinimalTheme({ data, colors }: ThemeProps) {
       style={{
         background: colors.background,
         color: colors.text,
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: THEME_FONTS.minimal,
         ['--accent' as string]: colors.accent,
       }}
     >

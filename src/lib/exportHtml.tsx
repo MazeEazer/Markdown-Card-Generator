@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { CardData, ResolvedTheme } from '../types/card'
 import { getCardExportCss } from './cardStyles'
-import { THEMES } from '../themes'
+import { Site } from '../themes/Site'
 import { hoursScript } from './hoursScript'
 
 function slugify(name: string): string {
@@ -13,8 +13,7 @@ function slugify(name: string): string {
 }
 
 export function exportHtml(data: CardData, resolved: ResolvedTheme): { html: string; filename: string } {
-  const ThemeComponent = THEMES[resolved.theme]
-  const body = renderToStaticMarkup(<ThemeComponent data={data} colors={resolved.colors} />)
+  const body = renderToStaticMarkup(<Site data={data} resolved={resolved} />)
   // Скрипт — только если есть часы работы: остальной сайт работает без JavaScript
   const script = data.sections.some((section) => section.type === 'hours') ? `\n  <script>\n${hoursScript()}\n  </script>` : ''
 

@@ -1,5 +1,5 @@
   import type { CardData, ResolvedTheme } from '../types/card'
-  import { THEMES } from '../themes'
+  import { Site } from '../themes/Site'
   import { DropZone } from './DropZone'
   interface PreviewPaneProps {
     data: CardData
@@ -8,8 +8,6 @@
   }
 
   export function PreviewPane({ data, resolved,onImageUpload }: PreviewPaneProps) {
-    const ThemeComponent = THEMES[resolved.theme]
-
     return (
       <div className="h-full overflow-hidden bg-zinc-200 dark:bg-zinc-900">
         <div className="px-4 py-2 border-b border-zinc-300 dark:border-zinc-700 text-xs text-zinc-500 font-mono flex items-center justify-between">
@@ -21,7 +19,7 @@
         <div className="h-[calc(100%-33px)] overflow-auto">
                      <DropZone onImage={onImageUpload}>
           <div id="card-preview" data-card-content="true">
-            <ThemeComponent data={data} colors={resolved.colors} />
+            <Site data={data} resolved={resolved} />
           </div>
         </DropZone>
 

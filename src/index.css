@@ -67,3 +67,18 @@ a.md-card:hover {
   transform: translateY(-2px);
   filter: brightness(1.15);
 }
+
+/* Сайт и панель связи: панель видна, только когда сам сайт узкий (телефон или узкое превью) */
+.md-site {
+  container: md-site / inline-size;
+}
+
+.md-contact-bar {
+  display: none;
+}
+
+@container md-site (max-width: 640px) {
+  .md-contact-bar {
+    display: flex;
+  }
+}

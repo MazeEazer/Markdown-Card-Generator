@@ -1,4 +1,5 @@
 import type { ThemeProps } from './shared/ThemeParts'
+import { THEME_FONTS } from './fonts'
 import { Avatar, LinksList } from './shared/ThemeParts'
 import { SectionBody } from './shared/SectionBlocks'
 
@@ -9,7 +10,7 @@ export function GlassTheme({ data, colors }: ThemeProps) {
       style={{
         background: `linear-gradient(160deg, ${colors.accentLight}44 0%, ${colors.background} 50%, ${colors.accent}22 100%)`,
         color: colors.text,
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: THEME_FONTS.glass,
         ['--accent' as string]: colors.accent,
       }}
     >
