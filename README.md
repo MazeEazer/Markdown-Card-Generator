@@ -163,4 +163,4 @@ tags: TypeScript, WebSocket, D3
 
 ## Стек
 
-React 18 · Vite · TypeScript · Tailwind CSS · gray-matter · react-markdown
+React 19 · Vite · TypeScript · Tailwind CSS 4 · yaml · react-markdown · Supabase
