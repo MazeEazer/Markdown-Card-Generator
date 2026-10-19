@@ -1,5 +1,6 @@
 // Цикл «генерация → проверка → исправление» (этап 5). Чистая функция: вызов нейросети передаётся
 // параметром, поэтому цикл проверяется тестами без сети, а Edge Function остаётся тонкой обёрткой.
+import { MISSING_DATA_CODES, MODEL_FIXABLE_CODES } from './codes.ts'
 import { applyAllFixes } from './fix.ts'
 import { fromJson } from './fromJson.ts'
 import { offsetToLineCol } from './position.ts'
@@ -28,8 +29,8 @@ export const MAX_ATTEMPTS = 3
  */
 const MODEL_FIXES: ReadonlySet<string> = new Set(['missing-frontmatter', 'missing-name'])
 
-/** Сколько ошибок перечислять в запросе на исправление: длинный список модель всё равно не осилит. */
-const MAX_ERRORS_IN_REQUEST = 15
+/** Сколько замечаний перечислять в запросе на исправление: длинный список модель всё равно не осилит. */
+const MAX_ISSUES_IN_REQUEST = 15
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
@@ -47,41 +48,74 @@ export interface ModelReply {
 /** Вызов нейросети. timeoutMs — сколько осталось до общего дедлайна цикла. */
 export type ChatModel = (messages: ChatMessage[], options: { timeoutMs: number }) => Promise<ModelReply>
 
-/** Одна попытка — одна строка журнала generation_logs. */
+/**
+ * Запрос до нейросети не дошёл: busy — занято (429, у физлица один поток), unavailable — не получили
+ * доступ (токен, сеть до отправки). Такой запуск не расходует дневной лимит.
+ */
+export class ModelNotReachedError extends Error {
+  readonly reason: 'busy' | 'unavailable'
+  constructor(message: string, reason: 'busy' | 'unavailable') {
+    super(message)
+    this.reason = reason
+  }
+}
+
+/** Счётчики для журнала. missingData — замечания «нехватки данных» любой важности (codes.ts). */
+export interface DiagnosticCounts {
+  errors: number
+  warnings: number
+  missingData: number
+}
+
+export function countDiagnostics(diagnostics: Diagnostic[]): DiagnosticCounts {
+  return {
+    errors: diagnostics.filter((d) => d.severity === 'error').length,
+    warnings: diagnostics.filter((d) => d.severity === 'warning').length,
+    missingData: diagnostics.filter((d) => MISSING_DATA_CODES.has(d.code)).length,
+  }
+}
+
+/** Документ на одном этапе проверки — одна строка журнала (stage: model или autofix). */
+export interface CheckedStage {
+  /** model — ответ нейросети как есть; autofix — документ после автоисправлений */
+  output: string
+  /** Замечания; если документа нет — почему (коды json-syntax, json-schema) */
+  diagnostics: Diagnostic[]
+  counts: DiagnosticCounts
+}
+
+/** Одно обращение к нейросети, в том числе неудачное. */
 export interface Attempt {
   /** С 1 */
   attempt: number
   /** Запрос пользователя этой попытки: описание или просьба исправить */
   request: string
-  /** Ответ нейросети как есть */
-  output: string
-  /** Документ после автоисправлений; null — ответ не удалось превратить в документ (JSON не разобран) */
-  markdown: string | null
-  /** Все замечания к документу; если документа нет — почему (коды json-syntax, json-schema) */
-  diagnostics: Diagnostic[]
-  errorsCount: number
-  /** Ошибки до автоисправлений — сколько из них исправил валидатор без нейросети */
-  errorsBeforeFixes: number
-  /** Коды применённых автоисправлений */
-  fixedByRules: string[]
+  /** false — запрос до нейросети не дошёл (занято), лимит не расходуется */
+  reachedModel: boolean
+  /** Почему нет ответа: ошибка сети, таймаут, занято */
+  error?: string
   finishReason?: string
   tokensIn?: number
   tokensOut?: number
   latencyMs: number
+  /** Ответ и замечания до автоисправлений. В режиме json — к документу, собранному из JSON */
+  model: CheckedStage
+  /** После автоисправлений; null — документа нет (нет ответа, JSON не разобран, отказ) */
+  autofix: (CheckedStage & { fixedCodes: string[] }) | null
 }
 
 /**
  * Чем закончился цикл:
- * valid — ошибок нет; max-attempts — попытки кончились; no-progress — исправление не уменьшило число ошибок;
- * deadline — вышло общее время; blacklist — нейросеть отказалась отвечать; length — ответ обрезан;
- * model-error — нейросеть не ответила на повторной попытке.
+ * valid — в лучшей попытке нет ошибок; max-attempts — попытки кончились; no-progress — исправление
+ * не уменьшило число ошибок; deadline — вышло общее время; blacklist — нейросеть отказалась отвечать;
+ * length — ответ обрезан; busy — нейросеть занята; model-error — нейросеть не ответила.
  */
-export type Outcome = 'valid' | 'max-attempts' | 'no-progress' | 'deadline' | 'blacklist' | 'length' | 'model-error'
+export type Outcome = 'valid' | 'max-attempts' | 'no-progress' | 'deadline' | 'blacklist' | 'length' | 'busy' | 'model-error'
 
 export interface GenerationResult {
   outcome: Outcome
   attempts: Attempt[]
-  /** Лучшая попытка с документом (меньше всего ошибок), а не последняя; null — документа нет ни в одной */
+  /** Лучшая попытка с документом (меньше ошибок, затем меньше исправимых предупреждений); null — документа нет */
   best: Attempt | null
 }
 
@@ -100,13 +134,23 @@ export interface GenerateOptions {
 /** Сообщение для пользователя: что получилось, если не всё гладко. null — всё хорошо. */
 export function outcomeMessage(outcome: Outcome, best: Attempt | null): string | null {
   if (!best) {
-    if (outcome === 'blacklist') return 'Нейросеть отказалась составлять сайт по этому описанию. Попробуйте описать бизнес другими словами'
-    if (outcome === 'length') return 'Ответ нейросети оборвался на середине. Сократите описание и попробуйте ещё раз'
-    if (outcome === 'deadline') return 'Нейросеть отвечала слишком долго. Попробуйте ещё раз через минуту'
-    return 'Не получилось составить сайт по описанию. Попробуйте ещё раз или опишите бизнес подробнее'
+    switch (outcome) {
+      case 'blacklist':
+        return 'Нейросеть отказалась составлять сайт по этому описанию. Попробуйте описать бизнес другими словами'
+      case 'length':
+        return 'Ответ нейросети оборвался на середине. Сократите описание и попробуйте ещё раз'
+      case 'deadline':
+        return 'Нейросеть отвечала слишком долго. Попробуйте ещё раз через минуту'
+      case 'busy':
+        return 'Нейросеть сейчас занята другим запросом. Попробуйте ещё раз через минуту'
+      default:
+        return 'Не получилось составить сайт по описанию. Попробуйте ещё раз или опишите бизнес подробнее'
+    }
   }
-  if (outcome === 'length') return 'Ответ нейросети оборвался — возможно, сайт обрезан в конце. Проверьте последние разделы или сократите описание'
-  if (best.errorsCount === 0) return null
+  if (outcome === 'length' && best.finishReason === 'length') {
+    return 'Ответ нейросети оборвался — возможно, сайт обрезан в конце. Проверьте последние разделы или сократите описание'
+  }
+  if (best.autofix!.counts.errors === 0) return null
   return 'Сайт составлен, но в разметке остались ошибки — они подсвечены в редакторе'
 }
 
@@ -131,6 +175,16 @@ export function extractDocument(output: string, mode: PromptMode): string {
 
 const errorsOf = (diagnostics: Diagnostic[]) => diagnostics.filter((d) => d.severity === 'error')
 
+/** Предупреждения, которые нейросеть может исправить без новых данных. */
+const fixableOf = (diagnostics: Diagnostic[]) =>
+  diagnostics.filter((d) => d.severity !== 'error' && MODEL_FIXABLE_CODES.has(d.code))
+
+const stageOf = (output: string, diagnostics: Diagnostic[]): CheckedStage => ({
+  output,
+  diagnostics,
+  counts: countDiagnostics(diagnostics),
+})
+
 function jsonIssue(code: 'json-syntax' | 'json-schema', message: string): Diagnostic {
   return { from: 0, to: 0, severity: 'error', code, message }
 }
@@ -140,37 +194,27 @@ function zodPath(path: readonly PropertyKey[]): string {
 }
 
 interface Checked {
+  /** Ответ без обёртки: разметка или JSON — его показываем нейросети в запросе на исправление */
   document: string
-  markdown: string | null
-  diagnostics: Diagnostic[]
-  errorsBeforeFixes: number
-  fixedByRules: string[]
+  model: CheckedStage
+  autofix: Attempt['autofix']
 }
 
-/** Разметка → автоисправления → замечания. */
-function checkMarkdown(text: string): Omit<Checked, 'document'> {
-  const errorsBeforeFixes = errorsOf(validate(text)).length
-  const fixed = applyAllFixes(text, { skip: MODEL_FIXES })
+/** Разметка → замечания до и после автоисправлений. */
+function checkMarkdown(output: string, markdown: string): Omit<Checked, 'document'> {
+  const fixed = applyAllFixes(markdown, { skip: MODEL_FIXES })
   return {
-    markdown: fixed.text,
-    diagnostics: validate(fixed.text),
-    errorsBeforeFixes,
-    fixedByRules: fixed.applied.map((d) => d.code),
+    model: stageOf(output, validate(markdown)),
+    autofix: { ...stageOf(fixed.text, validate(fixed.text)), fixedCodes: fixed.applied.map((d) => d.code) },
   }
 }
 
 /** Ответ нейросети → документ и замечания. В режиме json: JSON → схема → CardData → разметка. */
 function check(output: string, mode: PromptMode): Checked {
   const document = extractDocument(output, mode)
-  if (mode === 'markdown') return { document, ...checkMarkdown(document) }
+  if (mode === 'markdown') return { document, ...checkMarkdown(output, document) }
 
-  const failed = (diagnostics: Diagnostic[]): Checked => ({
-    document,
-    markdown: null,
-    diagnostics,
-    errorsBeforeFixes: diagnostics.length,
-    fixedByRules: [],
-  })
+  const failed = (diagnostics: Diagnostic[]): Checked => ({ document, model: stageOf(output, diagnostics), autofix: null })
   let json: unknown
   try {
     json = JSON.parse(document)
@@ -181,49 +225,63 @@ function check(output: string, mode: PromptMode): Checked {
   if (!parsed.success) {
     return failed(parsed.error.issues.map((issue) => jsonIssue('json-schema', `${zodPath(issue.path) || 'документ'}: ${issue.message}`)))
   }
-  return { document, ...checkMarkdown(serialize(fromJson(parsed.data))) }
+  return { document, ...checkMarkdown(output, serialize(fromJson(parsed.data))) }
 }
 
-/** Строка с ошибкой для запроса на исправление: «строка 12 («price: abc»): сообщение». */
-function describeError(markdown: string | null, d: Diagnostic): string {
+/** Строка замечания для запроса на исправление: «строка 12 («price: abc»): сообщение». */
+function describeIssue(markdown: string | null, d: Diagnostic): string {
   if (markdown === null) return `- ${d.message}`
   const { line } = offsetToLineCol(markdown, d.from)
   const content = markdown.split('\n')[line - 1]?.trim()
   return `- строка ${line}${content ? ` («${content}»)` : ''}: ${d.message}`
 }
 
-/** Запрос на исправление: исходное описание, текущий документ и ошибки с номерами строк. */
-export function buildFixRequest(description: string, mode: PromptMode, checked: Pick<Checked, 'document' | 'markdown' | 'diagnostics'>): string {
-  const errors = errorsOf(checked.diagnostics)
-  const listed = errors.slice(0, MAX_ERRORS_IN_REQUEST).map((d) => describeError(checked.markdown, d))
-  if (errors.length > listed.length) listed.push(`- и ещё ${errors.length - listed.length}`)
+/**
+ * Запрос на исправление: исходное описание, текущий документ, ошибки с номерами строк и отдельным списком —
+ * исправимые предупреждения. Замечания «нехватки данных» не попадают никогда.
+ */
+export function buildFixRequest(description: string, mode: PromptMode, checked: Pick<Checked, 'document' | 'model' | 'autofix'>): string {
+  const markdown = checked.autofix?.output ?? null
+  const diagnostics = checked.autofix?.diagnostics ?? checked.model.diagnostics
+  const errors = errorsOf(diagnostics)
+  // Ошибки важнее: предупреждения — только в оставшееся место списка
+  const warnings = fixableOf(diagnostics).slice(0, Math.max(0, MAX_ISSUES_IN_REQUEST - errors.length))
+  const listed = (items: Diagnostic[], limit: number) => {
+    const lines = items.slice(0, limit).map((d) => describeIssue(markdown, d))
+    if (items.length > limit) lines.push(`- и ещё ${items.length - limit}`)
+    return lines.join('\n')
+  }
 
   // В режиме markdown показываем документ уже после автоисправлений — чтобы модель их не откатила.
-  // В режиме json ошибки разметки ссылаются на строки собранного документа — показываем и его.
-  const current = mode === 'markdown' ? checked.markdown! : checked.document
+  // В режиме json замечания к разметке ссылаются на строки собранного документа — показываем и его.
   const parts = [
     `Описание бизнеса от пользователя:\n${description}`,
-    `Твой ответ:\n${current}`,
+    `Твой ответ:\n${mode === 'markdown' ? markdown : checked.document}`,
   ]
-  if (mode === 'json' && checked.markdown !== null) parts.push(`Из него получился документ MD Card:\n${checked.markdown}`)
+  if (mode === 'json' && markdown !== null) parts.push(`Из него получился документ MD Card:\n${markdown}`)
+  parts.push(errors.length ? `Ошибки — исправь обязательно:\n${listed(errors, MAX_ISSUES_IN_REQUEST)}` : 'Ошибок нет.')
+  if (warnings.length) parts.push(`Желательно исправить:\n${listed(warnings, warnings.length)}`)
   parts.push(
-    `Ошибки:\n${listed.join('\n')}`,
+    'Исправь перечисленное. Остальное не меняй. Не добавляй фактов, которых нет в описании: если для исправления нужны такие данные — убери поле или строку.',
     mode === 'markdown'
-      ? 'Исправь эти ошибки и верни документ целиком. Остальное не меняй и не добавляй фактов, которых нет в описании. Ответ — только документ на языке MD Card, начиная со строки ---.'
-      : 'Исправь эти ошибки и верни JSON целиком. Остальное не меняй и не добавляй фактов, которых нет в описании. Ответ — только JSON-объект по схеме.',
+      ? 'Верни документ целиком. Ответ — только документ на языке MD Card, начиная со строки ---.'
+      : 'Верни JSON целиком. Ответ — только JSON-объект по схеме.',
   )
   return parts.join('\n\n')
 }
 
-/** Насколько далеко ответ прошёл проверку: 0 — есть документ, 1 — JSON не прошёл схему, 2 — не JSON. */
-function stage(a: Attempt): number {
-  if (a.markdown !== null) return 0
-  return a.diagnostics.some((d) => d.code === 'json-syntax') ? 2 : 1
+/** Насколько далеко ответ прошёл проверку: 0 — есть документ, 1 — JSON не прошёл схему, 2 — не JSON, 3 — нет ответа. */
+function progressStage(a: Attempt): number {
+  if (a.autofix) return 0
+  if (!a.model.diagnostics.length) return 3
+  return a.model.diagnostics.some((d) => d.code === 'json-syntax') ? 2 : 1
 }
 
-/** Попытка a лучше b: дальше прошла проверку, затем меньше ошибок, затем меньше предупреждений. */
+const errorsCount = (a: Attempt) => a.autofix?.counts.errors ?? a.model.counts.errors
+
+/** Попытка a лучше b: дальше прошла проверку, затем меньше ошибок, затем меньше исправимых предупреждений. */
 function better(a: Attempt, b: Attempt): boolean {
-  const score = (x: Attempt) => [stage(x), x.errorsCount, x.diagnostics.filter((d) => d.severity === 'warning').length]
+  const score = (x: Attempt) => [progressStage(x), errorsCount(x), fixableOf(x.autofix?.diagnostics ?? []).length]
   const [sa, sb] = [score(a), score(b)]
   for (let i = 0; i < sa.length; i++) if (sa[i] !== sb[i]) return sa[i] < sb[i]
   return false
@@ -231,13 +289,15 @@ function better(a: Attempt, b: Attempt): boolean {
 
 /** Прогресс — дальше прошла проверку или на том же этапе меньше ошибок. */
 function progressed(a: Attempt, b: Attempt): boolean {
-  if (stage(a) !== stage(b)) return stage(a) < stage(b)
-  return a.errorsCount < b.errorsCount
+  if (progressStage(a) !== progressStage(b)) return progressStage(a) < progressStage(b)
+  return errorsCount(a) < errorsCount(b)
 }
 
+const EMPTY_STAGE: CheckedStage = { output: '', diagnostics: [], counts: { errors: 0, warnings: 0, missingData: 0 } }
+
 /**
- * Генерирует сайт по описанию. Ошибка нейросети на первой попытке пробрасывается (до модели не дошли —
- * пусть решает вызывающий код); на следующих — цикл останавливается и возвращает лучшее из готового.
+ * Генерирует сайт по описанию. Каждое обращение к нейросети — попытка в результате, в том числе неудачное.
+ * Исключение бросается только из-за ошибки в нашем коде до вызова нейросети.
  */
 export async function generateSite({
   description,
@@ -253,12 +313,15 @@ export async function generateSite({
   const attempts: Attempt[] = []
   let best: Attempt | null = null
   let lastChecked: Checked | null = null
+  // Когда ошибок нет, на исправимые предупреждения — не больше одной попытки
+  let warningsPassUsed = false
 
-  const result = (outcome: Outcome): GenerationResult => ({
-    outcome,
-    attempts,
-    best: best?.markdown === null ? null : best,
-  })
+  const result = (outcome: Outcome): GenerationResult => {
+    const document = best?.autofix ? best : null
+    // Попытки кончились или застряли на предупреждениях, но лучшая — без ошибок
+    if ((outcome === 'no-progress' || outcome === 'max-attempts') && document?.autofix!.counts.errors === 0) outcome = 'valid'
+    return { outcome, attempts, best: document }
+  }
 
   for (let n = 1; n <= maxAttempts; n++) {
     const timeoutMs = deadline - now()
@@ -271,43 +334,50 @@ export async function generateSite({
     try {
       reply = await model([{ role: 'system', content: system }, { role: 'user', content: request }], { timeoutMs })
     } catch (error) {
-      if (n === 1) throw error
+      const notReached = error instanceof ModelNotReachedError
+      attempts.push({
+        attempt: n,
+        request,
+        reachedModel: !notReached,
+        error: error instanceof Error ? error.message : String(error),
+        latencyMs: now() - started,
+        model: EMPTY_STAGE,
+        autofix: null,
+      })
+      if (notReached) return result(error.reason === 'busy' ? 'busy' : 'model-error')
       return result(now() >= deadline ? 'deadline' : 'model-error')
     }
-    const latencyMs = now() - started
 
     const base = {
       attempt: n,
       request,
-      output: reply.text,
+      reachedModel: true,
       finishReason: reply.finishReason,
       tokensIn: reply.tokensIn,
       tokensOut: reply.tokensOut,
-      latencyMs,
+      latencyMs: now() - started,
     }
     // Отказ фильтра — текст ответа не документ, проверять нечего
     if (reply.finishReason === 'blacklist') {
-      attempts.push({ ...base, markdown: null, diagnostics: [], errorsCount: 0, errorsBeforeFixes: 0, fixedByRules: [] })
+      attempts.push({ ...base, model: { ...EMPTY_STAGE, output: reply.text }, autofix: null })
       return result('blacklist')
     }
 
     const checked = check(reply.text, mode)
-    const attempt: Attempt = {
-      ...base,
-      markdown: checked.markdown,
-      diagnostics: checked.diagnostics,
-      errorsCount: errorsOf(checked.diagnostics).length,
-      errorsBeforeFixes: checked.errorsBeforeFixes,
-      fixedByRules: checked.fixedByRules,
-    }
+    const attempt: Attempt = { ...base, model: checked.model, autofix: checked.autofix }
     attempts.push(attempt)
 
     const previousBest = best
     if (!best || better(attempt, best)) best = attempt
 
     if (reply.finishReason === 'length') return result('length')
-    if (attempt.markdown !== null && attempt.errorsCount === 0) return result('valid')
-    if (previousBest && !progressed(attempt, previousBest)) return result('no-progress')
+    if (attempt.autofix?.counts.errors === 0) {
+      const canPolish = !warningsPassUsed && n < maxAttempts && fixableOf(attempt.autofix.diagnostics).length > 0
+      if (!canPolish) return result('valid')
+      warningsPassUsed = true
+    } else if (previousBest && !progressed(attempt, previousBest)) {
+      return result('no-progress')
+    }
     lastChecked = checked
   }
   return result('max-attempts')
