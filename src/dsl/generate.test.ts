@@ -275,6 +275,63 @@ describe('generateSite: особые исходы — каждое обраще�
     expect(result.best).toBe(result.attempts[1])
   })
 
+  // Как в Edge Function: дедлайн 120 с, предел запроса 90 с, новую попытку — если осталось не меньше 20 с.
+  // Модель «отвечает» за natural мс; если её прервали по таймауту раньше — бросает ошибку, как fetch
+  function slowModel(clock: { t: number }, plan: { natural: number; text: string }[]) {
+    const timeouts: number[] = []
+    const model: ChatModel = async (_messages, { timeoutMs }) => {
+      const { natural, text } = plan[timeouts.length]
+      timeouts.push(timeoutMs)
+      if (natural > timeoutMs) {
+        clock.t += timeoutMs
+        throw new Error('Chat: время ожидания ответа истекло')
+      }
+      clock.t += natural
+      return { text }
+    }
+    return { model, timeouts }
+  }
+  const limits = { deadlineMs: 120_000, requestTimeoutMs: 90_000, minAttemptMs: 20_000 }
+
+  it('попытка, начатая близко к дедлайну, не выходит за 120 с', async () => {
+    const clock = { t: 0 }
+    const { model, timeouts } = slowModel(clock, [
+      { natural: 50_000, text: TWO_ERRORS },
+      { natural: 45_000, text: UNKNOWN_BLOCK },
+      { natural: 60_000, text: VALID }, // не успеет: до дедлайна 25 с
+    ])
+    const result = await run(model, { ...limits, now: () => clock.t })
+    // Таймаут запроса = min(90 с, время до дедлайна)
+    expect(timeouts).toEqual([90_000, 70_000, 25_000])
+    expect(clock.t).toBe(120_000)
+    expect(result.outcome).toBe('deadline')
+    expect(result.attempts[2]).toMatchObject({ reachedModel: true, error: expect.stringMatching(/время ожидания/), latencyMs: 25_000 })
+    expect(result.best).toBe(result.attempts[1])
+  })
+
+  it('до дедлайна меньше 20 с — новая попытка не начинается', async () => {
+    const clock = { t: 0 }
+    const { model, timeouts } = slowModel(clock, [
+      { natural: 55_000, text: TWO_ERRORS },
+      { natural: 50_000, text: UNKNOWN_BLOCK },
+    ])
+    const result = await run(model, { ...limits, now: () => clock.t })
+    expect(timeouts).toEqual([90_000, 65_000])
+    expect(clock.t).toBe(105_000)
+    expect(result.outcome).toBe('deadline')
+    expect(result.attempts).toHaveLength(2)
+  })
+
+  it('медленный ответ обрывается пределом запроса (90 с), а не дедлайном; запуск останавливается', async () => {
+    const clock = { t: 0 }
+    const { model, timeouts } = slowModel(clock, [{ natural: 100_000, text: VALID }])
+    const result = await run(model, { ...limits, now: () => clock.t })
+    expect(timeouts).toEqual([90_000])
+    expect(clock.t).toBe(90_000)
+    expect(result.outcome).toBe('model-error')
+    expect(result.best).toBeNull()
+  })
+
   it('занято на первой попытке — запрос до модели не дошёл, документа нет', async () => {
     const result = await run(scripted(new ModelNotReachedError('Chat 429', 'busy')).model)
     expect(result.outcome).toBe('busy')

@@ -23,6 +23,11 @@ export type GenerationParams = typeof GENERATION_PARAMS
 
 export const MAX_ATTEMPTS = 3
 
+/** Модели для генерации (этап 1: доступны у физлица). Первая — по умолчанию. */
+export const GENERATION_MODELS = ['GigaChat-2-Pro', 'GigaChat-2', 'GigaChat-2-Max', 'GigaChat-3-Lightning', 'GigaChat-3-Pro'] as const
+export type GenerationModel = (typeof GENERATION_MODELS)[number]
+export const DEFAULT_MODEL: GenerationModel = GENERATION_MODELS[0]
+
 /**
  * Автоисправления, которые вставляют заглушку вместо данных («Моё название»).
  * Их не применяем: настоящее название знает нейросеть из описания.
@@ -129,6 +134,10 @@ export interface GenerateOptions {
   maxAttempts?: number
   /** Общее время на весь цикл, мс */
   deadlineMs: number
+  /** Предел одного запроса к нейросети, мс; фактический — не больше времени до дедлайна */
+  requestTimeoutMs?: number
+  /** Новую попытку не начинать, если до дедлайна осталось меньше, мс: ответ всё равно не успеет */
+  minAttemptMs?: number
   /** Часы — подменяются в тестах */
   now?: () => number
 }
@@ -308,6 +317,8 @@ export async function generateSite({
   model,
   maxAttempts = MAX_ATTEMPTS,
   deadlineMs,
+  requestTimeoutMs = Infinity,
+  minAttemptMs = 0,
   now = Date.now,
 }: GenerateOptions): Promise<GenerationResult> {
   const system = buildSystemPrompt({ mode, business })
@@ -326,8 +337,10 @@ export async function generateSite({
   }
 
   for (let n = 1; n <= maxAttempts; n++) {
-    const timeoutMs = deadline - now()
-    if (timeoutMs <= 0) return result('deadline')
+    const remaining = deadline - now()
+    // Первую попытку начинаем всегда — без неё нечего показать; следующие — если успеют
+    if (remaining <= 0 || (n > 1 && remaining < minAttemptMs)) return result('deadline')
+    const timeoutMs = Math.min(requestTimeoutMs, remaining)
 
     // Каждый запрос — без истории: системный промпт и одно сообщение со всем нужным
     const request = lastChecked ? buildFixRequest(description, mode, lastChecked) : `Описание бизнеса:\n${description}`

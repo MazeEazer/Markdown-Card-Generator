@@ -1,5 +1,5 @@
 // Тесты клиента GigaChat без сети: fetch подменяется. Запуск:
-//   npx deno@2 test -A --config supabase/functions/_shared/deno.json supabase/functions/_shared/
+//   npm run test:functions
 import { assertEquals, assertInstanceOf, assertRejects } from '@std/assert'
 import { ModelNotReachedError } from '../../../src/dsl/generate.ts'
 import { API_URL, callGigaChat, GigaChatError } from './gigachat.ts'
