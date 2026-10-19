@@ -7,6 +7,9 @@ import {
   extractDocument,
   generateSite,
   type GenerateOptions,
+  type GenerationLogRow,
+  type LogContext,
+  logRows,
   ModelNotReachedError,
   type ModelReply,
   outcomeMessage,
@@ -352,5 +355,86 @@ describe('generateSite: json', () => {
     expect(result.attempts).toHaveLength(2)
     expect(result.attempts[0].model.output).toBe('не знаю')
     expect(outcomeMessage(result.outcome, result.best)).toMatch(/Не получилось/)
+  })
+})
+
+describe('logRows: строки журнала generation_logs', () => {
+  const context: LogContext = {
+    runId: 'run-1',
+    userId: 'user-1',
+    siteId: null,
+    kind: 'generate',
+    mode: 'markdown',
+    model: 'GigaChat-2-Pro',
+    business: 'barbershop',
+    prompt: DESCRIPTION,
+    promptVersion: 'abcdef123456',
+    params: { temperature: 0.2, maxTokens: 4000 },
+  }
+  const rowsFor = async (...replies: (string | ModelReply | Error)[]) => {
+    const result = await run(scripted(...replies).model)
+    return { result, rows: logRows(result, context) }
+  }
+  const finalRows = (rows: GenerationLogRow[]) => rows.filter((r) => r.is_final)
+
+  // Все исходы: у каждого запуска ровно одна итоговая строка, и таблица примет строки (уникальность, CHECK)
+  const scenarios: [string, (string | ModelReply | Error)[]][] = [
+    ['valid', [VALID]],
+    ['исправлено со второй попытки', [UNKNOWN_BLOCK, VALID]],
+    ['нет прогресса', [UNKNOWN_BLOCK, TWO_ERRORS]],
+    ['blacklist', [{ text: 'нет', finishReason: 'blacklist' }]],
+    ['blacklist на исправлении', [UNKNOWN_BLOCK, { text: 'нет', finishReason: 'blacklist' }]],
+    ['length', [{ text: VALID.slice(0, 30), finishReason: 'length' }]],
+    ['ошибка сети', [new Error('reset')]],
+    ['ошибка сети на исправлении', [UNKNOWN_BLOCK, new Error('reset')]],
+    ['занято', [new ModelNotReachedError('429', 'busy')]],
+  ]
+  it.each(scenarios)('%s: ровно одна строка is_final, строки проходят ограничения таблицы', async (_name, replies) => {
+    const { result, rows } = await rowsFor(...replies)
+    expect(finalRows(rows)).toHaveLength(1)
+    const keys = rows.map((r) => `${r.attempt}/${r.stage}`)
+    expect(new Set(keys).size).toBe(keys.length)
+    for (const row of rows) {
+      if (row.stage === 'autofix') expect(row.reached_model).toBe(true)
+      expect(row).toMatchObject({ run_id: 'run-1', prompt_version: 'abcdef123456', params: context.params, outcome: result.outcome })
+    }
+  })
+
+  it('итог — autofix-строка лучшей попытки, а не последней', async () => {
+    const { result, rows } = await rowsFor(UNKNOWN_BLOCK, TWO_ERRORS)
+    expect(result.outcome).toBe('no-progress')
+    expect(finalRows(rows)).toEqual([expect.objectContaining({ attempt: 1, stage: 'autofix', output: UNKNOWN_BLOCK })])
+  })
+
+  it('документа нет ни в одной попытке — итог на model-строке последней (запуск не выпадает из выборки)', async () => {
+    const result = await generateSite({ description: DESCRIPTION, mode: 'json', model: scripted('не знаю').model, deadlineMs: 60_000 })
+    const rows = logRows(result, { ...context, mode: 'json' })
+    expect(rows.map((r) => [r.attempt, r.stage])).toEqual([[1, 'model'], [2, 'model']])
+    expect(finalRows(rows)).toEqual([expect.objectContaining({ attempt: 2, stage: 'model', output: 'не знаю', errors_count: 1 })])
+  })
+
+  it('blacklist — итог на model-строке с ответом и finish_reason', async () => {
+    const { rows } = await rowsFor({ text: 'Не могу', finishReason: 'blacklist' })
+    expect(rows).toEqual([expect.objectContaining({ stage: 'model', is_final: true, output: 'Не могу', finish_reason: 'blacklist' })])
+  })
+
+  it('строка model — ответ как есть, токены и время; строка autofix — документ и применённые исправления', async () => {
+    const dirty = VALID.replace('+7 999 123-45-67', '89991234567')
+    const result = await run(async () => ({ text: dirty, finishReason: 'stop', tokensIn: 5000, tokensOut: 300 }))
+    const [model, autofix] = logRows(result, context)
+    expect(model).toMatchObject({ stage: 'model', output: dirty, tokens_in: 5000, tokens_out: 300, finish_reason: 'stop', fixed_codes: [], is_final: false })
+    expect(model.warnings_count).toBeGreaterThan(0)
+    expect(autofix).toMatchObject({ stage: 'autofix', output: VALID, tokens_in: null, latency_ms: null, fixed_codes: ['phone-format'], is_final: true })
+  })
+
+  it('ошибка без ответа — output пустой, error заполнен', async () => {
+    const { rows } = await rowsFor(new ModelNotReachedError('Chat 429', 'busy'))
+    expect(rows).toEqual([expect.objectContaining({ reached_model: false, output: null, error: 'Chat 429', is_final: true })])
+  })
+
+  it('systemPrompt результата — тот, что ушёл нейросети', async () => {
+    const { model, calls } = scripted(VALID)
+    const result = await run(model, { mode: 'markdown' })
+    expect(result.systemPrompt).toBe(calls[0].messages[0].content)
   })
 })

@@ -114,6 +114,8 @@ export type Outcome = 'valid' | 'max-attempts' | 'no-progress' | 'deadline' | 'b
 
 export interface GenerationResult {
   outcome: Outcome
+  /** Системный промпт как он ушёл нейросети — от него считается prompt_version в журнале */
+  systemPrompt: string
   attempts: Attempt[]
   /** Лучшая попытка с документом (меньше ошибок, затем меньше исправимых предупреждений); null — документа нет */
   best: Attempt | null
@@ -320,7 +322,7 @@ export async function generateSite({
     const document = best?.autofix ? best : null
     // Попытки кончились или застряли на предупреждениях, но лучшая — без ошибок
     if ((outcome === 'no-progress' || outcome === 'max-attempts') && document?.autofix!.counts.errors === 0) outcome = 'valid'
-    return { outcome, attempts, best: document }
+    return { outcome, systemPrompt: system, attempts, best: document }
   }
 
   for (let n = 1; n <= maxAttempts; n++) {
@@ -381,4 +383,113 @@ export async function generateSite({
     lastChecked = checked
   }
   return result('max-attempts')
+}
+
+/** Данные запуска, общие для всех строк журнала. */
+export interface LogContext {
+  runId: string
+  userId: string
+  siteId: string | null
+  kind: 'generate' | 'fix'
+  mode: PromptMode
+  model: string
+  business: string | null
+  /** Описание пользователя */
+  prompt: string
+  /** Первые 12 знаков SHA-256 системного промпта (result.systemPrompt) */
+  promptVersion: string
+  /** Что реально ушло в нейросеть */
+  params: Record<string, unknown>
+}
+
+/** Строка таблицы generation_logs (миграция 20261019120000_generation_logs.sql). */
+export interface GenerationLogRow {
+  run_id: string
+  user_id: string
+  site_id: string | null
+  kind: 'generate' | 'fix'
+  mode: PromptMode
+  model: string
+  business: string | null
+  prompt: string
+  prompt_version: string
+  attempt: number
+  stage: 'model' | 'autofix'
+  request: string
+  reached_model: boolean
+  output: string | null
+  diagnostics: Diagnostic[]
+  errors_count: number
+  warnings_count: number
+  missing_data_count: number
+  fixed_codes: string[]
+  finish_reason: string | null
+  error: string | null
+  params: Record<string, unknown>
+  tokens_in: number | null
+  tokens_out: number | null
+  latency_ms: number | null
+  outcome: Outcome
+  is_final: boolean
+}
+
+/**
+ * Результат запуска → строки журнала: на каждое обращение к нейросети строка model и, если ответ
+ * стал документом, строка autofix. Ровно одна строка is_final: autofix лучшей попытки, а если документа
+ * нет ни в одной — model последней. Иначе неудачные запуски выпали бы из выборки эксперимента.
+ */
+export function logRows(result: GenerationResult, context: LogContext): GenerationLogRow[] {
+  const last = result.attempts.at(-1)
+  const common = {
+    run_id: context.runId,
+    user_id: context.userId,
+    site_id: context.siteId,
+    kind: context.kind,
+    mode: context.mode,
+    model: context.model,
+    business: context.business,
+    prompt: context.prompt,
+    prompt_version: context.promptVersion,
+    params: context.params,
+    outcome: result.outcome,
+  }
+  return result.attempts.flatMap((a) => {
+    const shared = { ...common, attempt: a.attempt, request: a.request, reached_model: a.reachedModel }
+    const counts = (stage: CheckedStage) => ({
+      diagnostics: stage.diagnostics,
+      errors_count: stage.counts.errors,
+      warnings_count: stage.counts.warnings,
+      missing_data_count: stage.counts.missingData,
+    })
+    const rows: GenerationLogRow[] = [{
+      ...shared,
+      stage: 'model',
+      output: a.model.output || null,
+      ...counts(a.model),
+      fixed_codes: [],
+      finish_reason: a.finishReason ?? null,
+      error: a.error ?? null,
+      // Токены и время — только у строки model: обращение к нейросети одно
+      tokens_in: a.tokensIn ?? null,
+      tokens_out: a.tokensOut ?? null,
+      latency_ms: a.latencyMs,
+      is_final: !result.best && a === last,
+    }]
+    if (a.autofix) {
+      rows.push({
+        ...shared,
+        stage: 'autofix',
+        output: a.autofix.output,
+        ...counts(a.autofix),
+        fixed_codes: a.autofix.fixedCodes,
+        finish_reason: null,
+        error: null,
+        tokens_in: null,
+        tokens_out: null,
+        latency_ms: null,
+        is_final: a === result.best,
+      })
+    }
+    return rows
+  })
 }
