@@ -4,7 +4,7 @@ import { applyAllFixes } from './fix.ts'
 import { validate } from './validate.ts'
 
 /** Исправимые замечания, которые остались в тексте. */
-const fixable = (text: string) => validate(text).filter((d) => d.fix)
+const fixable = (text: string) => validate(text).filter((d) => d.fix && !d.fix.guess)
 
 // Так пишет нейросеть или человек «как привык»: телефон с восьмёркой, ссылка вместо имени,
 // цвет без кавычек, «1500р», заголовок без пробела, незакрытый блок
@@ -59,6 +59,15 @@ describe('applyAllFixes', () => {
     expect(applyAllFixes(text).text).toContain('name: Моё название')
     const skipped = applyAllFixes(text, { skip: new Set(['missing-name']) })
     expect(skipped).toEqual({ text, applied: [] })
+  })
+
+  it('догадки не применяет без guesses: true', () => {
+    // «master: Иван» — выдуманное поле; склеить его с ценой — значит испортить цену
+    const text = '---\nname: A\nphone: +7 999 123-45-67\n---\n:::services\ntitle: Стрижка\nprice: 1500\nmaster: Иван\ntitle: Борода\n:::\n'
+    expect(applyAllFixes(text)).toEqual({ text, applied: [] })
+    const guessed = applyAllFixes(text, { guesses: true })
+    expect(guessed.text).toContain('price: 1500 master: Иван')
+    expect(guessed.applied.map((d) => d.code)).toEqual(['unknown-field', 'duplicate-field'])
   })
 
   it('пересекающиеся правки применяются в следующих проходах', () => {

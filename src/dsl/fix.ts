@@ -18,6 +18,8 @@ export function applyFix(text: string, diagnostic: Diagnostic): string {
 export interface FixAllOptions {
   /** Коды, которые не исправлять: например, вставку заглушки «Моё название» вместо настоящего названия */
   skip?: ReadonlySet<string>
+  /** Применять и догадки (fix.guess) — по умолчанию нет: без человека неясно, что имелось в виду */
+  guesses?: boolean
   /** Предел проходов: после правки валидатор может найти новое, тоже исправимое */
   maxRounds?: number
 }
@@ -38,13 +40,13 @@ function overlaps(a: { from: number; to: number }, b: { from: number; to: number
  * Применяет все автоисправления валидатора, пока они находятся. За проход — только непересекающиеся
  * правки; пересёкшиеся валидатор найдёт заново на следующем проходе, уже в исправленном тексте.
  */
-export function applyAllFixes(text: string, { skip, maxRounds = 10 }: FixAllOptions = {}): FixAllResult {
+export function applyAllFixes(text: string, { skip, guesses = false, maxRounds = 10 }: FixAllOptions = {}): FixAllResult {
   const applied: Diagnostic[] = []
   const seen = new Set([text])
 
   for (let round = 0; round < maxRounds; round++) {
     const candidates = validate(text)
-      .filter((d) => d.fix && !skip?.has(d.code))
+      .filter((d) => d.fix && (guesses || !d.fix.guess) && !skip?.has(d.code))
       .map((d) => ({ diagnostic: d, change: fixChange(d)! }))
       .sort((a, b) => a.change.from - b.change.from || a.change.to - b.change.to)
 
