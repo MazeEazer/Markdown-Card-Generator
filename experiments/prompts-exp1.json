@@ -1,0 +1,333 @@
+[
+  {
+    "id": "b01-clean",
+    "business": "barbershop",
+    "description": "Барбершоп «Бритва» в Нижнем Новгороде, ул. Большая Покровская, 40. Мужская стрижка — 1400 ₽, стрижка машинкой — 800 ₽, оформление бороды — 900 ₽, стрижка + борода — 2000 ₽. Работаем ежедневно с 10:00 до 22:00. Телефон +7 831 410-22-15, Telegram britva_nn.",
+    "tags": ["clean", "author:claude"],
+    "check": "4 услуги с ценами; часы ежедневно 10:00–22:00; адрес и город; phone +7 831 410-22-15, telegram britva_nn; ничего сверх описания"
+  },
+  {
+    "id": "b02-dirty",
+    "business": "barbershop",
+    "description": "стригу дома, район уралмаш, екб. мужская 1200р, детская 700р, борода 500р. с 11ти до 9ти, в воскресенье не работаю. пиши в тг @dima_cut или звони 8-922-604-18-37",
+    "tags": ["dirty", "city-abbrev", "day-exceptions", "district-address", "author:claude"],
+    "check": "«екб» → Екатеринбург; адрес — только район Уралмаш (без выдуманной улицы); цены 1200 / 700 / 500; часы пн–сб 11:00–21:00, вс выходной; telegram dima_cut без @; phone +7 922 604-18-37"
+  },
+  {
+    "id": "b03-messenger-only",
+    "business": "barbershop",
+    "description": "Барбер Артём, Краснодар, ул. Красная, 120 (вход со двора). Стрижка 1300, фейд 1500, борода 700. Запись только в WhatsApp +7 918 335-70-12, звонки не принимаю.",
+    "tags": ["messenger-only", "author:claude"],
+    "check": "phone пустой — номер только для WhatsApp («звонки не принимаю»); whatsapp +7 918 335-70-12; адрес ул. Красная, 120; часов нет"
+  },
+  {
+    "id": "b04-minimal",
+    "business": "barbershop",
+    "description": "Барбершоп в Воронеже, стрижки и бороды. Пишите в телеграм borodach_vrn",
+    "tags": ["minimal-input", "no-address", "messenger-only", "author:claude"],
+    "check": "Только город и telegram borodach_vrn; ни цен, ни часов, ни адреса, ни отзывов, ни вопросов; phone пустой"
+  },
+  {
+    "id": "b05-no-contacts",
+    "business": "barbershop",
+    "description": "Барбершоп «Усы» в Самаре на ул. Ленинградской, 33. Мужская стрижка 1500 ₽, камуфляж седины 900 ₽, королевское бритьё 1200 ₽. Открыты с 9 до 21 без выходных.",
+    "tags": ["no-contacts", "author:claude"],
+    "check": "Ни одного контакта (no-contacts), ни телефона-заглушки; часы ежедневно 9:00–21:00; 3 услуги с ценами"
+  },
+  {
+    "id": "b06-trap-ig-tg",
+    "business": "barbershop",
+    "description": "Барбершоп «Клинок», Пермь, ул. Ленина, 58. Стрижка — 1350 ₽, детская — 900 ₽. Работаем пн–пт 10–21, сб–вс 11–19. Наши работы — в Instagram klinok_perm, записаться можно в Telegram @klinok_zapis.",
+    "tags": ["trap-ig-tg", "day-exceptions", "messenger-only", "author:claude"],
+    "check": "instagram klinok_perm и telegram klinok_zapis — не перепутаны каналы; часы пн–пт 10–21, сб–вс 11–19; phone пустой"
+  },
+  {
+    "id": "b07-long",
+    "business": "barbershop",
+    "description": "Барбершоп «Старый город» открылся в 2019 году в Калуге, на ул. Кирова, 21. Нас четверо мастеров, каждый с опытом больше пяти лет. Делаем классические и современные мужские стрижки, работаем с бородой, бреем опасной бритвой. Мужская стрижка — от 1300 ₽ (топ-мастер — 1700 ₽), стрижка машинкой одной насадкой — 700 ₽, моделирование бороды — от 800 ₽, бритьё опасной бритвой — 1500 ₽, комплекс «стрижка + борода» — от 2000 ₽. Детей стрижём с 6 лет, детская стрижка — 900 ₽. Работаем с понедельника по субботу с 10:00 до 21:00, в воскресенье — с 11:00 до 18:00. Есть парковка во дворе, чай и кофе для гостей бесплатно. Записаться можно по телефону +7 4842 57-30-19 или в Telegram staryi_gorod_barber. Отзывы о нас — во ВКонтакте vk.com/staryi_gorod_kaluga.",
+    "tags": ["long", "price-from", "day-exceptions", "author:claude"],
+    "check": "Все 6 услуг, цены «от» сохранены как «от …»; часы пн–сб 10–21, вс 11–18; phone, telegram, vk staryi_gorod_kaluga; отзывов-текстов нет (в описании их нет); факты о мастерах — только из описания"
+  },
+  {
+    "id": "b08-no-punctuation",
+    "business": "barbershop",
+    "description": "барбершоп топ спб гороховая 12 стрижка 1600 стрижка и борода 2300 тонировка бороды 600 работаем пн вс 10 22 запись тг top_barber_spb телефон 8 812 309 44 21",
+    "tags": ["no-punctuation", "city-abbrev", "author:claude"],
+    "check": "«спб» → Санкт-Петербург; адрес ул. Гороховая, 12; цены 1600 / 2300 / 600; часы ежедневно 10–22; telegram top_barber_spb; phone +7 812 309-44-21; «тг» — Telegram, не тенге"
+  },
+  {
+    "id": "b09-english",
+    "business": "barbershop",
+    "description": "Barbershop \"Fade Room\" in Kazan, Bauman st. 22. Men's haircut 1500 rub, beard trim 700 rub, kids haircut 1000 rub. Open Tue–Sun 10am–8pm, Monday closed. Call +7 843 250-61-19 or Telegram fade_room_kzn.",
+    "tags": ["english", "day-exceptions", "author:claude"],
+    "check": "Город Казань; адрес ул. Баумана, 22 (или Bauman st. 22); цены 1500 / 700 / 1000 RUB; часы вт–вс 10–20, пн выходной; phone и telegram; язык сайта — фиксируем"
+  },
+  {
+    "id": "b10-trap-call-not-wa",
+    "business": "barbershop",
+    "description": "Барбершоп «Хищник», Тюмень, ул. Республики, 92. Стрижка 1200, борода 600, отец + сын 2000. Работаем каждый день с 10 до 20. Пишите в Telegram hishnik72, по телефону 8 3452 60-18-90.",
+    "tags": ["trap-call-not-wa", "author:claude"],
+    "check": "phone +7 3452 60-18-90, telegram hishnik72; whatsapp пустой (номер дан «по телефону»); часы ежедневно 10–20"
+  },
+  {
+    "id": "t01-clean",
+    "business": "tutor",
+    "description": "Репетитор по английскому языку Екатерина Павловна, Москва, ул. Профсоюзная, 45. Занимаюсь со школьниками 5–11 классов. Занятие 60 минут — 2000 ₽, подготовка к ЕГЭ — 2500 ₽ за 90 минут. Работаю пн–пт с 15:00 до 21:00. Телефон +7 916 702-45-38, Telegram katya_english.",
+    "tags": ["clean", "day-exceptions", "author:claude"],
+    "check": "Цены 2000 / 2500 и длительности 60 / 90 мин; часы пн–пт 15–21 (сб, вс — выходные или не указаны); адрес; phone и telegram"
+  },
+  {
+    "id": "t02-dirty",
+    "business": "tutor",
+    "description": "химия и биология, готовлю к егэ и огэ. 1500р за час, пробное бесплатно. онлайн или у меня дома в мск (бутово). пишите в вотсап 8-915-420-11-76 или в тг @himbio_olga",
+    "tags": ["dirty", "city-abbrev", "messenger-only", "district-address", "author:claude"],
+    "check": "«мск» → Москва; адрес — только Бутово; 1500 ₽ за час, пробное бесплатно (не выдуманная цена); whatsapp +7 915 420-11-76, telegram himbio_olga; phone пустой"
+  },
+  {
+    "id": "t03-messenger-only",
+    "business": "tutor",
+    "description": "Преподаватель гитары Максим, занятия онлайн по Zoom и Discord. Урок 45 минут — 1100 ₽, абонемент на 8 уроков — 8000 ₽. Пишите в Telegram @max_guitar_online.",
+    "tags": ["messenger-only", "no-address", "author:claude"],
+    "check": "Нет адреса, города и карты; цены 1100 / 8000, длительность 45 мин; telegram max_guitar_online; phone пустой"
+  },
+  {
+    "id": "t04-minimal",
+    "business": "tutor",
+    "description": "Репетитор по русскому, Казань",
+    "tags": ["minimal-input", "no-contacts", "no-address", "author:claude"],
+    "check": "Город Казань; ни цен, ни часов, ни контактов (no-contacts), ни вопросов; ни одной заглушки"
+  },
+  {
+    "id": "t05-no-contacts",
+    "business": "tutor",
+    "description": "Репетитор по математике для 1–4 классов, Ольга Ивановна, учитель начальных классов с 20-летним стажем. Занимаюсь в Омске, ул. 10 лет Октября, 182, или онлайн. Занятие 45 минут — 800 ₽. Помогаю с домашними заданиями и подготовкой к ВПР.",
+    "tags": ["no-contacts", "author:claude"],
+    "check": "Адрес ул. 10 лет Октября, 182 (число в названии улицы не потеряно); 800 ₽ / 45 мин; no-contacts, ни одного выдуманного контакта"
+  },
+  {
+    "id": "t06-foreign-phone",
+    "business": "tutor",
+    "description": "Репетитор по русскому языку и литературе Наталья, живу в Минске, занятия онлайн. Урок 45 минут — 25 BYN, пакет из 10 уроков — 220 BYN. Пишите в WhatsApp +375 29 614-27-83.",
+    "tags": ["foreign-phone", "foreign-currency", "no-address", "messenger-only", "author:claude"],
+    "check": "whatsapp +375 29 614-27-83 (белорусский номер не потерян и не переделан в +7); currency BYN; цены 25 / 220; phone пустой"
+  },
+  {
+    "id": "t07-price-from",
+    "business": "tutor",
+    "description": "Логопед Светлана, Новосибирск, ул. Красный проспект, 77, офис 305. Консультация — 1000 ₽, занятие с ребёнком 40 минут — от 1500 ₽. Принимаю пн, ср, пт с 9 до 18, сб с 10 до 14. Телефон 8 (383) 214-55-07.",
+    "tags": ["price-from", "day-exceptions", "author:claude"],
+    "check": "Цена «от 1500»; часы пн, ср, пт 9–18, сб 10–14 (вт, чт, вс — выходные); phone +7 383 214-55-07; адрес с офисом"
+  },
+  {
+    "id": "t08-english",
+    "business": "tutor",
+    "description": "Math tutor in Saint Petersburg, online and in-person near Vasileostrovskaya metro. 60 min lesson 1800 rub, exam prep 2200 rub. WhatsApp +7 921 455-30-82.",
+    "tags": ["english", "messenger-only", "district-address", "author:claude"],
+    "check": "Город Санкт-Петербург; адрес — только м. Василеостровская (без выдуманной улицы); цены 1800 / 2200; whatsapp; phone пустой; язык сайта — фиксируем"
+  },
+  {
+    "id": "t09-trap-ig-tg",
+    "business": "tutor",
+    "description": "Репетитор по рисованию для детей Алина, Ростов-на-Дону, ул. Пушкинская, 150. Занятие 90 минут — 1200 ₽, мастер-класс выходного дня — 1800 ₽. Работы учеников — в Instagram alina_art_kids, запись — в Telegram alina_art_zapis.",
+    "tags": ["trap-ig-tg", "messenger-only", "author:claude"],
+    "check": "instagram alina_art_kids и telegram alina_art_zapis — каналы не перепутаны; phone пустой; часов нет"
+  },
+  {
+    "id": "t10-no-punctuation",
+    "business": "tutor",
+    "description": "репетитор физика 7 11 класс екб онлайн и очно химмаш 1200 час огэ егэ 1500 тг fiz_pro_ekb звонить 89126031477",
+    "tags": ["no-punctuation", "city-abbrev", "dirty", "district-address", "author:claude"],
+    "check": "«екб» → Екатеринбург, район Химмаш; цены 1200 / 1500; telegram fiz_pro_ekb; phone +7 912 603-14-77; «7 11 класс» — не цена и не часы"
+  },
+  {
+    "id": "n01-clean",
+    "business": "nails",
+    "description": "Студия маникюра «Лак» в Уфе, ул. Ленина, 70, 3 этаж. Маникюр с покрытием — 1700 ₽, педикюр с покрытием — 2300 ₽, наращивание — 3000 ₽, снятие — 300 ₽. Работаем ежедневно с 9:00 до 21:00. Телефон +7 347 266-81-04, WhatsApp +7 917 482-30-66.",
+    "tags": ["clean", "author:claude"],
+    "check": "4 услуги с ценами; часы ежедневно 9–21; phone +7 347 266-81-04 и whatsapp +7 917 482-30-66 — разные номера не перепутаны"
+  },
+  {
+    "id": "n02-dirty",
+    "business": "nails",
+    "description": "делаю ногти на дому, спб купчино. маник с покрытием 1500р, педик 2000р, френч +300. с 10ти до 7ми, по вс выходной. пишите в ватсап 8-911-233-90-41",
+    "tags": ["dirty", "city-abbrev", "messenger-only", "day-exceptions", "district-address", "author:claude"],
+    "check": "«спб» → Санкт-Петербург, район Купчино; цены 1500 / 2000 / +300; часы пн–сб 10–19, вс выходной; whatsapp +7 911 233-90-41; phone пустой"
+  },
+  {
+    "id": "n03-trap-call-not-wa",
+    "business": "nails",
+    "description": "Мастер маникюра Юлия, Челябинск, пр. Победы, 160. Маникюр 1400, покрытие гель-лак 1900, укрепление 400. Пишите в Telegram yulia_nails74, по телефону 8 951 118-26-49.",
+    "tags": ["trap-call-not-wa", "author:claude"],
+    "check": "phone +7 951 118-26-49, telegram yulia_nails74; whatsapp пустой; часов нет"
+  },
+  {
+    "id": "n04-trap-ig-tg",
+    "business": "nails",
+    "description": "Nail-студия «Миндаль», Краснодар, ул. Северная, 324. Маникюр с покрытием 1800 ₽, дизайн от 50 ₽ за ноготь. Портфолио — Instagram mindal_nails_krd, запись — Telegram @mindal_krd.",
+    "tags": ["trap-ig-tg", "price-from", "messenger-only", "author:claude"],
+    "check": "instagram mindal_nails_krd и telegram mindal_krd — каналы не перепутаны; «от 50» за ноготь; phone пустой"
+  },
+  {
+    "id": "n05-minimal",
+    "business": "nails",
+    "description": "Педикюр Самара, недорого",
+    "tags": ["minimal-input", "no-contacts", "no-address", "author:claude"],
+    "check": "Город Самара; ни цен, ни часов, ни контактов (no-contacts), ни вопросов; ни одной заглушки"
+  },
+  {
+    "id": "n06-messenger-no-address",
+    "business": "nails",
+    "description": "Выездной мастер маникюра Карина, Москва и ближнее Подмосковье. Маникюр с выездом — 2500 ₽, маникюр + педикюр — 4500 ₽. Запись только в Telegram karina_nails_viezd.",
+    "tags": ["messenger-only", "no-address", "author:claude"],
+    "check": "Нет адреса и карты (работа на выезде); цены 2500 / 4500; telegram karina_nails_viezd; phone пустой"
+  },
+  {
+    "id": "n07-long",
+    "business": "nails",
+    "description": "Меня зовут Вероника, я мастер ногтевого сервиса с 2016 года. Принимаю в своём кабинете в Красноярске, ул. Взлётная, 7, кабинет 4 (второй этаж, вход через салон «Шарм»). Работаю только со стерильным инструментом: крафт-пакеты вскрываются при вас. Цены: маникюр без покрытия — 900 ₽, маникюр с покрытием гель-лак — 2000 ₽, укрепление — от 300 ₽, дизайн — от 50 ₽ за ноготь, педикюр smart — 2400 ₽, снятие чужой работы — 400 ₽. Длительность маникюра с покрытием — около 2 часов. Принимаю вт–сб с 10 до 20, в воскресенье и понедельник выходные. Запись — в WhatsApp +7 913 541-08-77 или в Telegram @veronika_nails_krsk. Если опаздываете больше чем на 15 минут, запись может быть перенесена.",
+    "tags": ["long", "price-from", "day-exceptions", "messenger-only", "author:claude"],
+    "check": "6 услуг, «от» сохранено; длительность 2 ч только у маникюра с покрытием; часы вт–сб 10–20, вс и пн выходные; whatsapp и telegram, phone пустой; правило об опоздании — не выдумано сверх"
+  },
+  {
+    "id": "n08-english",
+    "business": "nails",
+    "description": "Nail studio \"Pink\" in Sochi, Navaginskaya st. 9. Manicure with gel polish 2000 rub, pedicure 2500 rub, nail extensions from 3500 rub. Open daily 10–21. Instagram pink_nails_sochi, phone +7 862 555-19-73.",
+    "tags": ["english", "price-from", "author:claude"],
+    "check": "Город Сочи; адрес ул. Навагинская, 9; цены 2000 / 2500 / от 3500; часы ежедневно 10–21; instagram и phone; язык сайта — фиксируем"
+  },
+  {
+    "id": "n09-foreign-currency",
+    "business": "nails",
+    "description": "Мастер маникюра в Алматы, мкр Самал-2, 58. Маникюр с покрытием — 8000 тенге, педикюр — 10000 тенге, снятие — 1500 тенге. WhatsApp +7 701 345-62-18.",
+    "tags": ["foreign-currency", "messenger-only", "author:claude"],
+    "check": "currency KZT (тенге названы явно); цены 8000 / 10000 / 1500; whatsapp +7 701 345-62-18; phone пустой; город Алматы"
+  },
+  {
+    "id": "n10-no-punctuation",
+    "business": "nails",
+    "description": "маникюр гель лак 1600 снятие 200 дизайн 100 тольятти автозаводский район 40 лет победы 33 работаю пн сб 9 19 запись вотсап 89277064512",
+    "tags": ["no-punctuation", "dirty", "messenger-only", "author:claude"],
+    "check": "Адрес ул. 40 лет Победы, 33, Автозаводский район, Тольятти; цены 1600 / 200 / 100; часы пн–сб 9–19; whatsapp +7 927 706-45-12; phone пустой"
+  },
+  {
+    "id": "p01-clean",
+    "business": "photographer",
+    "description": "Фотограф Анна Белова, Москва. Студийные портреты, семейные и детские фотосессии. Час съёмки в студии — 6000 ₽, выездная фотосессия — 8000 ₽, свадьба (8 часов) — 60 000 ₽. Телефон +7 925 318-72-40, почта anna.belova.photo@example.ru, Instagram anna_belova_photo.",
+    "tags": ["clean", "no-address", "author:claude"],
+    "check": "Цены 6000 / 8000 / 60000; длительность свадьбы 8 ч; phone, email, instagram; без адреса и карты"
+  },
+  {
+    "id": "p02-dirty",
+    "business": "photographer",
+    "description": "снимаю свадьбы и love story, нск и область. час 3500р, свадьба от 25к. пишите в тг @sergey_foto_nsk, звоните 8-913-907-44-12",
+    "tags": ["dirty", "city-abbrev", "price-from", "no-address", "author:claude"],
+    "check": "«нск» → Новосибирск; «25к» → от 25000; час 3500; telegram sergey_foto_nsk; phone +7 913 907-44-12; без адреса"
+  },
+  {
+    "id": "p03-messenger-only",
+    "business": "photographer",
+    "description": "Фотограф Лиза, Калининград. Предметная съёмка для маркетплейсов: 1 товар (5 кадров) — 700 ₽, от 20 товаров — 550 ₽ за товар. Пишите в WhatsApp +7 911 862-04-31.",
+    "tags": ["messenger-only", "no-address", "price-from", "author:claude"],
+    "check": "Цены 700 / 550 (оптовая — не «от 550»); whatsapp; phone пустой; без адреса"
+  },
+  {
+    "id": "p04-trap-ig-tg",
+    "business": "photographer",
+    "description": "Семейный фотограф Ксения, Казань. Фотосессия 1 час — 5000 ₽, newborn — 7000 ₽. Примеры работ — в Instagram ksu_family_photo, для записи пишите в Telegram ksu_photo_zapis.",
+    "tags": ["trap-ig-tg", "messenger-only", "no-address", "author:claude"],
+    "check": "instagram ksu_family_photo и telegram ksu_photo_zapis — каналы не перепутаны; phone пустой"
+  },
+  {
+    "id": "p05-trap-call-not-wa",
+    "business": "photographer",
+    "description": "Фотостудия «Свет» в Ярославле, ул. Свободы, 46, 2 этаж. Аренда зала — 1500 ₽ в час, фотосессия с фотографом — 4000 ₽. Работаем ежедневно с 9 до 22. Пишите в Telegram svet_studio76, по телефону 8 4852 33-90-17.",
+    "tags": ["trap-call-not-wa", "author:claude"],
+    "check": "phone +7 4852 33-90-17, telegram svet_studio76; whatsapp пустой; часы ежедневно 9–22"
+  },
+  {
+    "id": "p06-no-contacts",
+    "business": "photographer",
+    "description": "Фотограф Игорь, Владивосток. Снимаю репортажи с мероприятий и корпоративов. Час — 4500 ₽, минимум 2 часа.",
+    "tags": ["no-contacts", "no-address", "author:claude"],
+    "check": "no-contacts, ни одного выдуманного контакта; час 4500, минимум 2 часа (не выдуманная цена за 2 часа)"
+  },
+  {
+    "id": "p07-long",
+    "business": "photographer",
+    "description": "Привет! Я Алексей, фотограф из Ижевска, снимаю уже 8 лет. Основное направление — свадьбы, но также провожу семейные, детские и индивидуальные фотосессии, снимаю выпускные. Свадебный день (до 10 часов съёмки) — 45 000 ₽, полдня (5 часов) — 25 000 ₽, фотосессия 1 час — 4000 ₽, каждый следующий час — 3000 ₽. Аренда студии оплачивается отдельно. Готовые фото присылаю через 2 недели, свадьбы — через 4 недели, все кадры в цветокоррекции, 20 фото с ретушью. Выезжаю по Удмуртии, поездки в другие регионы обсуждаются. Связаться: телефон +7 912 765-21-40 (звонки и WhatsApp), почта alexey.photo.izh@example.ru, портфолио на сайте alexeyfoto-izh.example.ru.",
+    "tags": ["long", "no-address", "author:claude"],
+    "check": "4 позиции с ценами и длительностями; сроки сдачи — только из описания; phone и whatsapp — один номер (оба канала названы), email, website; без адреса"
+  },
+  {
+    "id": "p08-english-foreign",
+    "business": "photographer",
+    "description": "Wedding photographer in Tbilisi, Georgia. Full day 1200 USD, half day 700 USD. WhatsApp +995 599 48 17 26, Instagram tbilisi_wed_photo.",
+    "tags": ["english", "foreign-phone", "foreign-currency", "messenger-only", "no-address", "author:claude"],
+    "check": "currency USD; whatsapp +995 599 48 17 26 (грузинский номер не переделан в +7); instagram; phone пустой; язык сайта — фиксируем"
+  },
+  {
+    "id": "p09-minimal",
+    "business": "photographer",
+    "description": "Фотограф Сочи",
+    "tags": ["minimal-input", "no-contacts", "no-address", "author:claude"],
+    "check": "Город Сочи; ни цен, ни контактов (no-contacts), ни вопросов; ни одной заглушки"
+  },
+  {
+    "id": "p10-city-abbrev",
+    "business": "photographer",
+    "description": "Фотостудия в екб на ул. Луначарского, 128. Час аренды 1200 ₽ в будни, 1600 ₽ в выходные. Открыты пн–пт 10–22, сб–вс 9–23. Телефон +7 343 288-60-15, ВКонтакте vk.com/foto_luna_ekb.",
+    "tags": ["city-abbrev", "day-exceptions", "author:claude"],
+    "check": "«екб» → Екатеринбург; цены 1200 / 1600 (будни / выходные); часы пн–пт 10–22, сб–вс 9–23; phone, vk foto_luna_ekb"
+  },
+  {
+    "id": "o01-clean",
+    "business": "other",
+    "description": "Автомойка «Капля», Иркутск, ул. Ширямова, 14. Мойка кузова — 500 ₽, комплекс — 1200 ₽, химчистка салона — от 6000 ₽. Работаем круглосуточно. Телефон +7 3952 70-44-81.",
+    "tags": ["clean", "price-from", "other-niche", "author:claude"],
+    "check": "Часы — круглосуточно (не выдуманные 9–21); цены 500 / 1200 / от 6000; phone +7 3952 70-44-81"
+  },
+  {
+    "id": "o02-no-niche-dirty",
+    "description": "ремонт стиралок и холодильников на дому, выезд по всему спб бесплатно. диагностика 500р, ремонт от 1500р. звоните с 8ми до 10ти вечера 8-921-750-63-28",
+    "tags": ["dirty", "no-niche", "city-abbrev", "price-from", "no-address", "author:claude"],
+    "check": "Ниша не выбрана; «спб» → Санкт-Петербург; цены 500 / от 1500; часы ежедневно 8–22; phone +7 921 750-63-28; без адреса и карты"
+  },
+  {
+    "id": "o03-no-niche-trap-ig-tg",
+    "description": "Кондитер Мария, торты на заказ в Туле. Бенто-торт — 1500 ₽, торт от 2 кг — 2200 ₽ за кг. Фото тортов в Instagram maria_tort_tula, заказы принимаю в Telegram @maria_tort_zakaz.",
+    "tags": ["trap-ig-tg", "no-niche", "messenger-only", "no-address", "author:claude"],
+    "check": "instagram maria_tort_tula и telegram maria_tort_zakaz — каналы не перепутаны; цены 1500 / 2200 за кг; phone пустой"
+  },
+  {
+    "id": "o04-trap-call-not-wa",
+    "business": "other",
+    "description": "Ветеринарный кабинет «Хвост», Иваново, ул. Лежневская, 120. Приём — 900 ₽, вакцинация — от 1200 ₽, стрижка когтей — 300 ₽. Пн–сб 9–20, вс 10–16. Пишите в Telegram hvost_vet37, по телефону 8 4932 58-40-12.",
+    "tags": ["trap-call-not-wa", "other-niche", "day-exceptions", "price-from", "author:claude"],
+    "check": "phone +7 4932 58-40-12, telegram hvost_vet37; whatsapp пустой; часы пн–сб 9–20, вс 10–16"
+  },
+  {
+    "id": "o05-no-niche-english",
+    "description": "Yoga studio \"Prana\" in Moscow, Pokrovka 17. Drop-in class 900 rub, monthly pass 6500 rub. Classes Mon–Fri 7–22, weekends 9–18. Telegram prana_yoga_msk, phone +7 495 640-28-71.",
+    "tags": ["english", "no-niche", "day-exceptions", "author:claude"],
+    "check": "Город Москва; адрес ул. Покровка, 17; цены 900 / 6500; часы пн–пт 7–22, сб–вс 9–18; telegram и phone; язык сайта — фиксируем"
+  },
+  {
+    "id": "o06-no-niche-minimal",
+    "description": "Ремонт обуви",
+    "tags": ["minimal-input", "no-niche", "no-contacts", "no-address", "author:claude"],
+    "check": "Ни города, ни адреса, ни цен, ни контактов (no-contacts); ни одной заглушки"
+  },
+  {
+    "id": "o07-no-niche-long",
+    "description": "Груминг-салон «Пушистик» в Твери, Тверской проспект, 6. Стрижём собак и кошек всех пород. Комплекс для собак мелких пород (мытьё, стрижка, когти, уши) — от 2000 ₽, для средних — от 3000 ₽, для крупных — от 4500 ₽. Кошкам — комплексный уход 3500 ₽, только когти — 400 ₽. Работаем ежедневно с 9:00 до 20:00, кроме последнего понедельника месяца — санитарный день. Грумеры с ветеринарным образованием, животных не усыпляем. Записывайтесь по телефону 8 (4822) 63-71-05 или в Telegram pushistik_tver, фото до/после — в Instagram pushistik_grooming.",
+    "tags": ["long", "no-niche", "price-from", "day-exceptions", "trap-ig-tg", "author:claude"],
+    "check": "5 услуг, «от» сохранено; часы ежедневно 9–20 (санитарный день — в тексте, не «пн выходной»); phone, telegram pushistik_tver, instagram pushistik_grooming — каналы не перепутаны"
+  },
+  {
+    "id": "o08-no-punctuation-foreign",
+    "business": "other",
+    "description": "массаж классический 60 мин 2500 антицеллюлитный 3000 минск пр независимости 95 запись телеграм massage_minsk телефон +375 44 781 20 36 ежедневно 9 21",
+    "tags": ["no-punctuation", "foreign-phone", "other-niche", "author:claude"],
+    "check": "Город Минск, адрес пр. Независимости, 95; цены 2500 / 3000, длительность 60 мин; phone +375 44 781-20-36 (не +7); telegram massage_minsk; часы ежедневно 9–21; валюта в описании не названа — не выдумывать BYN/KZT"
+  }
+]
