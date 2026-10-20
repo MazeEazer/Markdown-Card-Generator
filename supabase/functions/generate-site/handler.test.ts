@@ -93,7 +93,7 @@ Deno.test('лимит исчерпан — 429 с code: limit; окно — по
   const res = await call(handler, post({ description: DESCRIPTION }))
   assertEquals(res.status, 429)
   assertEquals(res.body.code, 'limit')
-  assertMatch(res.body.error, /предел на сутки/)
+  assertMatch(res.body.error, /Предел на сегодня исчерпан/)
   assertEquals(calls.countRuns.map((d) => d.toISOString()), ['2026-10-18T12:00:00.000Z'])
   assertEquals(calls.models, [])
 })

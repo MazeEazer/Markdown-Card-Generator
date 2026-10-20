@@ -28,6 +28,9 @@ export const GENERATION_MODELS = ['GigaChat-2-Pro', 'GigaChat-2', 'GigaChat-2-Ma
 export type GenerationModel = (typeof GENERATION_MODELS)[number]
 export const DEFAULT_MODEL: GenerationModel = GENERATION_MODELS[0]
 
+/** Длина описания бизнеса в символах — одинаково проверяют форма и Edge Function. */
+export const DESCRIPTION_LIMITS = { min: 10, max: 3000 } as const
+
 /**
  * Автоисправления, которые вставляют заглушку вместо данных («Моё название»).
  * Их не применяем: настоящее название знает нейросеть из описания.

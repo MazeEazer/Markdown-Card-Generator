@@ -6,6 +6,7 @@
 import {
   type ChatModel,
   DEFAULT_MODEL,
+  DESCRIPTION_LIMITS,
   type GenerationLogRow,
   GENERATION_MODELS,
   type GenerationModel,
@@ -26,8 +27,6 @@ export const MIN_ATTEMPT_MS = 20_000
 export const DEFAULT_DAILY_LIMIT = 20
 const DAY_MS = 24 * 60 * 60 * 1000
 
-const MIN_DESCRIPTION = 10
-const MAX_DESCRIPTION = 3000
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export interface Deps {
@@ -83,11 +82,11 @@ function parseInput(body: unknown): Input {
   if (!body || typeof body !== 'object') throw new PublicError('Не получилось прочитать запрос')
   const { description, business, mode = 'markdown', model = DEFAULT_MODEL, siteId } = body as Record<string, unknown>
 
-  if (typeof description !== 'string' || description.trim().length < MIN_DESCRIPTION) {
+  if (typeof description !== 'string' || description.trim().length < DESCRIPTION_LIMITS.min) {
     throw new PublicError('Опишите бизнес хотя бы одним-двумя предложениями: чем занимаетесь, где, как с вами связаться')
   }
-  if (description.length > MAX_DESCRIPTION) {
-    throw new PublicError(`Описание слишком длинное — сократите его до ${MAX_DESCRIPTION} символов`)
+  if (description.length > DESCRIPTION_LIMITS.max) {
+    throw new PublicError(`Описание слишком длинное — сократите его до ${DESCRIPTION_LIMITS.max} символов`)
   }
   if (business !== undefined && !BUSINESS_NAMES.includes(business as BusinessName)) throw new PublicError('Неизвестный вид бизнеса')
   if (mode !== 'markdown' && mode !== 'json') throw new PublicError('Неизвестный режим генерации')
@@ -122,7 +121,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       if (!deps.unlimitedUsers.has(userId)) {
         const used = await deps.countRuns(userId, new Date(deps.now() - DAY_MS))
         if (used >= deps.dailyLimit) {
-          throw new PublicError(`Сегодня вы уже создали ${used} сайтов по описанию — это предел на сутки. Попробуйте завтра или продолжите в редакторе`, 429, 'limit')
+          throw new PublicError('Предел на сегодня исчерпан: сайты по описанию можно создавать ограниченное число раз в сутки. Попробуйте завтра или продолжите в редакторе', 429, 'limit')
         }
       }
 
