@@ -13,6 +13,7 @@ const H = (extra = '') => `---\nname: Борода\nphone: +7 999 123-45-67\n${e
 /** На каждый код правила — минимальный документ, где он срабатывает. */
 const CORPUS: Record<string, string> = {
   'accent-format': H('accent: "#abcd"\n'),
+  'accent-low-contrast': H('theme: minimal\naccent: "#ffd700"\n'),
   'accent-unquoted': H('accent: #c0392b\n'),
   'address-without-city': H('address: ул. Ленина, 1\n'),
   'contact-link': H('contacts:\n  telegram: https://t.me/boroda\n'),
@@ -60,9 +61,9 @@ const RULE_SOURCES = import.meta.glob<string>(['../dsl/rules/*.ts', '!../dsl/rul
 const RULE_CODES = [...new Set(Object.values(RULE_SOURCES).flatMap((source) => [...source.matchAll(/code: '([a-z-]+)'/g)].map((m) => m[1])))]
 
 describe('все правила валидатора видны в редакторе', () => {
-  it('в корпусе есть пример на каждый код из правил (сейчас их 37)', () => {
+  it('в корпусе есть пример на каждый код из правил (сейчас их 38)', () => {
     expect(Object.keys(CORPUS).sort()).toEqual(RULE_CODES.sort())
-    expect(RULE_CODES).toHaveLength(37)
+    expect(RULE_CODES).toHaveLength(38)
   })
 
   it.each(Object.entries(CORPUS))('%s — подчёркивание с тем же сообщением и кнопкой исправления', (code, text) => {

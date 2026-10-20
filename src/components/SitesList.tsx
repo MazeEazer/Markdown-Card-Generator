@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { templateMarkdown, TEMPLATES, type SiteTemplate } from '../data/templates'
 import { useSites, type Site } from '../hooks/useSites'
 import { useAuth } from '../contexts/AuthContext'
+import { GenerateSiteDialog } from './GenerateSiteDialog'
 
 interface SitesListProps {
   onEditSite: (site: Site) => void
@@ -12,6 +13,7 @@ export function SitesList({ onEditSite, onSignOut }: SitesListProps) {
   const { sites, loading, createSite, deleteSite } = useSites()
   const { profile } = useAuth()
   const [showCreate, setShowCreate] = useState(false)
+  const [showGenerate, setShowGenerate] = useState(false)
   const [newSiteName, setNewSiteName] = useState('')
   const [creating, setCreating] = useState(false)
   const [templateId, setTemplateId] = useState<SiteTemplate['id']>('barbershop')
@@ -72,13 +74,27 @@ export function SitesList({ onEditSite, onSignOut }: SitesListProps) {
           <>
             {/* Create button */}
             <div className="mb-8">
-              {!showCreate ? (
-                <button
-                  onClick={() => setShowCreate(true)}
-                  className="px-6 py-3 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors"
-                >
-                  + Создать новый сайт
-                </button>
+              {showGenerate ? (
+                <GenerateSiteDialog
+                  createSite={(name, markdown) => createSite(name, markdown)}
+                  onCreated={onEditSite}
+                  onClose={() => setShowGenerate(false)}
+                />
+              ) : !showCreate ? (
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() => setShowCreate(true)}
+                    className="px-6 py-3 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors"
+                  >
+                    + Создать новый сайт
+                  </button>
+                  <button
+                    onClick={() => setShowGenerate(true)}
+                    className="px-6 py-3 rounded-lg border border-indigo-600 text-indigo-700 dark:text-indigo-300 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors"
+                  >
+                    Создать сайт по описанию
+                  </button>
+                </div>
               ) : (
                 <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 border border-zinc-200 dark:border-zinc-800">
                   <h3 className="text-lg font-semibold mb-4">Новый сайт</h3>

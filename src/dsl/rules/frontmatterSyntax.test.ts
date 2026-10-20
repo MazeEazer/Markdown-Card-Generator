@@ -85,3 +85,26 @@ describe('invalid-yaml', () => {
     expect(findAll('---\nname: A\ntitle: "Стрижки: мужские"\n---\n', 'invalid-yaml')).toEqual([])
   })
 })
+
+describe('unclosed-frontmatter: «Закрыть шапку»', () => {
+  it('--- вставляется после последнего поля перед первым разделом (так пишет GigaChat-3-Lightning)', () => {
+    const text = '---\nname: Лапки\ncontacts:\n  telegram: lapki_tlt\n\n## Услуги\n:::services\ntitle: Маникюр\n:::\n'
+    const d = findOne(text, 'unclosed-frontmatter')
+    expect(d.fix?.guess).toBeUndefined()
+    expect(fixAndRecheck(text, d)).toBe('---\nname: Лапки\ncontacts:\n  telegram: lapki_tlt\n---\n\n## Услуги\n:::services\ntitle: Маникюр\n:::\n')
+  })
+
+  it('перед блоком без раздела — тоже', () => {
+    const text = '---\nname: Лапки\n:::contacts\n:::\n'
+    expect(fixAndRecheck(text, findOne(text, 'unclosed-frontmatter'))).toBe('---\nname: Лапки\n---\n:::contacts\n:::\n')
+  })
+
+  it('среди полей есть обычный текст — граница неочевидна: исправление-догадка', () => {
+    const text = '---\nname: Лапки\nПросто текст про студию\n\n## Услуги\n'
+    expect(findOne(text, 'unclosed-frontmatter').fix?.guess).toBe(true)
+  })
+
+  it('нет ни раздела, ни блока — исправления нет', () => {
+    expect(findOne('---\nname: Лапки\nphone: +7 900 000-00-00\n', 'unclosed-frontmatter').fix).toBeUndefined()
+  })
+})

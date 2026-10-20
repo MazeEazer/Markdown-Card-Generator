@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type { CardContacts, ThemeName } from '../../types/card.ts'
 import { iconSchema } from './icons.ts'
+import { PLACEHOLDER_BASES, placeholder } from './placeholder.ts'
 
 // Поля шапки документа (YAML между строками ---). Описания идут в подсказки редактора и в промпт для нейросети.
 
@@ -70,22 +71,30 @@ export const CONTACT_ALIASES: Record<string, string> = {
 export const PRIMARY_TARGETS = [...CONTACT_NAMES, 'phone'] as const
 
 const text = (description: string, example: string) => z.string().meta({ description, examples: [example] })
+/**
+ * Контакт или адрес: правдоподобный пример — для редактора, а в промпт и JSON Schema идёт заглушка promptExample
+ * (как в шаблонах): нейросеть переносила номер из примера в сайт, где контактов в описании не было.
+ */
+const contact = (description: string, example: string, promptExample: string) =>
+  z.string().meta({ description, examples: [example], promptExample })
+/** Свободный текст: пример — для редактора, в промпт не попадает (как prose в blocks.ts). */
+const prose = (description: string, example: string) => z.string().meta({ description, examples: [example], prose: true })
 
 const linkSchema = z
   .strictObject({
     label: text('Подпись ссылки', 'Telegram'),
-    url: text('Адрес ссылки', 'https://t.me/barber_ivan'),
+    url: contact('Адрес ссылки', 'https://t.me/barber_ivan', 'https://t.me/vash_telegram'),
     icon: iconSchema.optional(),
   })
   .meta({ description: 'Ссылка в шапке сайта' })
 
 export const contactsSchema = z
   .strictObject({
-    telegram: text(CONTACTS.telegram, 'barber_ivan').optional(),
-    whatsapp: text(CONTACTS.whatsapp, '+7 999 123-45-67').optional(),
-    vk: text(CONTACTS.vk, 'barber_samara').optional(),
-    max: text(CONTACTS.max, 'https://max.ru/u/f9LHodD0cOKGmHmt').optional(),
-    instagram: text(CONTACTS.instagram, 'barber.ivan').optional(),
+    telegram: contact(CONTACTS.telegram, 'barber_ivan', 'vash_telegram').optional(),
+    whatsapp: contact(CONTACTS.whatsapp, '+7 999 123-45-67', '+7 900 000-00-00').optional(),
+    vk: contact(CONTACTS.vk, 'barber_samara', 'vasha_stranica').optional(),
+    max: contact(CONTACTS.max, 'https://max.ru/u/f9LHodD0cOKGmHmt', 'https://max.ru/u/vash_profil').optional(),
+    instagram: contact(CONTACTS.instagram, 'barber.ivan', 'vash.instagram').optional(),
     email: z.email().meta({ description: CONTACTS.email, examples: ['hello@example.ru'] }).optional(),
     website: z.url().meta({ description: CONTACTS.website, examples: ['https://example.ru'] }).optional(),
     primary: z
@@ -101,7 +110,7 @@ export const contactsSchema = z
 export const frontmatterSchema = z
   .strictObject({
     name: text('Название бизнеса или имя мастера — главный заголовок сайта', 'Барбершоп «Борода»'),
-    title: text('Короткое описание под названием', 'Мужские стрижки и уход за бородой').optional(),
+    title: prose('Короткое описание под названием', 'Мужские стрижки и уход за бородой').optional(),
     theme: z
       .enum([...THEME_NAMES, 'auto'])
       .meta({
@@ -112,7 +121,8 @@ export const frontmatterSchema = z
     accent: z
       .string()
       .regex(/^(auto|#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?)$/)
-      .meta({ description: 'Основной цвет в формате "#rrggbb" (в кавычках!) или auto', examples: ['#c0392b'] })
+      // В промпте — auto: цвет из примера модель ставила почти всем сайтам
+      .meta({ description: 'Основной цвет в формате "#rrggbb" (в кавычках!) или auto', examples: ['#c0392b'], promptExample: 'auto' })
       .optional(),
     avatar: z.url().meta({ description: 'Ссылка на фото или логотип', examples: ['https://example.ru/logo.png'] }).optional(),
     location: z
@@ -127,9 +137,10 @@ export const frontmatterSchema = z
         examples: ['barbershop'],
       })
       .optional(),
-    phone: text('Телефон для звонков', '+7 999 123-45-67').optional(),
-    address: text('Адрес без города: улица, дом', 'ул. Ленина, 10').optional(),
-    city: text('Город', 'Самара').optional(),
+    phone: contact('Телефон для звонков', '+7 999 123-45-67', '+7 900 000-00-00').optional(),
+    // В промпте — заглушки: пример «ул. Ленина, 10» модель переносила в сайт без адреса («ул. Ленина, 15»)
+    address: contact('Адрес без города: улица, дом', 'ул. Ленина, 10', placeholder(PLACEHOLDER_BASES.address)).optional(),
+    city: contact('Город', 'Самара', placeholder(PLACEHOLDER_BASES.city)).optional(),
     currency: z
       .enum(['RUB'])
       .meta({ description: 'Валюта цен; по умолчанию RUB — рубли', examples: ['RUB'] })
@@ -162,16 +173,15 @@ export const FRONTMATTER_ALIASES: Record<string, string> = {
 /** Пример шапки — для справки в редакторе и промпта. */
 export const FRONTMATTER_EXAMPLE = `---
 name: Барбершоп «Борода»
-title: Мужские стрижки и уход за бородой
+title: ${placeholder(PLACEHOLDER_BASES.title)}
 theme: noir
-accent: "#c0392b"
 business: barbershop
-phone: +7 999 123-45-67
-address: ул. Ленина, 10
-city: Самара
+phone: +7 900 000-00-00
+address: ${placeholder(PLACEHOLDER_BASES.address)}
+city: ${placeholder(PLACEHOLDER_BASES.city)}
 currency: RUB
 contacts:
-  telegram: barber_ivan
-  whatsapp: +7 999 123-45-67
+  telegram: vash_telegram
+  whatsapp: +7 900 000-00-00
   primary: telegram
 ---`

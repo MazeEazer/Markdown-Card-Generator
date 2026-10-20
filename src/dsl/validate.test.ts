@@ -10,9 +10,9 @@ describe('validate', () => {
     expect(validate(defaultTemplate)).toEqual([])
   })
 
-  it('пример из схемы со всеми блоками — без замечаний', () => {
+  it('пример из схемы со всеми блоками — только подсказка об услуге без описания', () => {
     const text = `${FRONTMATTER_EXAMPLE}\n${BLOCK_NAMES.map((name) => `## ${BLOCKS[name].label}\n${BLOCKS[name].example}`).join('\n\n')}\n`
-    expect(validate(text)).toEqual([])
+    expect(validate(text).map((d) => d.code)).toEqual(['service-no-description'])
   })
 
   it('диагностики отсортированы по позиции и знают строку', () => {

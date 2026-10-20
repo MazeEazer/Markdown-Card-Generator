@@ -2,7 +2,7 @@ export const barbershop = `---
 name: Барбершоп «Борода»
 title: Мужские стрижки и уход за бородой
 theme: noir
-accent: "#c0392b"
+accent: "#cb5d51"
 business: barbershop
 phone: +7 900 000-00-00
 address: ул. Ленина, 1

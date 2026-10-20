@@ -50,8 +50,9 @@ describe('serialize: круговой путь', () => {
 
   it('сайт бизнеса со всеми блоками и контактами', () => {
     const text = roundTrip(parse(businessExample))
-    expect(validate(text)).toEqual([])
-    expect(text).toContain('contacts:\n  telegram: barber_ivan\n  whatsapp: +7 999 123-45-67\n  primary: telegram')
+    // Подсказка — у второй услуги примера из схемы нет описания
+    expect(validate(text).map((d) => d.code)).toEqual(['service-no-description'])
+    expect(text).toContain('contacts:\n  telegram: vash_telegram\n  whatsapp: +7 900 000-00-00\n  primary: telegram')
   })
 
   it('значения, которым нужны кавычки в YAML', () => {
