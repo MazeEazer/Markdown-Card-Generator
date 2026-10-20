@@ -165,6 +165,27 @@ describe('generateSite: markdown', () => {
   })
 })
 
+describe('generateSite: блоки без данных удаляются', () => {
+  it('онлайн-репетитор: «Как добраться» без адреса удаляется, удаление — в fixedCodes', async () => {
+    const tutor = '---\nname: Репетитор Анна\nphone: +7 999 123-45-67\n---\n\n## Обо мне\nЗанимаюсь онлайн.\n\n## Как добраться\n:::map\n:::\n'
+    const { model, calls } = scripted(tutor)
+    const result = await run(model)
+    expect(calls).toHaveLength(1)
+    const { model: before, autofix } = result.attempts[0]
+    expect(before.diagnostics.map((d) => d.code)).toContain('map-no-address')
+    expect(autofix!.output).toBe('---\nname: Репетитор Анна\nphone: +7 999 123-45-67\n---\n\n## Обо мне\nЗанимаюсь онлайн.\n')
+    expect(autofix!.fixedCodes).toEqual(['map-no-address'])
+    expect(autofix!.diagnostics).toEqual([])
+  })
+
+  it('в режиме json — так же: пустая карта из JSON не попадает в документ', async () => {
+    const json = JSON.stringify({ name: 'Репетитор Анна', phone: '+7 999 123-45-67', sections: [{ type: 'map', title: 'Как добраться' }] })
+    const result = await generateSite({ description: DESCRIPTION, mode: 'json', model: scripted(json).model, deadlineMs: 60_000 })
+    expect(result.best!.autofix!.output).not.toContain(':::map')
+    expect(result.best!.autofix!.fixedCodes).toContain('map-no-address')
+  })
+})
+
 describe('generateSite: предупреждения', () => {
   it('«нехватка данных» не уходит нейросети никогда — иначе она выдумает телефон', async () => {
     const noContacts = '---\nname: Борода\naddress: ул. Ленина, 10\n---\n\n## Где мы\n:::map\n:::\n'

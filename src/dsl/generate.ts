@@ -3,6 +3,7 @@
 import { MISSING_DATA_CODES, MODEL_FIXABLE_CODES } from './codes.ts'
 import { applyAllFixes } from './fix.ts'
 import { fromJson } from './fromJson.ts'
+import { pruneEmptyBlocks } from './prune.ts'
 import { offsetToLineCol } from './position.ts'
 import { buildSystemPrompt, type PromptMode } from './prompt.ts'
 import { documentSchema } from './schema/document.ts'
@@ -214,12 +215,16 @@ interface Checked {
   autofix: Attempt['autofix']
 }
 
-/** Разметка → замечания до и после автоисправлений. */
+/** Разметка → замечания до и после автоисправлений. Затем — удаление блоков, которым нечего показать (prune.ts). */
 function checkMarkdown(output: string, markdown: string): Omit<Checked, 'document'> {
   const fixed = applyAllFixes(markdown, { skip: MODEL_FIXES })
+  const pruned = pruneEmptyBlocks(fixed.text)
   return {
     model: stageOf(output, validate(markdown)),
-    autofix: { ...stageOf(fixed.text, validate(fixed.text)), fixedCodes: fixed.applied.map((d) => d.code) },
+    autofix: {
+      ...stageOf(pruned.text, validate(pruned.text)),
+      fixedCodes: [...fixed.applied.map((d) => d.code), ...pruned.removed],
+    },
   }
 }
 
