@@ -102,6 +102,11 @@ describe('правила против выдуманных фактов', () => 
     expect(promptExample(BLOCKS.hours)).toBe(BLOCKS.hours.example)
   })
 
+  it.each([['markdown', markdown], ['json', json]])('%s: phone — только номер для звонков, номер для мессенджера — только в contacts', (_mode, prompt) => {
+    expect(prompt).toMatch(/phone — только если номер дан для звонков/)
+    expect(prompt).toMatch(/Номер, данный только для WhatsApp или Telegram.*только в contacts \(whatsapp\), phone не заполняй/)
+  })
+
   it.each([['markdown', markdown], ['json', json]])('%s: вопросы — только из описания, карта — только при адресе', (_mode, prompt) => {
     expect(prompt).toMatch(/:::accordion\) — только с вопросами и ответами, которые есть в описании/)
     expect(prompt).toMatch(/Карту \(:::map.*только если в описании есть адрес, куда приходят клиенты/)
