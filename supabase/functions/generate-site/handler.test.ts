@@ -137,6 +137,14 @@ Deno.test('режим json и выбранная модель доходят д�
   assertEquals(calls.logs[0].prompt_version, await promptVersion(buildSystemPrompt({ mode: 'json' })))
 })
 
+Deno.test('GigaChat-3-Ultra принимается (эксперимент 1), неизвестная модель — 400', async () => {
+  const { handler, calls } = fakeDeps({}, async () => ({ text: '{"name": "Борода", "sections": []}' }))
+  const res = await call(handler, post({ description: DESCRIPTION, mode: 'json', model: 'GigaChat-3-Ultra' }))
+  assertEquals(res.status, 200)
+  assertEquals(calls.models, ['GigaChat-3-Ultra'])
+  assertEquals((await call(handler, post({ description: DESCRIPTION, model: 'GigaChat-4' }))).status, 400)
+})
+
 Deno.test('нейросеть занята — 503 с code: busy, попытка записана с reached_model = false', async () => {
   const { handler, calls } = fakeDeps({}, () => Promise.reject(new ModelNotReachedError('Chat 429', 'busy')))
   const res = await call(handler, post({ description: DESCRIPTION }))

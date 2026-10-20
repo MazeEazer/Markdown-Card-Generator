@@ -27,8 +27,15 @@ export type GenerationParams = typeof GENERATION_PARAMS
 
 export const MAX_ATTEMPTS = 3
 
-/** Модели для генерации (этап 1: доступны у физлица). Первая — по умолчанию. */
-export const GENERATION_MODELS = ['GigaChat-2-Pro', 'GigaChat-2', 'GigaChat-2-Max', 'GigaChat-3-Lightning', 'GigaChat-3-Pro'] as const
+/** Модели для генерации (этап 1: доступны у физлица; GigaChat-3-Ultra — для эксперимента 1). Первая — по умолчанию. */
+export const GENERATION_MODELS = [
+  'GigaChat-2-Pro',
+  'GigaChat-2',
+  'GigaChat-2-Max',
+  'GigaChat-3-Lightning',
+  'GigaChat-3-Pro',
+  'GigaChat-3-Ultra',
+] as const
 export type GenerationModel = (typeof GENERATION_MODELS)[number]
 export const DEFAULT_MODEL: GenerationModel = GENERATION_MODELS[0]
 
