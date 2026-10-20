@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Проверка критериев этапа 5 (шаг 8): описания из experiments/prompts.json × режимы через задеплоенную
-# функцию generate-site. Ответы — в experiments/results/<дата-время>/ (папка в .gitignore).
+# функцию generate-site. Ответы — в experiments/results/<дата-время>[_модель]/ (папка в .gitignore).
 #
 # Токен (access_token из приложения: DevTools → Application → Local Storage → sb-…-auth-token):
 #   из переменной окружения TOKEN, а если её нет — из буфера обмена (pbpaste).
@@ -51,7 +51,8 @@ print(int(payload.get("exp", 0) - time.time()))
 [ "$expires_in" -gt 900 ] || echo "Внимание: токен истечёт через $((expires_in / 60)) мин — прогон может не успеть" >&2
 
 # --- прогон
-OUT="$ROOT/experiments/results/$(date +%Y-%m-%d_%H-%M-%S)"
+# Модель — в имени папки: прогоны на разных моделях не смешиваются
+OUT="$ROOT/experiments/results/$(date +%Y-%m-%d_%H-%M-%S)${MODEL:+_$MODEL}"
 mkdir -p "$OUT"
 ids="$(python3 -c 'import json, sys; [print(d["id"]) for d in json.load(open(sys.argv[1]))]' "$PROMPTS")"
 printf 'id\tmode\thttp\tseconds\toutcome\tattempts\trun_id\n' > "$OUT/summary.tsv"
