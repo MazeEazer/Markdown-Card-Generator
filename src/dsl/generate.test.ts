@@ -447,6 +447,33 @@ describe('generateSite: json', () => {
     expect(result.outcome).toBe('valid')
   })
 
+  it('"phone": null — «нет данных», а не ошибка: поле удаляется до схемы, повторный запрос не нужен (случай dc441353)', async () => {
+    const description = 'Студия маникюра «Лапки» в Самаре, ул. Ленинградская, 40. Маникюр — 900 ₽. Работаем ежедневно с 9 до 21.'
+    const reply = JSON.stringify({
+      name: 'Студия маникюра «Лапки»',
+      phone: null,
+      address: 'ул. Ленинградская, 40',
+      city: 'Самара',
+      title: '',
+      sections: [{ type: 'services', title: 'Услуги', items: [{ title: 'Маникюр', price: '900', description: null }] }],
+    })
+    const { model, calls } = scripted(reply)
+    const result = await generateSite({ description, mode: 'json', model, deadlineMs: 60_000 })
+    expect(calls).toHaveLength(1)
+    expect(result.outcome).toBe('valid')
+    const { autofix } = result.attempts[0]
+    expect(autofix!.fixedCodes).toEqual(['json-null-field', 'json-null-field', 'json-null-field'])
+    expect(autofix!.output).not.toMatch(/phone|title: $/m)
+    expect(autofix!.diagnostics.map((d) => d.code)).toContain('no-contacts')
+  })
+
+  it('обязательное поле null — по-прежнему ошибка схемы, модель исправляет', async () => {
+    const { model, calls } = scripted(JSON.stringify({ ...EXAMPLE_JSON, name: null }), example)
+    const result = await runJson(model)
+    expect(calls).toHaveLength(2)
+    expect(result.attempts[0].model.diagnostics[0]).toMatchObject({ code: 'json-schema', message: expect.stringMatching(/^name:/) })
+  })
+
   it('ни одного разобранного JSON — документа нет, но попытки записаны', async () => {
     const result = await runJson(scripted('не знаю').model)
     expect(result.outcome).toBe('no-progress')

@@ -221,7 +221,7 @@ interface Checked {
  * контактов и ссылок по описанию (ground.ts), затем удаление блоков, которым нечего показать (prune.ts) —
  * в этом порядке, чтобы «Контакты», опустевшие после проверки, тоже убрались.
  */
-function checkMarkdown(output: string, markdown: string, description: string): Omit<Checked, 'document'> {
+function checkMarkdown(output: string, markdown: string, description: string): { model: CheckedStage; autofix: NonNullable<Attempt['autofix']> } {
   const fixed = applyAllFixes(markdown, { skip: MODEL_FIXES })
   const grounded = groundContacts(fixed.text, description)
   const pruned = pruneEmptyBlocks(grounded.text)
@@ -232,6 +232,28 @@ function checkMarkdown(output: string, markdown: string, description: string): O
       fixedCodes: [...fixed.applied.map((d) => d.code), ...grounded.removed, ...pruned.removed],
     },
   }
+}
+
+/** Код в журнале (fixed_codes): поле JSON со значением null или пустой строкой удалено до проверки схемой. */
+export const JSON_NULL_FIELD = 'json-null-field'
+
+/**
+ * Убирает из JSON поля со значением null и пустой строкой: так модель пишет «нет данных» («phone": null),
+ * а это не ошибка и не выдумка. Обязательное поле после удаления схема всё равно потребует.
+ */
+export function dropEmptyJsonFields(value: unknown): { value: unknown; removed: number } {
+  let removed = 0
+  const walk = (node: unknown): unknown => {
+    if (Array.isArray(node)) return node.map(walk)
+    if (!node || typeof node !== 'object') return node
+    const entries = Object.entries(node).filter(([, v]) => {
+      const empty = v === null || (typeof v === 'string' && !v.trim())
+      if (empty) removed++
+      return !empty
+    })
+    return Object.fromEntries(entries.map(([k, v]) => [k, walk(v)]))
+  }
+  return { value: walk(value), removed }
 }
 
 /** Ответ нейросети → документ и замечания. В режиме json: JSON → схема → CardData → разметка. */
@@ -246,11 +268,14 @@ function check(output: string, mode: PromptMode, description: string): Checked {
   } catch (error) {
     return failed([jsonIssue('json-syntax', `Ответ — не JSON: ${(error as Error).message}`)])
   }
-  const parsed = documentSchema.safeParse(json)
+  const cleaned = dropEmptyJsonFields(json)
+  const parsed = documentSchema.safeParse(cleaned.value)
   if (!parsed.success) {
     return failed(parsed.error.issues.map((issue) => jsonIssue('json-schema', `${zodPath(issue.path) || 'документ'}: ${issue.message}`)))
   }
-  return { document, ...checkMarkdown(output, serialize(fromJson(parsed.data)), description) }
+  const checked = checkMarkdown(output, serialize(fromJson(parsed.data)), description)
+  const nullCodes = Array.from({ length: cleaned.removed }, () => JSON_NULL_FIELD)
+  return { document, ...checked, autofix: { ...checked.autofix, fixedCodes: [...nullCodes, ...checked.autofix.fixedCodes] } }
 }
 
 /** Строка замечания для запроса на исправление: «строка 12 («price: abc»): сообщение». */
