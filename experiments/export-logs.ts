@@ -16,6 +16,7 @@
 //   валиден              — итоговая строка (is_final) — документ после обработки без ошибок (stage autofix, errors_count 0)
 //   валиден с 1-й попытки — документ первой попытки после обработки без ошибок
 //   ответ модели валиден — сам ответ модели первой попытки без ошибок, до автоисправлений (насколько модель справляется сама)
+//                          (сбой или отказ фильтра — не валиден: ответа нет)
 //   спасён обработкой    — ответ модели первой попытки с ошибками, после автоисправлений — без
 //   исправлен моделью    — валиден, но первая попытка и после обработки с ошибками: помог запрос исправления
 //   (каскад по первой попытке: ответ модели валиден + спасён обработкой + исправлен моделью = валиден)
@@ -169,7 +170,9 @@ const analysed: Run[] = runs.flatMap((record) => {
   const finalModel = at(final.attempt, 'model') ?? final
   const valid = final.stage === 'autofix' && final.errors_count === 0
   const firstValid = at(1, 'autofix')?.errors_count === 0
-  const firstModelValid = at(1, 'model')?.errors_count === 0
+  // Ответа не было (сбой, отказ фильтра) — строка model с errors_count 0, но проверять нечего
+  const firstModel = at(1, 'model')
+  const firstModelValid = !!firstModel && firstModel.errors_count === 0 && !firstModel.error && firstModel.finish_reason !== 'blacklist'
   const responseModels = [...new Set(modelRows.flatMap((row) => (row.response_model ? [row.response_model] : [])))]
   return [{
     record,
