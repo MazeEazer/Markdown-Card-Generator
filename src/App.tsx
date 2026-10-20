@@ -7,6 +7,7 @@ import { resolveTheme } from './lib/themeEngine'
 import { persistTheme, resolveInitialTheme, type ThemePreference } from './lib/themePreference'
 import type { CardData } from './types/card'
 import { EditorPane, type EditorHandle } from './components/EditorPane'
+import { applyTextChange, frontmatterFieldChange } from './dsl/frontmatterEdit'
 import { PreviewPane } from './components/PreviewPane'
 import { Toolbar } from './components/Toolbar'
 import { SitesList } from './components/SitesList'
@@ -156,16 +157,10 @@ export default function App() {
     saveAs(blob, filename)
   }, [parsed.data, resolved])
 
+  // Фото, перетащенное на превью, — в поле avatar шапки (раньше дописывалось в конец документа — за пределы шапки)
   const handleImageUpload = useCallback((dataUrl: string) => {
-    setMarkdown(prev => {
-      if (/^avatar:\s*.+$/m.test(prev)) {
-        return prev.replace(/^avatar:\s*.+$/m, `avatar: ${dataUrl}`)
-      }
-      if (/^location:\s*.+$/m.test(prev)) {
-        return prev.replace(/^location:\s*.+$/m, match => `${match}\navatar: ${dataUrl}`)
-      }
-      return prev + `\navatar: ${dataUrl}\n`
-    })
+    if (editorRef.current?.setFrontmatterField('avatar', dataUrl)) return
+    setMarkdown(prev => applyTextChange(prev, frontmatterFieldChange(prev, 'avatar', dataUrl)))
   }, [])
 
   const handleEditSite = useCallback((site: Site) => {
