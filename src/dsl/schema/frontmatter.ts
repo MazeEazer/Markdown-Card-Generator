@@ -121,7 +121,8 @@ export const frontmatterSchema = z
     accent: z
       .string()
       .regex(/^(auto|#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?)$/)
-      .meta({ description: 'Основной цвет в формате "#rrggbb" (в кавычках!) или auto', examples: ['#c0392b'] })
+      // В промпте — auto: цвет из примера модель ставила почти всем сайтам
+      .meta({ description: 'Основной цвет в формате "#rrggbb" (в кавычках!) или auto', examples: ['#c0392b'], promptExample: 'auto' })
       .optional(),
     avatar: z.url().meta({ description: 'Ссылка на фото или логотип', examples: ['https://example.ru/logo.png'] }).optional(),
     location: z
@@ -174,7 +175,6 @@ export const FRONTMATTER_EXAMPLE = `---
 name: Барбершоп «Борода»
 title: ${placeholder('чем занимаетесь, коротко')}
 theme: noir
-accent: "#c0392b"
 business: barbershop
 phone: +7 900 000-00-00
 address: ${placeholder('улица и дом')}

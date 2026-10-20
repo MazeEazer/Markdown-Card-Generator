@@ -87,6 +87,8 @@ const FACTS_FROM_EXAMPLES = [
   '999 123-45-67', 'barber_ivan', 'barber_samara', 'barber.ivan', 'f9LHodD0',
   // Адрес и город из примеров редактора: кофейня без адреса получила «ул. Ленина, 15» (ручные тесты)
   'Ленина', 'Самара',
+  // Цвет из примера стоял почти у всех сайтов (ручные тесты)
+  '#c0392b',
 ]
 
 describe('правила против выдуманных фактов', () => {
@@ -111,6 +113,11 @@ describe('правила против выдуманных фактов', () => 
   it.each([['markdown', markdown], ['json', json]])('%s: phone — только номер для звонков, номер для мессенджера — только в contacts', (_mode, prompt) => {
     expect(prompt).toMatch(/phone — только если номер дан для звонков/)
     expect(prompt).toMatch(/Номер, данный только для WhatsApp или Telegram.*только в contacts \(whatsapp\), phone не заполняй/)
+  })
+
+  it.each([['markdown', markdown], ['json', json]])('%s: без служебного текста на сайте; цвет — только если назван', (_mode, prompt) => {
+    expect(prompt).toMatch(/не объясняй на сайте, почему какого-то раздела нет/)
+    expect(prompt).toMatch(/accent \(цвет\) пиши, только если цвет назван в описании/)
   })
 
   it.each([['markdown', markdown], ['json', json]])('%s: вопросы — только из описания, карта — только при адресе', (_mode, prompt) => {
