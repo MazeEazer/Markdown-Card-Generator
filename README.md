@@ -259,10 +259,10 @@ contacts:
 **Эксперимент 1** (протокол — `PLAN.md`, этап 7). Скрипты запускаются Node.js 24 без сборки; вход — по паролю тестового аккаунта из `experiments/.env.local` (`EXP_EMAIL`, `EXP_PASSWORD`; файл в git не попадает):
 
 ```bash
-node experiments/run-generation.ts --dry-run       # план: 48 описаний × 5 моделей × 2 режима × 3 повтора
+node experiments/run-generation.ts --dry-run       # план: 48 описаний × 5 моделей × 2 режима × 2 повтора
 node experiments/run-generation.ts --models GigaChat-2-Pro --reps 1 --only b01-clean,t03-messenger-only
-node experiments/run-generation.ts                 # весь прогон; прервать — Ctrl+C, продолжить — та же команда
-node experiments/export-logs.ts                    # журнал → final.csv, metrics.csv, metrics-by-tag.csv, annotation/
+node experiments/run-generation.ts                 # весь прогон; прервать — Ctrl+C, продолжить — та же команда (она же перезапускает технические сбои GigaChat)
+node experiments/export-logs.ts                    # журнал → final.csv, metrics.csv, metrics-by-tag.csv, failures.csv, annotation/
 ```
 
 Результаты — в `experiments/results/exp1/` (в git не попадают). Проверка скриптов без GigaChat — на заглушке `experiments/stub-supabase.ts` (команды в её заголовке). Тесты функций — `npm run test:functions` (Deno).

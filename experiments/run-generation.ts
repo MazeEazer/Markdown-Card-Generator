@@ -3,17 +3,19 @@
 // токен обновляется сам, прогон можно прерывать и продолжать.
 //
 //   node experiments/run-generation.ts --dry-run                 # план прогона без сети
-//   node experiments/run-generation.ts                           # всё: 5 моделей × 3 повтора × 48 × 2 режима
+//   node experiments/run-generation.ts                           # всё: 5 моделей × 2 повтора × 48 × 2 режима
 //   node experiments/run-generation.ts --models GigaChat-2-Pro --reps 1 --only b01-clean,t03-messenger-only
 //
 // Параметры: --models, --modes, --only (через запятую), --reps N, --prompts файл, --out папка (по умолчанию
 // experiments/results/exp1 — в .gitignore), --dry-run.
 // Порядок моделей — как в --models (по умолчанию 2-Pro, 2-Max, 3-Lightning, 3-Pro, 3-Ultra); --reverse — обратный.
 // Протокол: повтор 2 — в обратном порядке, чтобы дрейф GigaChat во времени не совпадал с моделью:
-//   ночь 1: --reps 1    ночь 2: --reps 2 --reverse    ночь 3: --reps 3
+//   повтор 1: --reps 1    повтор 2: --reps 2 --reverse    (повтор 3 отменён — PLAN.md, протокол эксперимента 1)
 // Порядок строго последовательный (у физлица в GigaChat один поток): модель → повтор → описание → режим.
 // Каждый завершённый запуск сразу дописывается в <out>/runs.jsonl; при повторном старте готовые пропускаются.
 // Занято, 5xx, сеть — пауза и повтор; limit, 401, 400 — остановка (продолжить можно тем же запуском).
+// Технический сбой внутри функции (ответ 200, но GigaChat ответил 5xx и т. п. — common.ts → technicalFailure) записывается
+// в runs.jsonl с полем failure и перезапускается; старые записи model-error/busy без failure проверяются по журналу при старте.
 // Ctrl+C — остановка после текущего запуска, второй Ctrl+C — сразу.
 // EXP_PAUSE_SCALE — множитель пауз (для проверки на заглушке: 0.001).
 
@@ -27,6 +29,8 @@ import {
   EXP_MODES,
   EXP_REPS,
   fail,
+  FAILURE_OUTCOMES,
+  fetchLogs,
   loadConfig,
   type PromptItem,
   readPrompts,
@@ -36,6 +40,7 @@ import {
   runKey,
   Session,
   sleep,
+  technicalFailure,
 } from './common.ts'
 
 /** Паузы перед повтором, с: «занято» — ждём, пока GigaChat освободится; 5xx и сеть — реже и дольше. */
@@ -90,7 +95,11 @@ const tasks: Task[] = models.flatMap((model) =>
   ),
 )
 
-const done = new Map(readRuns(runsPath).map((r) => [r.key, r]))
+const taskKeys = new Set(tasks.map((t) => t.key))
+// Сбой (failure) — запуск не готов, его повторяем; при нескольких записях ключа берётся последняя без сбоя
+const done = new Map(readRuns(runsPath).filter((r) => !r.failure).map((r) => [r.key, r]))
+/** model-error и busy из прошлых запусков, ещё не проверенные по журналу: не сбой ли это */
+const unchecked = [...done.values()].filter((r) => taskKeys.has(r.key) && FAILURE_OUTCOMES.includes(r.outcome) && r.failure === undefined)
 // Описание поменяли после начала прогона — старые запуски уже не о том же тексте
 for (const task of tasks) {
   const old = done.get(task.key)
@@ -98,7 +107,7 @@ for (const task of tasks) {
     fail(`описание ${task.prompt.id} изменилось после запуска ${task.key}. Отложенную выборку во время прогона не меняют`)
   }
 }
-const todo = tasks.filter((t) => !done.has(t.key))
+let todo = tasks.filter((t) => !done.has(t.key))
 
 console.log(`Описаний: ${prompts.length}, модели: ${models.join(', ')}, режимы: ${modes.join(', ')}, повторов: ${reps}`)
 console.log(`Запусков: ${tasks.length}, готово: ${tasks.length - todo.length}, осталось: ${todo.length}`)
@@ -106,15 +115,38 @@ const shown = relative(ROOT, runsPath)
 console.log(`Журнал: ${shown.startsWith('..') ? runsPath : shown}`)
 
 if (args['dry-run']) {
+  if (unchecked.length) {
+    console.log(`Исход model-error/busy у ${unchecked.length} готовых — при запуске проверятся по журналу; технический сбой перезапустится:`)
+    for (const r of unchecked) console.log(`  ${r.key} (${r.outcome})`)
+  }
   for (const t of todo.slice(0, 12)) console.log(`  ${t.key}`)
   if (todo.length > 12) console.log(`  … и ещё ${todo.length - 12}`)
   process.exit(0)
 }
-if (!todo.length) process.exit(0)
+if (!todo.length && !unchecked.length) process.exit(0)
 
 const session = new Session(loadConfig())
 await session.signIn()
 console.log(`Тестовый аккаунт: ${session.userId}`)
+
+type FailureRow = { run_id: string; stage: string; error: string | null }
+/** Причина технического сбоя запуска по журналу или null */
+async function failureOf(runId: string, outcome: string): Promise<string | null> {
+  if (!FAILURE_OUTCOMES.includes(outcome)) return null
+  const rows = await fetchLogs<FailureRow>(session, [runId], 'run_id,stage,error')
+  if (!rows.length) console.warn(`    Внимание: журнал запуска ${runId} пуст — сбой не проверить, считается результатом`)
+  return technicalFailure(outcome, rows)
+}
+
+for (const record of unchecked) {
+  const reason = await failureOf(record.runId, record.outcome)
+  if (!reason) continue
+  console.log(`Технический сбой в прошлом прогоне: ${record.key} — ${reason}. Запуск повторится (запись остаётся в runs.jsonl)`)
+  done.delete(record.key)
+}
+todo = tasks.filter((t) => !done.has(t.key))
+console.log(`К запуску: ${todo.length}`)
+if (!todo.length) process.exit(0)
 const otherUser = [...done.values()].find((r) => r.userId !== session.userId)
 if (otherUser) console.warn(`Внимание: в runs.jsonl есть запуски другого аккаунта (${otherUser.userId}) — выгрузка их не увидит`)
 
@@ -166,7 +198,7 @@ async function run(task: Task): Promise<RunRecord | null> {
     const message = String(reply.body.error ?? reply.error ?? '')
 
     if (reply.http === 200 && typeof reply.body.runId === 'string') {
-      return {
+      const record: RunRecord = {
         key: task.key,
         model: task.model,
         rep: task.rep,
@@ -180,8 +212,19 @@ async function run(task: Task): Promise<RunRecord | null> {
         attempts: Number(reply.body.attempts),
         seconds: Math.round(seconds * 10) / 10,
         startedAt: startedAt.toISOString(),
-        retries,
+        retries: [...retries],
       }
+      const failure = await failureOf(record.runId, record.outcome)
+      if (!failure) return record
+      // Сбой GigaChat внутри функции: запись — для подсчёта сбоев, запуск — заново
+      appendFileSync(runsPath, JSON.stringify({ ...record, failure }) + '\n')
+      const pause = ERROR_PAUSES[errors++]
+      retries.push({ http: 200, error: `технический сбой: ${failure}`, at: startedAt.toISOString() })
+      if (pause === undefined) return stop(`после ${retries.length} повторов технический сбой не проходит (${failure})`)
+      if (stopRequested) return null
+      console.log(`    технический сбой (${failure}) — повтор через ${pause} с`)
+      await sleep(pause * 1000 * pauseScale)
+      continue
     }
 
     // Токен отозван раньше срока — один раз входим заново

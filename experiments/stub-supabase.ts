@@ -7,7 +7,8 @@
 //     EXP_PAUSE_SCALE=0.001 node experiments/run-generation.ts --out /tmp/exp1-stub --reps 1 --only b01-clean
 //
 // STUB_PORT (54329), STUB_PASSWORD (stub), STUB_TOKEN_TTL — срок токена, с (3600);
-// STUB_FAIL — ответы по номеру вызова функции: busy@N, 500@N, net@N (обрыв соединения), limit@N, 401@N, 400@N;
+// STUB_FAIL — ответы по номеру вызова функции: busy@N, 500@N, net@N (обрыв соединения), limit@N, 401@N, 400@N,
+//   chat502@N — функция отвечает 200, но GigaChat внутри ответил 502 (outcome model-error, технический сбой);
 // STUB_MIX_VERSIONS=1 — у каждого пятого запуска другая pipeline_version (проверка предупреждения выгрузки);
 // STUB_WRONG_MODEL=имя — запросы к этой модели «отвечает» GigaChat-2 (проверка предупреждения о подмене).
 
@@ -60,7 +61,7 @@ async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> 
 const pick = <T>(items: T[]) => items[Math.floor(Math.random() * items.length)]
 
 /** Выдуманный запуск: 1–3 попытки, строки model и autofix — как logRows в src/dsl/generate.ts. */
-function fakeRun(userId: string, input: Record<string, unknown>, runNo: number) {
+function fakeRun(userId: string, input: Record<string, unknown>, runNo: number, chat502 = false) {
   const runId = randomUUID()
   const attempts = pick([1, 1, 1, 2, 3])
   const outcome = attempts === 3 && Math.random() < 0.5 ? 'max-attempts' : 'valid'
@@ -81,6 +82,15 @@ function fakeRun(userId: string, input: Record<string, unknown>, runNo: number) 
     params: { temperature: 0.2, max_tokens: 4000 },
     outcome,
     created_at: new Date().toISOString(),
+  }
+  if (chat502) {
+    logs.push({
+      ...common, outcome: 'model-error', attempt: 1, stage: 'model', request: common.prompt, reached_model: true, output: '',
+      diagnostics: [], errors_count: 0, warnings_count: 0, missing_data_count: 0, fixed_codes: [], finish_reason: null,
+      error: 'Chat 502: <html>\n<head><title>502 Bad Gateway</title></head>', tokens_in: null, tokens_out: null,
+      precached_prompt_tokens: null, response_model: null, latency_ms: 3000, is_final: true,
+    })
+    return { runId, outcome: 'model-error', markdown: null, message: 'Нейросеть не ответила', attempts: 1 }
   }
   for (let a = 1; a <= attempts; a++) {
     const last = a === attempts
@@ -133,7 +143,7 @@ const server = createServer(async (req, res) => {
     const body = await readBody(req)
     if (!MODELS.includes(String(body.model))) return send(res, 400, { error: 'Неизвестная модель' })
     await new Promise((resolve) => setTimeout(resolve, 20))
-    return send(res, 200, fakeRun(userId, body, n))
+    return send(res, 200, fakeRun(userId, body, n, failure === 'chat502'))
   }
 
   if (req.method === 'GET' && url.pathname === '/rest/v1/generation_logs') {

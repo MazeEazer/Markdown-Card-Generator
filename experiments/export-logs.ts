@@ -9,6 +9,7 @@
 //   final.csv             — строка на запуск
 //   metrics.csv           — по «модель × режим»
 //   metrics-by-tag.csv    — по «модель × режим × тег» (теги сложности и niche:<ниша>)
+//   failures.csv          — технические сбои: какой запуск, причина, удался ли перезапуск
 //   annotation/           — 16 описаний из annotation-exp1.json, первый повтор, все модели и режимы:
 //                           <id>.md на описание и sheet.csv для разметки (существующий sheet.csv не перезаписывается)
 //
@@ -22,6 +23,8 @@
 //   (каскад по первой попытке: ответ модели валиден + спасён обработкой + исправлен моделью = валиден)
 //   модель из ответа     — response_model строк model; «не та модель» — имя без версии (до «:») не совпадает с запрошенным
 //   токены из кэша       — precached_prompt_tokens: в tokens_in не входят, полный вход = tokens_in + tokens_precached
+//   технический сбой     — common.ts → technicalFailure (HTTP 5xx, сеть, 429, 401 у GigaChat — ответа модели нет);
+//                          такой запуск перезапускается, в выборку идёт последний запуск без сбоя, сбои — tech_failures
 //   согласованность      — по описаниям, где есть ≥ 2 повтора: одинаковая валидность во всех повторах; одинаковый
 //                          итоговый документ; среднее попарное сходство документов (Жаккар по непустым строкам)
 
@@ -40,11 +43,12 @@ import {
   loadConfig,
   type PromptItem,
   readJson,
+  technicalFailure,
+  fetchLogs,
   readPrompts,
   readRuns,
   type RunRecord,
   Session,
-  sleep,
   toCsv,
 } from './common.ts'
 
@@ -99,26 +103,9 @@ interface LogRow {
 const session = new Session(loadConfig())
 await session.signIn()
 
-async function fetchLogs(runIds: string[]): Promise<LogRow[]> {
-  const url = `${session.config.url}/rest/v1/generation_logs?select=*&run_id=in.(${runIds.join(',')})&order=run_id,attempt,stage`
-  for (let retry = 0; ; retry++) {
-    const res = await fetch(url, {
-      headers: { apikey: session.config.anonKey, Authorization: `Bearer ${await session.token()}` },
-      signal: AbortSignal.timeout(60_000),
-    }).catch((error: Error) => error)
-    if (res instanceof Response && res.ok) return (await res.json()) as LogRow[]
-    if (res instanceof Response && res.status === 401 && retry === 0) {
-      await session.refresh()
-      continue
-    }
-    if (retry >= 2) fail(`журнал не читается: ${res instanceof Response ? `HTTP ${res.status} ${await res.text()}` : res.message}`)
-    await sleep(5000)
-  }
-}
-
 const unique = [...new Set(runs.map((r) => r.runId))]
 const logs: LogRow[] = []
-for (let i = 0; i < unique.length; i += BATCH) logs.push(...(await fetchLogs(unique.slice(i, i + BATCH))))
+for (let i = 0; i < unique.length; i += BATCH) logs.push(...(await fetchLogs<LogRow>(session, unique.slice(i, i + BATCH))))
 writeFileSync(join(outDir, 'logs.jsonl'), logs.map((row) => JSON.stringify(row)).join('\n') + '\n')
 console.log(`Запусков в runs.jsonl: ${runs.length}, строк журнала: ${logs.length}`)
 
@@ -129,9 +116,37 @@ if (missing.length) {
     missing.slice(0, 5).map((r) => r.key).join(', '))
 }
 
+// --- технические сбои (протокол, common.ts → technicalFailure): в выборку — последний запуск без сбоя
+//     для каждого «модель × повтор × описание × режим», сбои — отдельно (failures.csv, колонка tech_failures)
+const failures = runs.flatMap((record) => {
+  const reason = technicalFailure(record.outcome, byRun.get(record.runId) ?? [])
+  return reason ? [{ record, reason }] : []
+})
+const failedRuns = new Set(failures.map((f) => f.record))
+const byKey = Map.groupBy(runs.filter((record) => !failedRuns.has(record)), (record) => record.key)
+const chosen = [...byKey.values()].map((group) => group.at(-1)!)
+const failuresByKey = Map.groupBy(failures, (f) => f.record.key)
+const unresolved = [...failuresByKey.keys()].filter((key) => !byKey.has(key))
+writeFileSync(join(outDir, 'failures.csv'), toCsv(failures.map(({ record, reason }) => ({
+  key: record.key, model: record.model, rep: record.rep, id: record.id, mode: record.mode, run_id: record.runId,
+  outcome: record.outcome, reason, started_at: record.startedAt, rerun_ok: byKey.has(record.key) ? 1 : 0,
+})), ['key', 'model', 'rep', 'id', 'mode', 'run_id', 'outcome', 'reason', 'started_at', 'rerun_ok']))
+if (failures.length) {
+  const perModel = [...Map.groupBy(failures, (f) => f.record.model)].map(([model, list]) => `${model} ${list.length}`).join(', ')
+  console.log(`Технических сбоев: ${failures.length} (${perModel}) — в выборку не входят, список в failures.csv`)
+}
+if (unresolved.length) {
+  console.warn(`Внимание: ${unresolved.length} запусков без успешного перезапуска — перезапустите той же командой run-generation: ` +
+    unresolved.slice(0, 5).join(', '))
+}
+const doubled = [...byKey].filter(([, group]) => group.length > 1).map(([key]) => key)
+if (doubled.length) console.warn(`Внимание: ${doubled.length} запусков записаны дважды без сбоя — взят последний: ${doubled.slice(0, 5).join(', ')}`)
+
 // --- строка на запуск
 interface Run {
   record: RunRecord
+  /** Технических сбоев перед этим запуском (перезапуски того же условия) */
+  techFailures: number
   prompt: PromptItem | undefined
   rows: LogRow[]
   final: LogRow
@@ -157,7 +172,7 @@ const baseName = (name: string) => name.split(':')[0].trim().toLowerCase()
 
 const sum = (values: (number | null | undefined)[]) => values.reduce<number>((total, v) => total + (v ?? 0), 0)
 
-const analysed: Run[] = runs.flatMap((record) => {
+const analysed: Run[] = chosen.flatMap((record) => {
   const rows = byRun.get(record.runId)
   if (!rows) return []
   const final = rows.find((row) => row.is_final)
@@ -176,6 +191,7 @@ const analysed: Run[] = runs.flatMap((record) => {
   const responseModels = [...new Set(modelRows.flatMap((row) => (row.response_model ? [row.response_model] : [])))]
   return [{
     record,
+    techFailures: failuresByKey.get(record.key)?.length ?? 0,
     prompt: prompts.get(record.id),
     rows,
     final,
@@ -228,6 +244,7 @@ writeFileSync(join(outDir, 'final.csv'), toCsv(analysed.map((run) => ({
   model_latency_s: sum(run.rows.map((row) => row.latency_ms)) / 1000,
   seconds: run.record.seconds,
   retries: run.record.retries.length,
+  tech_failures: run.techFailures,
   prompt_version: run.final.prompt_version,
   prompt_base_version: run.final.prompt_base_version ?? '',
   pipeline_version: run.final.pipeline_version ?? '',
@@ -291,6 +308,7 @@ function metrics(group: Run[]) {
     pipeline_version: pipelines,
     prompt_base_version: bases,
     versions_mixed: yes(pipelines.length > 1 || bases.length > 1),
+    tech_failures: sum(group.map((run) => run.techFailures)),
   }
 }
 
