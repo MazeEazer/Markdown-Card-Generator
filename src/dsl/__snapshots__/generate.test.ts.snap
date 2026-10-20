@@ -22,6 +22,7 @@ exports[`pipelineFingerprint: версия обработки ответа > с�
   ],
   "modelFixable": [
     "accent-format",
+    "accent-low-contrast",
     "accent-unquoted",
     "contact-link",
     "contacts-block-text",

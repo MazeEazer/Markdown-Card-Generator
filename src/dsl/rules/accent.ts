@@ -1,10 +1,22 @@
 // Цвет accent: `#abc` без кавычек YAML считает комментарием, а необычную запись цвета парсер молча исправляет.
+// Цвет — это и цвет текста на сайте: на фоне темы он должен читаться (контраст по WCAG).
 import { parseAccent } from '../cardData.ts'
+import { contrast, MIN_TEXT_CONTRAST, readableAccent } from '../color.ts'
 import type { Diagnostic } from '../types.ts'
 import type { Rule } from '../validate.ts'
 import { lineAt, yamlValue } from './helpers.ts'
 
 const CANONICAL = /^(auto|#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?)$/
+
+/**
+ * Фон, на котором цвет становится текстом (цены, ссылки), — по теме из шапки. vercel цвет не использует,
+ * у auto тема выбирается при показе — их не проверяем.
+ */
+const TEXT_BACKGROUND: Record<string, { color: string; label: string }> = {
+  minimal: { color: '#ffffff', label: 'светлом' },
+  glass: { color: '#ffffff', label: 'светлом' },
+  noir: { color: '#14141f', label: 'тёмном' },
+}
 
 export const accentRule: Rule = ({ text, ast }) => {
   const frontmatter = ast.frontmatter
@@ -31,7 +43,23 @@ export const accentRule: Rule = ({ text, ast }) => {
   }
 
   const value = String(yamlValue(frontmatter.yaml.get('accent', true) as never) ?? '').trim()
-  if (CANONICAL.test(value)) return []
+  if (CANONICAL.test(value)) {
+    const theme = String(yamlValue(frontmatter.yaml.get('theme', true) as never) ?? '').trim()
+    const background = TEXT_BACKGROUND[theme]
+    if (value === 'auto' || !background) return []
+    const ratio = contrast(value, background.color)
+    if (ratio >= MIN_TEXT_CONTRAST) return []
+    const readable = readableAccent(value, background.color)
+    return [
+      {
+        ...field.valueRange,
+        severity: 'warning',
+        code: 'accent-low-contrast',
+        message: `Цвет плохо читается на ${background.label} фоне темы ${theme}: контраст ${ratio.toFixed(1).replace('.', ',')} : 1, нужно не меньше 4,5 : 1 — цены и ссылки будет трудно прочитать. Тот же оттенок, но читаемый: "${readable}"`,
+        fix: { label: `Заменить на "${readable}"`, replace: `"${readable}"` },
+      },
+    ]
+  }
 
   const parsed = parseAccent(value)
   const diagnostic: Diagnostic =

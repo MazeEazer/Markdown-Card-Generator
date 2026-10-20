@@ -42,6 +42,7 @@ export const MODEL_FIXABLE_CODES: ReadonlySet<string> = new Set([
   'contacts-block-text', // текст внутри :::contacts (автоисправление)
   'accent-unquoted', // автоисправление
   'accent-format', // автоисправление
+  'accent-low-contrast', // цвет не читается на фоне темы (автоисправление — тот же оттенок темнее/светлее)
   'contact-link', // ссылка вместо имени пользователя (автоисправление)
   'heading-no-space', // автоисправление
   'crlf-heading', // автоисправление
