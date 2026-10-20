@@ -4,6 +4,7 @@ import { MISSING_DATA_CODES, MODEL_FIXABLE_CODES } from './codes.ts'
 import { applyAllFixes } from './fix.ts'
 import { fromJson } from './fromJson.ts'
 import { groundContacts } from './ground.ts'
+import { groundNumbers } from './groundNumbers.ts'
 import { removePlaceholders } from './placeholders.ts'
 import { pruneEmptyBlocks } from './prune.ts'
 import { offsetToLineCol } from './position.ts'
@@ -219,19 +220,21 @@ interface Checked {
 
 /**
  * Разметка → замечания до и после обработки без нейросети: автоисправления валидатора, заглушки из примеров
- * и пустые поля (placeholders.ts), проверка контактов, ссылок и адреса по описанию (ground.ts), удаление
- * блоков, которым нечего показать (prune.ts) — в этом порядке, чтобы опустевшие блоки тоже убрались.
+ * и пустые поля (placeholders.ts), проверка по описанию контактов, ссылок и адреса (ground.ts), цен, длительностей
+ * и часов (groundNumbers.ts), удаление блоков, которым нечего показать (prune.ts) — в этом порядке, чтобы
+ * опустевшие блоки тоже убрались.
  */
 function checkMarkdown(output: string, markdown: string, description: string): { model: CheckedStage; autofix: NonNullable<Attempt['autofix']> } {
   const fixed = applyAllFixes(markdown, { skip: MODEL_FIXES })
   const cleaned = removePlaceholders(fixed.text)
   const grounded = groundContacts(cleaned.text, description)
-  const pruned = pruneEmptyBlocks(grounded.text)
+  const numbers = groundNumbers(grounded.text, description)
+  const pruned = pruneEmptyBlocks(numbers.text)
   return {
     model: stageOf(output, validate(markdown)),
     autofix: {
       ...stageOf(pruned.text, validate(pruned.text)),
-      fixedCodes: [...fixed.applied.map((d) => d.code), ...cleaned.removed, ...grounded.removed, ...pruned.removed],
+      fixedCodes: [...fixed.applied.map((d) => d.code), ...cleaned.removed, ...grounded.removed, ...numbers.removed, ...pruned.removed],
     },
   }
 }
@@ -576,7 +579,7 @@ export const PIPELINE_PROBES: { mode: PromptMode; description: string; output: s
     description: 'Барбершоп в Самаре. Стрижка 1500р. С 10 до 20. Пишите в тг @probe_barber или ватсап 8-912-000-11-22',
     output:
       'Вот сайт:\n```markdown\n---\nname: Барбершоп\nphone: 8-912-000-11-22\ncontacts:\n  telegram: https://t.me/probe_barber\n  instagram: invented.name\n  primary: tg\n---\n' +
-      '##Цены\n:::services\ntitle: Стрижка\nprice: 1500р\nmaster: Иван\n\n:::hours\nежедневно: 10:00–20:00\n:::\n\n## Как добраться\n:::map\n:::\n\n## Вопросы\n:::accordion\n:::\n```',
+      '##Цены\n:::services\ntitle: Стрижка\nprice: 1500р\nduration: 45 мин\nmaster: Иван\n\n:::hours\nежедневно: 10:00–20:00\n:::\n\n## Как добраться\n:::map\n:::\n\n## Вопросы\n:::accordion\n:::\n```',
   },
   {
     mode: 'json',

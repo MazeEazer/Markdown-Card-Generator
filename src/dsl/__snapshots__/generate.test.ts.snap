@@ -57,6 +57,7 @@ exports[`pipelineFingerprint: версия обработки ответа > с�
           "nested-fence",
           "ungrounded-contact",
           "ungrounded-contact",
+          "ungrounded-number",
           "map-no-address",
           "empty-block",
         ],

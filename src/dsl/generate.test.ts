@@ -591,7 +591,7 @@ describe('pipelineFingerprint: версия обработки ответа', ()
   it('на зондах срабатывает каждый шаг обработки', () => {
     // Автоисправления, проверка по описанию и удаление пустых блоков
     expect(markdown.autofix.fixedCodes).toEqual(
-      expect.arrayContaining(['phone-format', 'contact-link', 'heading-no-space', 'price-not-number', 'nested-fence', 'ungrounded-contact', 'map-no-address', 'empty-block']),
+      expect.arrayContaining(['phone-format', 'contact-link', 'heading-no-space', 'price-not-number', 'nested-fence', 'ungrounded-contact', 'ungrounded-number', 'map-no-address', 'empty-block']),
     )
     // Догадка (master: Иван) не применена — предупреждение для модели; заглушка названия не вставлена — ошибка
     expect(markdown.autofix.diagnostics).toContain('warning:unknown-field')
