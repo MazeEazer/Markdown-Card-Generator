@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { parseCardMarkdown } from '../lib/parser.ts'
+import { MANUAL_RUNS } from './__fixtures__/manual.ts'
 import { STEP8_RUNS } from './__fixtures__/step8.ts'
+import { STEP8_RUN2_RAW } from './__fixtures__/step8run2.ts'
+import { extractDocument } from './generate.ts'
 import { groundContacts, UNGROUNDED } from './ground.ts'
 import { validate } from './validate.ts'
 
@@ -115,5 +118,65 @@ describe('groundContacts: что считается найденным в опи
   it('битый YAML или нет шапки — ничего не трогаем', () => {
     expect(groundContacts('---\nname: [\n---\n', 'x').removed).toEqual([])
     expect(groundContacts('## Без шапки\n', 'x').removed).toEqual([])
+  })
+})
+
+describe('groundContacts: адрес и город', () => {
+  const doc = (head: string) => `---\nname: A\n${head}\n---\n\n## О нас\nТекст.\n`
+  const kept = (head: string, description: string) => groundContacts(doc(head), description).removed.length === 0
+
+  it('адрес — по основам слов и числам: склонение, «ул.» и регистр не важны', () => {
+    expect(kept('address: ул. Садовая, 5', 'Барбершоп на ул. Садовой, 5 в Казани')).toBe(true)
+    expect(kept('address: ул. Баумана, 15', 'казань баумана 15')).toBe(true)
+    expect(kept('address: ул. Мира 25, 2 этаж', 'в Тольятти, ул. Мира 25, 2 этаж')).toBe(true)
+    expect(kept('address: район Химмаш', 'район химмаш екб')).toBe(true)
+    expect(kept('address: Академгородок', 'у меня дома в Новосибирске (Академгородок)')).toBe(true)
+  })
+
+  it('выдуманный адрес или другой номер дома — удаляется', () => {
+    expect(kept('address: ул. Ленина, 15', 'Coffee shop in Moscow, latte 250')).toBe(false)
+    expect(kept('address: ул. Садовая, 7', 'на ул. Садовой, 5')).toBe(false)
+    expect(kept('address: ул. Садовая, 5, центр', 'на ул. Садовой, 5')).toBe(false)
+  })
+
+  it('город — по основе, сокращению или английскому названию', () => {
+    expect(kept('city: Казань', 'в Казани')).toBe(true)
+    expect(kept('city: Екатеринбург', 'район химмаш екб')).toBe(true)
+    expect(kept('city: Санкт-Петербург', 'Фотограф, Санкт-Петербург')).toBe(true)
+    expect(kept('city: Москва', 'Coffee shop in Moscow')).toBe(true)
+    expect(kept('city: Тольятти', 'Маникюр тольятти')).toBe(true)
+    expect(kept('city: Москва', 'Студия маникюра в Самаре')).toBe(false)
+  })
+
+  it('primary без своего контакта убирается, даже если контакт не писала модель (m6: потерян telegram)', () => {
+    const run = MANUAL_RUNS.find((r) => r.id === 'm6-no-punctuation')!
+    const { text } = groundContacts(run.markdown, run.description)
+    expect(text).not.toMatch(/contacts:|primary:/)
+    expect(card(text)).toMatchObject({ address: 'ул. Баумана, 15', city: 'Казань' })
+  })
+
+  it('на всех настоящих ответах (шаг 8, оба прогона, ручные тесты) — только ожидаемые удаления', () => {
+    const all = [
+      ...STEP8_RUNS.map((r) => ({ name: `run1/${r.id}/${r.mode}`, text: r.markdown, description: r.description })),
+      ...STEP8_RUN2_RAW.filter((r) => r.mode === 'markdown').map((r) => ({ name: `run2/${r.id}`, text: extractDocument(r.output, 'markdown'), description: r.description })),
+      ...MANUAL_RUNS.map((r) => ({ name: `manual/${r.id}`, text: r.markdown, description: r.description })),
+    ]
+    const removedLines = Object.fromEntries(
+      all.map((r) => {
+        const after = new Set(groundContacts(r.text, r.description).text.split('\n'))
+        return [r.name, r.text.split('\n').filter((line) => !after.has(line))]
+      }).filter(([, lines]) => lines.length),
+    )
+    expect(removedLines).toEqual({
+      'run1/3-nails/markdown': ['avatar: https://example.com/photo.jpg'],
+      'run1/5-dirty/json': ['phone: +7 999 123-45-67'],
+      'run1/6-no-contacts/markdown': ['phone: +7 999 123-45-67', 'contacts:', '  whatsapp: +7 999 123-45-67', '  instagram: lapki_nails', '  primary: whatsapp'],
+      'run2/1-barbershop': ['avatar: https://barber.ru/images/barber_topor.jpg'],
+      'run2/3-nails': ['avatar: https://example.com/photo.jpg'],
+      'run2/4-photographer': ['avatar: https://avatars.mds.yandex.net/get-pdb/1459563/typography_lg.png'],
+      'run2/6-no-contacts': ['phone: +7 900 000-00-00', 'contacts:', '  whatsapp: +7 900 000-00-00', '  primary: whatsapp'],
+      'manual/m4-minimal-input': ['contacts:', '  primary: telegram'],
+      'manual/m6-no-punctuation': ['contacts:', '  primary: telegram'],
+    })
   })
 })

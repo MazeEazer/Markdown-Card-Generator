@@ -22,7 +22,7 @@ const DESCRIPTION = 'Барбершоп «Борода» в Самаре, ул. 
 
 const VALID = '---\nname: Борода\nphone: +7 999 123-45-67\n---\n\n## Услуги\n:::services\ntitle: Стрижка\nprice: 1500\n:::\n'
 /** Описание с контактами-заглушками из примера промпта */
-const EXAMPLE_CONTACTS = 'Барбершоп «Борода». Звоните +7 900 000-00-00, Telegram vash_telegram'
+const EXAMPLE_CONTACTS = 'Барбершоп «Борода», Самара, ул. Ленина, 10. Звоните +7 900 000-00-00, Telegram vash_telegram'
 /** Ошибка без автоисправления: неизвестный блок */
 const UNKNOWN_BLOCK = VALID.replace(':::services', ':::prices')
 /** Две ошибки без автоисправления */

@@ -2,7 +2,8 @@
 // Только для AI-генерации (generate.ts). Запреты в промпте модель соблюдает не всегда: на шаге 8 она подставила
 // телефон из примера промпта, придумала instagram по названию студии и аватар example.com. Валидатор этого
 // не видит — поля заполнены правильно по форме, — поэтому проверяем содержание по описанию, без нейросети.
-// Адрес и город пока не проверяются (их нейросеть переписывает своими словами — сравнивать сложнее).
+// Адрес и город сравниваются по основам слов и числам: нейросеть склоняет («на Садовой» → «ул. Садовая»)
+// и сокращает («екб»), поэтому точное совпадение не подходит; ложное удаление хуже пропущенной выдумки.
 import { isMap, isScalar, isSeq, type Node, type Pair, type YAMLMap } from 'yaml'
 import { MAX_LINK, usernameFromLink } from './contacts.ts'
 import { parseDocument } from './parser.ts'
@@ -35,6 +36,32 @@ function forCalls(description: string, at: number): boolean {
   return CALL_WORDS.test(sentence) || !MESSENGER_WORDS.test(sentence)
 }
 
+/** Служебные слова адреса: в описании их могут не писать или писать иначе. */
+const ADDRESS_STOP_WORDS = new Set([
+  'ул', 'улица', 'пр', 'просп', 'проспект', 'пер', 'переулок', 'бул', 'бульвар', 'ш', 'шоссе', 'наб', 'набережная',
+  'пл', 'площадь', 'д', 'дом', 'к', 'корп', 'корпус', 'стр', 'строение', 'кв', 'оф', 'офис', 'кабинет', 'каб',
+  'этаж', 'эт', 'район', 'р-н', 'мкр', 'микрорайон', 'г', 'город', 'пос', 'поселок', 'вход', 'street', 'st', 'avenue', 'ave',
+])
+
+/** Сокращения и английские названия городов, которыми пишут в описании. */
+const CITY_ALIASES: Record<string, string[]> = {
+  'москва': ['мск', 'moscow'],
+  'санкт-петербург': ['спб', 'питер', 'петербург', 'saint petersburg', 'st petersburg', 'st. petersburg'],
+  'екатеринбург': ['екб', 'ебург', 'yekaterinburg', 'ekaterinburg'],
+  'новосибирск': ['нск', 'novosibirsk'],
+  'нижний новгород': ['нн', 'нижний', 'nizhny novgorod'],
+  'казань': ['kazan'],
+  'самара': ['samara'],
+  'краснодар': ['krasnodar'],
+  'ростов-на-дону': ['ростов', 'rostov'],
+}
+
+const letters = (text: string) => text.toLowerCase().replace(/ё/g, 'е')
+/** Основа слова: без окончания — «садовая» и «садовой» дают одну основу. */
+const stem = (word: string) => (word.length > 5 ? word.slice(0, -2) : word.length > 3 ? word.slice(0, -1) : word)
+const wordsOf = (text: string) => letters(text).match(/[a-zа-я]+(?:-[a-zа-я]+)*/g) ?? []
+const numbersOf = (text: string) => text.match(/\d+/g) ?? []
+
 /** Что есть в описании: телефоны, слова-имена и адреса. */
 function groundTruth(description: string) {
   const lower = description.toLowerCase()
@@ -50,6 +77,12 @@ function groundTruth(description: string) {
   )
 
   // Граница имени: «olga.nails» не найдено в «olga.nails.ekb» — точка перед буквой продолжает имя
+  const descWords = wordsOf(description).flatMap((w) => [w, ...w.split('-')])
+  const descNumbers = new Set(numbersOf(description))
+  const hasStem = (word: string) => {
+    const s = stem(word)
+    return descWords.some((w) => w.startsWith(s) || s.startsWith(stem(w)))
+  }
   const hasWord = (word: string) => new RegExp(`(?<![\\w.])${escape(word.toLowerCase())}(?![\\w]|\\.\\w)`, 'u').test(lower)
   return {
     /** Номер есть в описании (для whatsapp) */
@@ -67,6 +100,18 @@ function groundTruth(description: string) {
       return name.length > 0 && hasWord(name)
     },
     email: (value: string) => hasWord(value.trim()),
+    /** Адрес: каждое значимое слово — по основе, каждое число (дом, этаж, кабинет) — как есть */
+    address(value: string): boolean {
+      const words = wordsOf(value).filter((w) => w.length >= 3 && !ADDRESS_STOP_WORDS.has(w))
+      return words.every(hasStem) && numbersOf(value).every((n) => descNumbers.has(n))
+    },
+    /** Город: по основе слов или по сокращению / английскому названию */
+    city(value: string): boolean {
+      const city = letters(value).trim()
+      if (CITY_ALIASES[city]?.some((alias) => new RegExp(`(?<![\\p{L}])${escape(alias)}(?![\\p{L}])`, 'u').test(letters(description)))) return true
+      const words = wordsOf(value).flatMap((w) => w.split('-')).filter((w) => w.length >= 3 && w !== 'на')
+      return words.length > 0 && words.every(hasStem)
+    },
     /** Ссылка с путём — нужен адрес целиком, без пути — достаточно домена */
     url(value: string): boolean {
       const url = bareUrl(value)
@@ -134,9 +179,10 @@ export function groundContacts(text: string, description: string): GroundResult 
     const key = scalarText(pair.key)
     if (key === 'phone') {
       if (phoneRemoved) cut(pair)
-    } else if (key === 'avatar') {
+    } else if (key === 'avatar' || key === 'address' || key === 'city') {
       const value = scalarText(pair.value)
-      if (value && !truth.url(value)) cut(pair)
+      const ok = key === 'avatar' ? truth.url : key === 'address' ? truth.address : truth.city
+      if (value && !ok(value)) cut(pair)
     } else if (key === 'links' && isSeq(pair.value)) {
       const items = pair.value.items.filter((item) => isMap(item))
       const bad = items.filter((item) => {
@@ -151,9 +197,10 @@ export function groundContacts(text: string, description: string): GroundResult 
       const bad = contacts.filter((e) => !grounded(truth, e.name, e.value!))
       const kept = new Set(contacts.filter((e) => !bad.includes(e)).map((e) => e.name))
       const primary = entries.find((e) => e.name === 'primary')
-      // primary на удалённый контакт (или на удалённый телефон) — тоже убрать
+      // primary без своего контакта убирается всегда: и если контакт удалили мы, и если модель его не написала
       const target = primary?.value ?? ''
-      const primaryGone = Boolean(primary) && (bad.some((e) => e.name === target) || (target === 'phone' && phoneRemoved))
+      const phoneKept = phone !== null && !phoneRemoved
+      const primaryGone = Boolean(primary) && !(kept.has(target) || (target === 'phone' && phoneKept))
       if (!kept.size && (bad.length || primaryGone)) {
         // Не осталось ни одного контакта — убираем contacts целиком (с primary)
         cuts.push(lines(pair))
