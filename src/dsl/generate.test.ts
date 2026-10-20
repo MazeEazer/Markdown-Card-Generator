@@ -83,13 +83,17 @@ describe('generateSite: markdown', () => {
     expect(calls[0].messages[0].content).toBe(buildSystemPrompt({ mode: 'markdown', business: 'barbershop' }))
   })
 
-  it('пример документа из промпта проходит проверку без ошибок и исправлений', async () => {
+  it('пример документа из промпта, переписанный моделью как есть, — заглушки не доходят до сайта', async () => {
     const { model, calls } = scripted(EXAMPLE_DOCUMENT)
-    // Контакты примера — заглушки; чтобы проверка по описанию их не удалила, они должны быть в описании
     const result = await run(model, { description: EXAMPLE_CONTACTS })
     expect(calls).toHaveLength(1)
     expect(result.outcome).toBe('valid')
-    expect(result.best!.autofix!.fixedCodes).toEqual([])
+    const { output, fixedCodes } = result.best!.autofix!
+    expect(output).not.toContain('из описания')
+    expect(fixedCodes).toContain('placeholder-value')
+    // Контакты-заглушки есть в описании этого теста — остаются; название из шапки — тоже
+    expect(output).toContain('telegram: vash_telegram')
+    expect(output).toContain('name: Барбершоп «Борода»')
   })
 
   it('исправимое чинит валидатор — без второго запроса; замечания до и после исправлений', async () => {
@@ -425,7 +429,9 @@ describe('generateSite: json', () => {
     expect(calls[0].messages[0].content).toBe(buildSystemPrompt({ mode: 'json' }))
     expect(result.outcome).toBe('valid')
     expect(result.best!.model.output).toBe(`\`\`\`json\n${example}\n\`\`\``)
-    expect(result.best!.autofix!.output).toBe(serialize(fromJson(EXAMPLE_JSON)))
+    // Пример JSON — с заглушками «… — из описания»: после обработки их нет
+    expect(serialize(fromJson(EXAMPLE_JSON))).toContain('из описания')
+    expect(result.best!.autofix!.output).not.toContain('из описания')
   })
 
   it('лишнее поле — ошибка схемы с путём, нейросеть исправляет', async () => {
@@ -580,7 +586,7 @@ describe('logRows: строки журнала generation_logs', () => {
 
 describe('pipelineFingerprint: версия обработки ответа', () => {
   const fingerprint = JSON.parse(pipelineFingerprint())
-  const [markdown, json, broken, noName] = fingerprint.probes
+  const [markdown, json, broken, placeholders, noName] = fingerprint.probes
 
   it('на зондах срабатывает каждый шаг обработки', () => {
     // Автоисправления, проверка по описанию и удаление пустых блоков
@@ -597,6 +603,9 @@ describe('pipelineFingerprint: версия обработки ответа', ()
     expect(json.autofix.fixedCodes).toEqual(['json-null-field', 'json-null-field', 'ungrounded-contact'])
     expect(json.autofix.output).toContain(':::contacts')
     expect(json.autofix.diagnostics).toContain('warning:no-contacts')
+    // Заглушки и пустые поля
+    expect(placeholders.autofix.fixedCodes).toEqual(expect.arrayContaining(['empty-field', 'placeholder-value']))
+    expect(placeholders.autofix.output).not.toMatch(/из описания|phone:|## О нас/i)
     // Ошибка схемы
     expect(broken.autofix).toBeNull()
     expect(broken.model).toEqual(['error:json-schema'])

@@ -1,0 +1,100 @@
+import { describe, expect, it } from 'vitest'
+import { z } from 'zod'
+import { MANUAL_RUNS } from './__fixtures__/manual.ts'
+import { STEP8_RUNS } from './__fixtures__/step8.ts'
+import { processResponse } from './generate.ts'
+import { EMPTY_FIELD, isPlaceholder, PLACEHOLDER_MARKER, PLACEHOLDER_VALUE, removePlaceholders } from './placeholders.ts'
+import { EXAMPLE_DOCUMENT, EXAMPLE_JSON, promptExample } from './prompt.ts'
+import { unwrap } from './rules/helpers.ts'
+import { BLOCK_NAMES, BLOCKS } from './schema/blocks.ts'
+import { frontmatterSchema } from './schema/frontmatter.ts'
+
+const manual = (id: string) => MANUAL_RUNS.find((r) => r.id === id)!
+
+describe('removePlaceholders: заглушки из примеров промпта', () => {
+  it('маркер — одна константа, по ней строятся все заглушки промпта', () => {
+    expect(PLACEHOLDER_MARKER).toBe('из описания')
+    expect(isPlaceholder('Маникюр — из описания')).toBe(true)
+    expect(isPlaceholder('Из описания')).toBe(true)
+    expect(isPlaceholder('Маникюр с покрытием')).toBe(false)
+  })
+
+  it('m4 (Lightning, «Маникюр тольятти»): услуги и вопросы с заглушками — удалены вместе с элементами', () => {
+    const { text, removed } = removePlaceholders(manual('m4-minimal-input').markdown)
+    expect(text).not.toContain(PLACEHOLDER_MARKER)
+    // Вопрос — обязательное поле: без него удаляется и ответ, который модель тоже выдумала
+    expect(text).not.toContain('Срочный маникюр возможен')
+    expect(removed.every((code) => code === PLACEHOLDER_VALUE)).toBe(true)
+    expect(removed).toHaveLength(4)
+  })
+
+  it('m5 (Lightning, автосервис): «Часто задаваемые вопросы — из описания» удалены, настоящие услуги остались', () => {
+    const { text } = removePlaceholders(manual('m5-car-service').markdown)
+    expect(text).not.toMatch(/из описания/i)
+    expect(text).toContain('title: Замена масла\nprice: 800')
+    expect(text).toContain('title: Шиномонтаж\nprice: от 1500')
+  })
+
+  it('m6: «description: Из описания» — удаляется только поле, услуга остаётся', () => {
+    const { text, removed } = removePlaceholders(manual('m6-no-punctuation').markdown)
+    expect(removed).toEqual([PLACEHOLDER_VALUE])
+    expect(text).toContain('title: Мужская стрижка\nprice: 1500\n\ntitle: Борода')
+  })
+
+  it('пустое поле «phone:» (кофейня) — удаляется, как null в режиме json', () => {
+    const text = '---\nname: Coffee shop\nphone:\ncontacts:\n  telegram: coffee_msk\n---\n\n## О нас\nКофе.\n'
+    expect(removePlaceholders(text)).toEqual({ text: '---\nname: Coffee shop\ncontacts:\n  telegram: coffee_msk\n---\n\n## О нас\nКофе.\n', removed: [EMPTY_FIELD] })
+  })
+
+  it('раздел, где был только текст-заглушка, — удаляется с заголовком; с настоящим текстом — только строка', () => {
+    const only = '---\nname: A\n---\n\n## О нас\nТекст о бизнесе — из описания\n\n## Цены\nСтрижка 1500.\n'
+    expect(removePlaceholders(only).text).toBe('---\nname: A\n---\n\n## Цены\nСтрижка 1500.\n')
+    const mixed = '---\nname: A\n---\n\n## О нас\nСтрижём с утра.\nТекст о бизнесе — из описания\n'
+    expect(removePlaceholders(mixed).text).toBe('---\nname: A\n---\n\n## О нас\nСтрижём с утра.\n')
+  })
+
+  it('настоящие ответы без заглушек и пустых полей не меняются', () => {
+    for (const run of [...STEP8_RUNS, ...MANUAL_RUNS.filter((r) => !['m4-minimal-input', 'm5-car-service', 'm6-no-punctuation'].includes(r.id))]) {
+      expect(removePlaceholders(run.markdown).removed, run.id).toEqual([])
+    }
+  })
+})
+
+/** Все заглушки, которые нейросеть видит в промпте: promptExample полей и условные значения примеров блоков. */
+function promptPlaceholders(): string[] {
+  const values: string[] = []
+  const visit = (schema: z.ZodType) => {
+    const inner = unwrap(schema)
+    const meta = inner.meta() as { promptExample?: string } | undefined
+    if (meta?.promptExample) values.push(meta.promptExample)
+    if (inner instanceof z.ZodObject) Object.values(inner.shape as Record<string, z.ZodType>).forEach(visit)
+    if (inner instanceof z.ZodArray) visit(inner.element as z.ZodType)
+  }
+  visit(frontmatterSchema)
+  for (const name of BLOCK_NAMES) {
+    if (BLOCKS[name].item) visit(BLOCKS[name].item!)
+    for (const line of promptExample(BLOCKS[name]).split('\n')) if (isPlaceholder(line)) values.push(line.replace(/^\w+: /, ''))
+  }
+  return [...new Set(values)]
+}
+
+describe('ни одна заглушка промпта не доходит до сайта', () => {
+  const placeholders = promptPlaceholders()
+
+  it('заглушек много — проверка не пустая', () => {
+    expect(placeholders).toEqual(expect.arrayContaining(['+7 900 000-00-00', 'vash_telegram', 'улица и дом — из описания', 'Вопрос 1 — из описания']))
+    expect(placeholders.length).toBeGreaterThan(15)
+  })
+
+  // Худший случай: модель переписала пример из промпта целиком, а в описании ничего этого нет
+  const blocksDocument = `---\nname: Тест\n---\n\n${BLOCK_NAMES.map((name) => `## ${BLOCKS[name].label}\n${promptExample(BLOCKS[name])}`).join('\n\n')}\n`
+  it.each([
+    ['пример документа', EXAMPLE_DOCUMENT, 'markdown'],
+    ['примеры всех блоков', blocksDocument, 'markdown'],
+    ['пример JSON', JSON.stringify(EXAMPLE_JSON), 'json'],
+  ] as const)('%s', (_name, output, mode) => {
+    const { autofix } = processResponse(output, mode, 'Барбершоп в Самаре')
+    for (const value of placeholders) expect(autofix!.output, value).not.toContain(value)
+    expect(autofix!.output).not.toContain(PLACEHOLDER_MARKER)
+  })
+})

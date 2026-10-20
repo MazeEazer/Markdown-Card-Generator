@@ -4,6 +4,7 @@ import { MISSING_DATA_CODES, MODEL_FIXABLE_CODES } from './codes.ts'
 import { applyAllFixes } from './fix.ts'
 import { fromJson } from './fromJson.ts'
 import { groundContacts } from './ground.ts'
+import { removePlaceholders } from './placeholders.ts'
 import { pruneEmptyBlocks } from './prune.ts'
 import { offsetToLineCol } from './position.ts'
 import { buildSystemPrompt, type PromptMode } from './prompt.ts'
@@ -217,19 +218,20 @@ interface Checked {
 }
 
 /**
- * Разметка → замечания до и после обработки без нейросети: автоисправления валидатора, затем проверка
- * контактов и ссылок по описанию (ground.ts), затем удаление блоков, которым нечего показать (prune.ts) —
- * в этом порядке, чтобы «Контакты», опустевшие после проверки, тоже убрались.
+ * Разметка → замечания до и после обработки без нейросети: автоисправления валидатора, заглушки из примеров
+ * и пустые поля (placeholders.ts), проверка контактов, ссылок и адреса по описанию (ground.ts), удаление
+ * блоков, которым нечего показать (prune.ts) — в этом порядке, чтобы опустевшие блоки тоже убрались.
  */
 function checkMarkdown(output: string, markdown: string, description: string): { model: CheckedStage; autofix: NonNullable<Attempt['autofix']> } {
   const fixed = applyAllFixes(markdown, { skip: MODEL_FIXES })
-  const grounded = groundContacts(fixed.text, description)
+  const cleaned = removePlaceholders(fixed.text)
+  const grounded = groundContacts(cleaned.text, description)
   const pruned = pruneEmptyBlocks(grounded.text)
   return {
     model: stageOf(output, validate(markdown)),
     autofix: {
       ...stageOf(pruned.text, validate(pruned.text)),
-      fixedCodes: [...fixed.applied.map((d) => d.code), ...grounded.removed, ...pruned.removed],
+      fixedCodes: [...fixed.applied.map((d) => d.code), ...cleaned.removed, ...grounded.removed, ...pruned.removed],
     },
   }
 }
@@ -276,6 +278,15 @@ function check(output: string, mode: PromptMode, description: string): Checked {
   const checked = checkMarkdown(output, serialize(fromJson(parsed.data)), description)
   const nullCodes = Array.from({ length: cleaned.removed }, () => JSON_NULL_FIELD)
   return { document, ...checked, autofix: { ...checked.autofix, fixedCodes: [...nullCodes, ...checked.autofix.fixedCodes] } }
+}
+
+/**
+ * Обработка одного ответа нейросети без самой нейросети — для анализа: прогнать сохранённые в журнале
+ * ответы через текущие правила (что удалилось бы, что осталось бы).
+ */
+export function processResponse(output: string, mode: PromptMode, description: string): Pick<Attempt, 'model' | 'autofix'> {
+  const { model, autofix } = check(output, mode, description)
+  return { model, autofix }
 }
 
 /** Строка замечания для запроса на исправление: «строка 12 («price: abc»): сообщение». */
@@ -581,6 +592,14 @@ export const PIPELINE_PROBES: { mode: PromptMode; description: string; output: s
     }),
   },
   { mode: 'json', description: 'Репетитор', output: '{"name": "Репетитор", "sections": [{"type": "map", "title": "Где", "floor": 2}]}' },
+  // Заглушки из примеров и пустые поля (GigaChat-3-Lightning переносил «… — из описания» в сайт)
+  {
+    mode: 'markdown',
+    description: 'Маникюр тольятти',
+    output:
+      '---\nname: Маникюр Тольятти\nphone:\ncity: город — из описания\n---\n\n## О нас\nТекст о бизнесе — из описания\n\n' +
+      '## Услуги\n:::services\ntitle: Маникюр 1 — из описания\nprice: 1500\n\ntitle: Педикюр\ndescription: Из описания\n:::\n',
+  },
   // Без названия: заглушку «Моё название» не вставляем — исправляет нейросеть
   { mode: 'markdown', description: 'Репетитор Анна', output: '---\ntitle: Математика\n---\n\n## О себе\nУчу.\n' },
 ]

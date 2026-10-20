@@ -41,7 +41,7 @@ function removals(text: string, section: SectionNode, blocks: BlockNode[]): { fr
 }
 
 /** Вырезает [from, to) так, чтобы на стыке осталось не больше одной пустой строки, а в конце — один перевод строки. */
-function splice(text: string, from: number, to: number): string {
+export function splice(text: string, from: number, to: number): string {
   const before = text.slice(0, from)
   let after = text.slice(to)
   const trailing = before.length - before.replace(/\n+$/, '').length

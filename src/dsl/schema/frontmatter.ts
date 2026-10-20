@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type { CardContacts, ThemeName } from '../../types/card.ts'
 import { iconSchema } from './icons.ts'
+import { placeholder } from './placeholder.ts'
 
 // Поля шапки документа (YAML между строками ---). Описания идут в подсказки редактора и в промпт для нейросети.
 
@@ -71,7 +72,7 @@ export const PRIMARY_TARGETS = [...CONTACT_NAMES, 'phone'] as const
 
 const text = (description: string, example: string) => z.string().meta({ description, examples: [example] })
 /**
- * Контакт: правдоподобный пример — для редактора, а в промпт и JSON Schema идёт заглушка promptExample
+ * Контакт или адрес: правдоподобный пример — для редактора, а в промпт и JSON Schema идёт заглушка promptExample
  * (как в шаблонах): нейросеть переносила номер из примера в сайт, где контактов в описании не было.
  */
 const contact = (description: string, example: string, promptExample: string) =>
@@ -136,8 +137,9 @@ export const frontmatterSchema = z
       })
       .optional(),
     phone: contact('Телефон для звонков', '+7 999 123-45-67', '+7 900 000-00-00').optional(),
-    address: text('Адрес без города: улица, дом', 'ул. Ленина, 10').optional(),
-    city: text('Город', 'Самара').optional(),
+    // В промпте — заглушки: пример «ул. Ленина, 10» модель переносила в сайт без адреса («ул. Ленина, 15»)
+    address: contact('Адрес без города: улица, дом', 'ул. Ленина, 10', placeholder('улица и дом')).optional(),
+    city: contact('Город', 'Самара', placeholder('город')).optional(),
     currency: z
       .enum(['RUB'])
       .meta({ description: 'Валюта цен; по умолчанию RUB — рубли', examples: ['RUB'] })
@@ -170,13 +172,13 @@ export const FRONTMATTER_ALIASES: Record<string, string> = {
 /** Пример шапки — для справки в редакторе и промпта. */
 export const FRONTMATTER_EXAMPLE = `---
 name: Барбершоп «Борода»
-title: Чем занимаетесь — коротко, из описания
+title: ${placeholder('чем занимаетесь, коротко')}
 theme: noir
 accent: "#c0392b"
 business: barbershop
 phone: +7 900 000-00-00
-address: ул. Ленина, 10
-city: Самара
+address: ${placeholder('улица и дом')}
+city: ${placeholder('город')}
 currency: RUB
 contacts:
   telegram: vash_telegram

@@ -5,6 +5,7 @@ import { enumOptions, unwrap } from './rules/helpers.ts'
 import { BLOCK_NAMES, BLOCKS, type BlockDefinition } from './schema/blocks.ts'
 import { type DocumentJson, documentSchema } from './schema/document.ts'
 import { BUSINESSES, type BusinessName, FRONTMATTER_EXAMPLE, frontmatterSchema } from './schema/frontmatter.ts'
+import { placeholder } from './schema/placeholder.ts'
 
 export type PromptMode = 'markdown' | 'json'
 
@@ -22,8 +23,11 @@ function isProse(schema: z.ZodType): boolean {
 
 /** Условное значение вместо правдоподобного: «Вопрос 2 — из описания». Номер — чтобы элементы не совпадали. */
 function proseHint(schema: z.ZodType, n: number): string {
-  return `${unwrap(schema).meta()?.description ?? 'Текст'} ${n} — из описания`
+  return placeholder(`${unwrap(schema).meta()?.description ?? 'Текст'} ${n}`)
 }
+
+/** Текст раздела «О нас» в примерах. */
+const ABOUT_EXAMPLE = placeholder('Текст о бизнесе своими словами, без новых фактов')
 
 const hint = <B extends 'services' | 'accordion'>(block: B, key: keyof (typeof BLOCKS)[B]['item']['shape'], n: number) =>
   proseHint((BLOCKS[block].item.shape as Record<string, z.ZodType>)[key as string], n)
@@ -50,7 +54,7 @@ export function promptExample(block: BlockDefinition): string {
 export const EXAMPLE_DOCUMENT = `${FRONTMATTER_EXAMPLE}
 
 ## О нас
-Пересказ описания своими словами, без новых фактов.
+${ABOUT_EXAMPLE}
 
 ## Услуги и цены
 ${promptExample(BLOCKS.services)}
@@ -71,17 +75,17 @@ ${BLOCKS.contacts.example}
 /** Тот же пример в виде JSON — для режима «JSON по схеме». */
 export const EXAMPLE_JSON: DocumentJson = {
   name: 'Барбершоп «Борода»',
-  title: 'Чем занимаетесь — коротко, из описания',
+  title: placeholder('чем занимаетесь, коротко'),
   theme: 'noir',
   accent: '#c0392b',
   business: 'barbershop',
   phone: '+7 900 000-00-00',
-  address: 'ул. Ленина, 10',
-  city: 'Самара',
+  address: placeholder('улица и дом'),
+  city: placeholder('город'),
   currency: 'RUB',
   contacts: { telegram: 'vash_telegram', whatsapp: '+7 900 000-00-00', primary: 'telegram' },
   sections: [
-    { type: 'text', title: 'О нас', content: 'Пересказ описания своими словами, без новых фактов.' },
+    { type: 'text', title: 'О нас', content: ABOUT_EXAMPLE },
     {
       type: 'services',
       title: 'Услуги и цены',

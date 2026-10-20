@@ -204,6 +204,55 @@ price: 900
     {
       "autofix": {
         "diagnostics": [
+          "warning:no-contacts",
+          "info:service-no-description",
+        ],
+        "fixedCodes": [
+          "empty-field",
+          "placeholder-value",
+          "placeholder-value",
+          "placeholder-value",
+          "placeholder-value",
+        ],
+        "output": "---
+name: Маникюр Тольятти
+---
+
+## Услуги
+:::services
+
+title: Педикюр
+:::
+",
+      },
+      "fixRequest": "Описание бизнеса от пользователя:
+Маникюр тольятти
+
+Твой ответ:
+---
+name: Маникюр Тольятти
+---
+
+## Услуги
+:::services
+
+title: Педикюр
+:::
+
+
+Ошибок нет.
+
+Исправь перечисленное. Остальное не меняй. Не добавляй фактов, которых нет в описании: если для исправления нужны такие данные — убери поле или строку.
+
+Верни документ целиком. Ответ — только документ на языке MD Card, начиная со строки ---.",
+      "model": [
+        "warning:no-contacts",
+        "info:service-no-description",
+      ],
+    },
+    {
+      "autofix": {
+        "diagnostics": [
           "error:missing-name",
         ],
         "fixedCodes": [],
