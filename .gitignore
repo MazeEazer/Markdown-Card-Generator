@@ -24,3 +24,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Ответы generate-site из скриптов experiments/ (могут содержать данные запусков)
+experiments/results/
