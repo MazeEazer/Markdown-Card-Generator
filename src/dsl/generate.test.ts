@@ -565,11 +565,16 @@ describe('logRows: строки журнала generation_logs', () => {
 
   it('строка model — ответ как есть, токены и время; строка autofix — документ и применённые исправления', async () => {
     const dirty = VALID.replace('+7 999 123-45-67', '89991234567')
-    const result = await run(async () => ({ text: dirty, finishReason: 'stop', tokensIn: 5000, tokensOut: 300 }))
+    const result = await run(async () => ({
+      text: dirty, finishReason: 'stop', tokensIn: 5000, tokensOut: 300, tokensPrecached: 2800, responseModel: 'GigaChat-2-Pro:2.0.28.2',
+    }))
     const [model, autofix] = logRows(result, context)
     expect(model).toMatchObject({ stage: 'model', output: dirty, tokens_in: 5000, tokens_out: 300, finish_reason: 'stop', fixed_codes: [], is_final: false })
+    // Кэш промпта и имя модели из ответа — тоже только у строки model
+    expect(model).toMatchObject({ precached_prompt_tokens: 2800, response_model: 'GigaChat-2-Pro:2.0.28.2' })
     expect(model.warnings_count).toBeGreaterThan(0)
     expect(autofix).toMatchObject({ stage: 'autofix', output: VALID, tokens_in: null, latency_ms: null, fixed_codes: ['phone-format'], is_final: true })
+    expect(autofix).toMatchObject({ precached_prompt_tokens: null, response_model: null })
   })
 
   it('ошибка без ответа — output пустой, error заполнен', async () => {

@@ -62,6 +62,10 @@ export interface ModelReply {
   finishReason?: string
   tokensIn?: number
   tokensOut?: number
+  /** Входные токены, взятые из кэша промпта: в tokensIn они не входят */
+  tokensPrecached?: number
+  /** Имя модели из ответа API — проверка, что ответила запрошенная модель */
+  responseModel?: string
 }
 
 /** Вызов нейросети. timeoutMs — сколько осталось до общего дедлайна цикла. */
@@ -116,6 +120,8 @@ export interface Attempt {
   finishReason?: string
   tokensIn?: number
   tokensOut?: number
+  tokensPrecached?: number
+  responseModel?: string
   latencyMs: number
   /** Ответ и замечания до автоисправлений. В режиме json — к документу, собранному из JSON */
   model: CheckedStage
@@ -430,6 +436,8 @@ export async function generateSite({
       finishReason: reply.finishReason,
       tokensIn: reply.tokensIn,
       tokensOut: reply.tokensOut,
+      tokensPrecached: reply.tokensPrecached,
+      responseModel: reply.responseModel,
       latencyMs: now() - started,
     }
     // Отказ фильтра — текст ответа не документ, проверять нечего
@@ -479,7 +487,7 @@ export interface LogContext {
   params: Record<string, unknown>
 }
 
-/** Строка таблицы generation_logs (миграции 20261019120000_generation_logs.sql и 20261020120000_generation_versions.sql). */
+/** Строка таблицы generation_logs (миграции 20261019120000_generation_logs.sql, 20261020120000_generation_versions.sql, 20261021120000_generation_response_model.sql). */
 export interface GenerationLogRow {
   run_id: string
   user_id: string
@@ -507,6 +515,8 @@ export interface GenerationLogRow {
   params: Record<string, unknown>
   tokens_in: number | null
   tokens_out: number | null
+  precached_prompt_tokens: number | null
+  response_model: string | null
   latency_ms: number | null
   outcome: Outcome
   is_final: boolean
@@ -553,6 +563,8 @@ export function logRows(result: GenerationResult, context: LogContext): Generati
       // Токены и время — только у строки model: обращение к нейросети одно
       tokens_in: a.tokensIn ?? null,
       tokens_out: a.tokensOut ?? null,
+      precached_prompt_tokens: a.tokensPrecached ?? null,
+      response_model: a.responseModel ?? null,
       latency_ms: a.latencyMs,
       is_final: !result.best && a === last,
     }]
@@ -567,6 +579,8 @@ export function logRows(result: GenerationResult, context: LogContext): Generati
         error: null,
         tokens_in: null,
         tokens_out: null,
+        precached_prompt_tokens: null,
+        response_model: null,
         latency_ms: null,
         is_final: a === result.best,
       })
