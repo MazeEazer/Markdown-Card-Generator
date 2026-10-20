@@ -8,6 +8,9 @@
 //
 // Параметры: --models, --modes, --only (через запятую), --reps N, --prompts файл, --out папка (по умолчанию
 // experiments/results/exp1 — в .gitignore), --dry-run.
+// Порядок моделей — как в --models (по умолчанию 2-Pro, 2-Max, 3-Lightning, 3-Pro, 3-Ultra); --reverse — обратный.
+// Протокол: повтор 2 — в обратном порядке, чтобы дрейф GigaChat во времени не совпадал с моделью:
+//   ночь 1: --reps 1    ночь 2: --reps 2 --reverse    ночь 3: --reps 3
 // Порядок строго последовательный (у физлица в GigaChat один поток): модель → повтор → описание → режим.
 // Каждый завершённый запуск сразу дописывается в <out>/runs.jsonl; при повторном старте готовые пропускаются.
 // Занято, 5xx, сеть — пауза и повтор; limit, 401, 400 — остановка (продолжить можно тем же запуском).
@@ -49,12 +52,14 @@ const { values: args } = parseArgs({
     only: { type: 'string' },
     prompts: { type: 'string' },
     out: { type: 'string' },
+    reverse: { type: 'boolean', default: false },
     'dry-run': { type: 'boolean', default: false },
   },
 })
 
 const list = (value: string | undefined, all: string[]) => (value ? value.split(',').map((s) => s.trim()).filter(Boolean) : all)
-const models = list(args.models, EXP_MODELS)
+const ordered = list(args.models, EXP_MODELS)
+const models = args.reverse ? ordered.toReversed() : ordered
 const modes = list(args.modes, EXP_MODES)
 const reps = args.reps ? Number(args.reps) : EXP_REPS
 if (!Number.isInteger(reps) || reps < 1) fail('--reps — целое число от 1')
