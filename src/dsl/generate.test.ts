@@ -10,6 +10,7 @@ import {
   type GenerationLogRow,
   type LogContext,
   logRows,
+  pipelineFingerprint,
   ModelNotReachedError,
   type ModelReply,
   outcomeMessage,
@@ -498,6 +499,8 @@ describe('logRows: строки журнала generation_logs', () => {
     business: 'barbershop',
     prompt: DESCRIPTION,
     promptVersion: 'abcdef123456',
+    promptBaseVersion: 'base12345678',
+    pipelineVersion: 'pipe12345678',
     params: { temperature: 0.2, maxTokens: 4000 },
   }
   const rowsFor = async (...replies: (string | ModelReply | Error)[]) => {
@@ -525,7 +528,14 @@ describe('logRows: строки журнала generation_logs', () => {
     expect(new Set(keys).size).toBe(keys.length)
     for (const row of rows) {
       if (row.stage === 'autofix') expect(row.reached_model).toBe(true)
-      expect(row).toMatchObject({ run_id: 'run-1', prompt_version: 'abcdef123456', params: context.params, outcome: result.outcome })
+      expect(row).toMatchObject({
+        run_id: 'run-1',
+        prompt_version: 'abcdef123456',
+        prompt_base_version: 'base12345678',
+        pipeline_version: 'pipe12345678',
+        params: context.params,
+        outcome: result.outcome,
+      })
     }
   })
 
@@ -565,5 +575,39 @@ describe('logRows: строки журнала generation_logs', () => {
     const { model, calls } = scripted(VALID)
     const result = await run(model, { mode: 'markdown' })
     expect(result.systemPrompt).toBe(calls[0].messages[0].content)
+  })
+})
+
+describe('pipelineFingerprint: версия обработки ответа', () => {
+  const fingerprint = JSON.parse(pipelineFingerprint())
+  const [markdown, json, broken, noName] = fingerprint.probes
+
+  it('на зондах срабатывает каждый шаг обработки', () => {
+    // Автоисправления, проверка по описанию и удаление пустых блоков
+    expect(markdown.autofix.fixedCodes).toEqual(
+      expect.arrayContaining(['phone-format', 'contact-link', 'heading-no-space', 'price-not-number', 'nested-fence', 'ungrounded-contact', 'map-no-address', 'empty-block']),
+    )
+    // Догадка (master: Иван) не применена — предупреждение для модели; заглушка названия не вставлена — ошибка
+    expect(markdown.autofix.diagnostics).toContain('warning:unknown-field')
+    expect(noName.autofix.diagnostics).toContain('error:missing-name')
+    expect(noName.autofix.output).not.toContain('Моё название')
+    expect(markdown.fixRequest).toMatch(/Ошибок нет\.\n\nЖелательно исправить:\n.*master/)
+    expect(noName.fixRequest).toMatch(/Ошибки — исправь обязательно:\n.*нет названия/)
+    // JSON: null и пустая строка удалены, выдуманный instagram удалён, «Контакты» с адресом остались
+    expect(json.autofix.fixedCodes).toEqual(['json-null-field', 'json-null-field', 'ungrounded-contact'])
+    expect(json.autofix.output).toContain(':::contacts')
+    expect(json.autofix.diagnostics).toContain('warning:no-contacts')
+    // Ошибка схемы
+    expect(broken.autofix).toBeNull()
+    expect(broken.model).toEqual(['error:json-schema'])
+  })
+
+  it('детерминирован', () => {
+    expect(pipelineFingerprint()).toBe(pipelineFingerprint())
+  })
+
+  // Снимок меняется при любом изменении обработки — это и есть новая pipeline_version
+  it('снимок отпечатка', () => {
+    expect(fingerprint).toMatchSnapshot()
   })
 })

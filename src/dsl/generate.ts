@@ -450,11 +450,15 @@ export interface LogContext {
   prompt: string
   /** Первые 12 знаков SHA-256 системного промпта (result.systemPrompt) */
   promptVersion: string
+  /** То же для промпта этого режима без ниши (buildSystemPrompt({ mode })) — общая версия для сравнения запусков */
+  promptBaseVersion: string
+  /** Первые 12 знаков SHA-256 отпечатка обработки ответа (pipelineFingerprint) */
+  pipelineVersion: string
   /** Что реально ушло в нейросеть */
   params: Record<string, unknown>
 }
 
-/** Строка таблицы generation_logs (миграция 20261019120000_generation_logs.sql). */
+/** Строка таблицы generation_logs (миграции 20261019120000_generation_logs.sql и 20261020120000_generation_versions.sql). */
 export interface GenerationLogRow {
   run_id: string
   user_id: string
@@ -465,6 +469,8 @@ export interface GenerationLogRow {
   business: string | null
   prompt: string
   prompt_version: string
+  prompt_base_version: string
+  pipeline_version: string
   attempt: number
   stage: 'model' | 'autofix'
   request: string
@@ -502,6 +508,8 @@ export function logRows(result: GenerationResult, context: LogContext): Generati
     business: context.business,
     prompt: context.prompt,
     prompt_version: context.promptVersion,
+    prompt_base_version: context.promptBaseVersion,
+    pipeline_version: context.pipelineVersion,
     params: context.params,
     outcome: result.outcome,
   }
@@ -543,5 +551,63 @@ export function logRows(result: GenerationResult, context: LogContext): Generati
       })
     }
     return rows
+  })
+}
+
+/**
+ * Зонды для версии обработки: ответы нейросети, на которых видна работа каждого шага без нейросети —
+ * автоисправления (и пропуск догадок и заглушки названия), проверка по описанию, удаление пустых блоков,
+ * очистка null в JSON, ошибка схемы, разбор ответа в ```. Тест следит, что каждый шаг на зондах срабатывает.
+ */
+export const PIPELINE_PROBES: { mode: PromptMode; description: string; output: string }[] = [
+  {
+    mode: 'markdown',
+    description: 'Барбершоп в Самаре. Стрижка 1500р. С 10 до 20. Пишите в тг @probe_barber или ватсап 8-912-000-11-22',
+    output:
+      'Вот сайт:\n```markdown\n---\nname: Барбершоп\nphone: 8-912-000-11-22\ncontacts:\n  telegram: https://t.me/probe_barber\n  instagram: invented.name\n  primary: tg\n---\n' +
+      '##Цены\n:::services\ntitle: Стрижка\nprice: 1500р\nmaster: Иван\n\n:::hours\nежедневно: 10:00–20:00\n:::\n\n## Как добраться\n:::map\n:::\n\n## Вопросы\n:::accordion\n:::\n```',
+  },
+  {
+    mode: 'json',
+    description: 'Студия маникюра «Лапки» в Самаре, ул. Ленинградская, 40. Маникюр 900 ₽.',
+    output: JSON.stringify({
+      name: 'Лапки',
+      phone: null,
+      title: '',
+      address: 'ул. Ленинградская, 40',
+      city: 'Самара',
+      contacts: { instagram: 'lapki_nails', primary: 'instagram' },
+      sections: [{ type: 'services', title: 'Услуги', items: [{ title: 'Маникюр', price: '900' }] }, { type: 'contacts', title: 'Контакты' }],
+    }),
+  },
+  { mode: 'json', description: 'Репетитор', output: '{"name": "Репетитор", "sections": [{"type": "map", "title": "Где", "floor": 2}]}' },
+  // Без названия: заглушку «Моё название» не вставляем — исправляет нейросеть
+  { mode: 'markdown', description: 'Репетитор Анна', output: '---\ntitle: Математика\n---\n\n## О себе\nУчу.\n' },
+]
+
+/**
+ * Отпечаток обработки ответа: результаты всех шагов на зондах плюс правила цикла (списки кодов, пределы).
+ * Поменялось правило обработки — поменялся отпечаток, а с ним pipeline_version в журнале. Без ручных номеров.
+ */
+export function pipelineFingerprint(): string {
+  const probes = PIPELINE_PROBES.map(({ mode, description, output }) => {
+    const checked = check(output, mode, description)
+    return {
+      model: checked.model.diagnostics.map((d) => `${d.severity}:${d.code}`),
+      autofix: checked.autofix && {
+        output: checked.autofix.output,
+        fixedCodes: checked.autofix.fixedCodes,
+        diagnostics: checked.autofix.diagnostics.map((d) => `${d.severity}:${d.code}`),
+      },
+      fixRequest: buildFixRequest(description, mode, checked),
+    }
+  })
+  return JSON.stringify({
+    probes,
+    maxAttempts: MAX_ATTEMPTS,
+    maxIssues: MAX_ISSUES_IN_REQUEST,
+    modelFixes: [...MODEL_FIXES].sort(),
+    missingData: [...MISSING_DATA_CODES].sort(),
+    modelFixable: [...MODEL_FIXABLE_CODES].sort(),
   })
 }

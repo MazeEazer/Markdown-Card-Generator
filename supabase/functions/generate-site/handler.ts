@@ -13,8 +13,9 @@ import {
   generateSite,
   logRows,
   outcomeMessage,
+  pipelineFingerprint,
 } from '../../../src/dsl/generate.ts'
-import type { PromptMode } from '../../../src/dsl/prompt.ts'
+import { buildSystemPrompt, type PromptMode } from '../../../src/dsl/prompt.ts'
 import { BUSINESS_NAMES, type BusinessName } from '../../../src/dsl/schema/frontmatter.ts'
 import { promptVersion } from '../_shared/promptVersion.ts'
 
@@ -102,6 +103,9 @@ function parseInput(body: unknown): Input {
   }
 }
 
+/** Версия обработки ответа — одна на весь экземпляр функции: код не меняется между запросами. */
+let pipelineVersion: Promise<string> | null = null
+
 export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
   return async (req) => {
     if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -147,6 +151,9 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
         business: input.business ?? null,
         prompt: input.description,
         promptVersion: await promptVersion(result.systemPrompt),
+        // Общая версия режима без ниши — чтобы сравнивать запуски с разными видами бизнеса
+        promptBaseVersion: await promptVersion(buildSystemPrompt({ mode: input.mode })),
+        pipelineVersion: await (pipelineVersion ??= promptVersion(pipelineFingerprint())),
         params: deps.params,
       })
       try {

@@ -1,6 +1,6 @@
 // Тесты функции generate-site без Supabase и GigaChat: зависимости подменяются. Запуск — npm run test:functions
-import { assertEquals, assertMatch } from '@std/assert'
-import { type ChatModel, type GenerationLogRow, ModelNotReachedError } from '../../../src/dsl/generate.ts'
+import { assertEquals, assertMatch, assertNotEquals } from '@std/assert'
+import { type ChatModel, type GenerationLogRow, ModelNotReachedError, pipelineFingerprint } from '../../../src/dsl/generate.ts'
 import { buildSystemPrompt } from '../../../src/dsl/prompt.ts'
 import { promptVersion } from '../_shared/promptVersion.ts'
 import { createHandler, type Deps } from './handler.ts'
@@ -114,13 +114,18 @@ Deno.test('успех: документ, исход и журнал с prompt_ve
   assertEquals(calls.models, ['GigaChat-2-Pro'])
 
   const version = await promptVersion(buildSystemPrompt({ mode: 'markdown', business: 'barbershop' }))
+  const base = await promptVersion(buildSystemPrompt({ mode: 'markdown' }))
+  const pipeline = await promptVersion(pipelineFingerprint())
   assertEquals(calls.logs.map((r) => [r.stage, r.is_final]), [['model', false], ['autofix', true]])
   for (const row of calls.logs) {
     assertEquals(
       [row.run_id, row.user_id, row.site_id, row.kind, row.mode, row.model, row.business, row.prompt, row.prompt_version, row.params],
       ['run-1', USER, SITE, 'generate', 'markdown', 'GigaChat-2-Pro', 'barbershop', DESCRIPTION, version, { temperature: 0.2, max_tokens: 4000 }],
     )
+    // Версия с нишей своя, общая версия режима и версия обработки — одинаковы для всех запусков режима
+    assertEquals([row.prompt_base_version, row.pipeline_version], [base, pipeline])
   }
+  assertNotEquals(version, base)
 })
 
 Deno.test('режим json и выбранная модель доходят до генерации', async () => {

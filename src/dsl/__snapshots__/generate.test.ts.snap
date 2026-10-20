@@ -1,0 +1,242 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`pipelineFingerprint: версия обработки ответа > снимок отпечатка 1`] = `
+{
+  "maxAttempts": 3,
+  "maxIssues": 15,
+  "missingData": [
+    "address-without-city",
+    "contacts-block-empty",
+    "hours-day-missing",
+    "hours-empty",
+    "map-no-address",
+    "max-not-link",
+    "missing-item-field",
+    "no-contacts",
+    "phone-format",
+    "price-not-number",
+    "rating-invalid",
+    "service-no-description",
+    "telegram-username",
+    "whatsapp-not-phone",
+  ],
+  "modelFixable": [
+    "accent-format",
+    "accent-unquoted",
+    "contact-link",
+    "contacts-block-text",
+    "crlf-heading",
+    "duplicate-field",
+    "duplicate-service",
+    "heading-no-space",
+    "hours-close-before-open",
+    "hours-day-twice",
+    "hours-syntax",
+    "invalid-value",
+    "primary-unknown",
+    "stray-text",
+    "unknown-field",
+  ],
+  "modelFixes": [
+    "missing-frontmatter",
+    "missing-name",
+  ],
+  "probes": [
+    {
+      "autofix": {
+        "diagnostics": [
+          "info:service-no-description",
+          "warning:unknown-field",
+        ],
+        "fixedCodes": [
+          "phone-format",
+          "contact-link",
+          "invalid-value",
+          "heading-no-space",
+          "price-not-number",
+          "nested-fence",
+          "ungrounded-contact",
+          "ungrounded-contact",
+          "map-no-address",
+          "empty-block",
+        ],
+        "output": "---
+name: Барбершоп
+contacts:
+  telegram: probe_barber
+  primary: telegram
+---
+## Цены
+:::services
+title: Стрижка
+price: 1500
+master: Иван
+
+:::
+:::hours
+ежедневно: 10:00–20:00
+:::
+",
+      },
+      "fixRequest": "Описание бизнеса от пользователя:
+Барбершоп в Самаре. Стрижка 1500р. С 10 до 20. Пишите в тг @probe_barber или ватсап 8-912-000-11-22
+
+Твой ответ:
+---
+name: Барбершоп
+contacts:
+  telegram: probe_barber
+  primary: telegram
+---
+## Цены
+:::services
+title: Стрижка
+price: 1500
+master: Иван
+
+:::
+:::hours
+ежедневно: 10:00–20:00
+:::
+
+
+Ошибок нет.
+
+Желательно исправить:
+- строка 11 («master: Иван»): Строка «master: Иван» читается как неизвестное поле «master» — этот текст пропадёт с сайта. Если это продолжение предыдущего текста, присоедините строку к нему. Возможные поля: title, price, duration, description
+
+Исправь перечисленное. Остальное не меняй. Не добавляй фактов, которых нет в описании: если для исправления нужны такие данные — убери поле или строку.
+
+Верни документ целиком. Ответ — только документ на языке MD Card, начиная со строки ---.",
+      "model": [
+        "warning:phone-format",
+        "warning:contact-link",
+        "warning:invalid-value",
+        "warning:heading-no-space",
+        "info:service-no-description",
+        "warning:price-not-number",
+        "warning:unknown-field",
+        "error:nested-fence",
+        "warning:stray-text",
+        "warning:stray-text",
+        "warning:map-no-address",
+      ],
+    },
+    {
+      "autofix": {
+        "diagnostics": [
+          "warning:no-contacts",
+          "info:service-no-description",
+        ],
+        "fixedCodes": [
+          "json-null-field",
+          "json-null-field",
+          "ungrounded-contact",
+        ],
+        "output": "---
+name: Лапки
+address: ул. Ленинградская, 40
+city: Самара
+---
+
+## Услуги
+:::services
+title: Маникюр
+price: 900
+:::
+
+## Контакты
+:::contacts
+:::
+",
+      },
+      "fixRequest": "Описание бизнеса от пользователя:
+Студия маникюра «Лапки» в Самаре, ул. Ленинградская, 40. Маникюр 900 ₽.
+
+Твой ответ:
+{"name":"Лапки","phone":null,"title":"","address":"ул. Ленинградская, 40","city":"Самара","contacts":{"instagram":"lapki_nails","primary":"instagram"},"sections":[{"type":"services","title":"Услуги","items":[{"title":"Маникюр","price":"900"}]},{"type":"contacts","title":"Контакты"}]}
+
+Из него получился документ MD Card:
+---
+name: Лапки
+address: ул. Ленинградская, 40
+city: Самара
+---
+
+## Услуги
+:::services
+title: Маникюр
+price: 900
+:::
+
+## Контакты
+:::contacts
+:::
+
+
+Ошибок нет.
+
+Исправь перечисленное. Остальное не меняй. Не добавляй фактов, которых нет в описании: если для исправления нужны такие данные — убери поле или строку.
+
+Верни JSON целиком. Ответ — только JSON-объект по схеме.",
+      "model": [
+        "info:service-no-description",
+      ],
+    },
+    {
+      "autofix": null,
+      "fixRequest": "Описание бизнеса от пользователя:
+Репетитор
+
+Твой ответ:
+{"name": "Репетитор", "sections": [{"type": "map", "title": "Где", "floor": 2}]}
+
+Ошибки — исправь обязательно:
+- sections[0]: Unrecognized key: "floor"
+
+Исправь перечисленное. Остальное не меняй. Не добавляй фактов, которых нет в описании: если для исправления нужны такие данные — убери поле или строку.
+
+Верни JSON целиком. Ответ — только JSON-объект по схеме.",
+      "model": [
+        "error:json-schema",
+      ],
+    },
+    {
+      "autofix": {
+        "diagnostics": [
+          "error:missing-name",
+        ],
+        "fixedCodes": [],
+        "output": "---
+title: Математика
+---
+
+## О себе
+Учу.
+",
+      },
+      "fixRequest": "Описание бизнеса от пользователя:
+Репетитор Анна
+
+Твой ответ:
+---
+title: Математика
+---
+
+## О себе
+Учу.
+
+
+Ошибки — исправь обязательно:
+- строка 1 («---»): В шапке нет названия (name) — сайт не покажется
+
+Исправь перечисленное. Остальное не меняй. Не добавляй фактов, которых нет в описании: если для исправления нужны такие данные — убери поле или строку.
+
+Верни документ целиком. Ответ — только документ на языке MD Card, начиная со строки ---.",
+      "model": [
+        "error:missing-name",
+      ],
+    },
+  ],
+}
+`;
