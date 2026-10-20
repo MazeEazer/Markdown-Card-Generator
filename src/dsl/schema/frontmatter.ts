@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { CardContacts, ThemeName } from '../../types/card.ts'
 import { iconSchema } from './icons.ts'
-import { placeholder } from './placeholder.ts'
+import { PLACEHOLDER_BASES, placeholder } from './placeholder.ts'
 
 // Поля шапки документа (YAML между строками ---). Описания идут в подсказки редактора и в промпт для нейросети.
 
@@ -139,8 +139,8 @@ export const frontmatterSchema = z
       .optional(),
     phone: contact('Телефон для звонков', '+7 999 123-45-67', '+7 900 000-00-00').optional(),
     // В промпте — заглушки: пример «ул. Ленина, 10» модель переносила в сайт без адреса («ул. Ленина, 15»)
-    address: contact('Адрес без города: улица, дом', 'ул. Ленина, 10', placeholder('улица и дом')).optional(),
-    city: contact('Город', 'Самара', placeholder('город')).optional(),
+    address: contact('Адрес без города: улица, дом', 'ул. Ленина, 10', placeholder(PLACEHOLDER_BASES.address)).optional(),
+    city: contact('Город', 'Самара', placeholder(PLACEHOLDER_BASES.city)).optional(),
     currency: z
       .enum(['RUB'])
       .meta({ description: 'Валюта цен; по умолчанию RUB — рубли', examples: ['RUB'] })
@@ -173,12 +173,12 @@ export const FRONTMATTER_ALIASES: Record<string, string> = {
 /** Пример шапки — для справки в редакторе и промпта. */
 export const FRONTMATTER_EXAMPLE = `---
 name: Барбершоп «Борода»
-title: ${placeholder('чем занимаетесь, коротко')}
+title: ${placeholder(PLACEHOLDER_BASES.title)}
 theme: noir
 business: barbershop
 phone: +7 900 000-00-00
-address: ${placeholder('улица и дом')}
-city: ${placeholder('город')}
+address: ${placeholder(PLACEHOLDER_BASES.address)}
+city: ${placeholder(PLACEHOLDER_BASES.city)}
 currency: RUB
 contacts:
   telegram: vash_telegram

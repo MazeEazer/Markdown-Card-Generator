@@ -208,13 +208,15 @@ price: 900
         "diagnostics": [
           "warning:no-contacts",
           "info:service-no-description",
+          "info:service-no-description",
         ],
         "fixedCodes": [
           "empty-field",
           "placeholder-value",
           "placeholder-value",
+          "placeholder-stripped",
           "placeholder-value",
-          "placeholder-value",
+          "ungrounded-number",
         ],
         "output": "---
 name: Маникюр Тольятти
@@ -222,6 +224,7 @@ name: Маникюр Тольятти
 
 ## Услуги
 :::services
+title: Маникюр 1
 
 title: Педикюр
 :::
@@ -237,6 +240,7 @@ name: Маникюр Тольятти
 
 ## Услуги
 :::services
+title: Маникюр 1
 
 title: Педикюр
 :::
@@ -249,6 +253,62 @@ title: Педикюр
 Верни документ целиком. Ответ — только документ на языке MD Card, начиная со строки ---.",
       "model": [
         "warning:no-contacts",
+        "info:service-no-description",
+      ],
+    },
+    {
+      "autofix": {
+        "diagnostics": [
+          "info:service-no-description",
+        ],
+        "fixedCodes": [
+          "unclosed-frontmatter",
+          "phone-format",
+          "phone-format",
+          "placeholder-stripped",
+          "empty-field",
+          "ungrounded-currency",
+          "ungrounded-contact",
+        ],
+        "output": "---
+name: Лапки
+phone: +7 937 111-22-33
+contacts:
+  telegram: lapki_tlt
+---
+
+## Услуги
+:::services
+title: Маникюр
+price: 1800
+:::
+",
+      },
+      "fixRequest": "Описание бизнеса от пользователя:
+Студия «Лапки», Тольятти. Маникюр 1800. Запись по телефону 8 937 111-22-33 или в тг lapki_tlt
+
+Твой ответ:
+---
+name: Лапки
+phone: +7 937 111-22-33
+contacts:
+  telegram: lapki_tlt
+---
+
+## Услуги
+:::services
+title: Маникюр
+price: 1800
+:::
+
+
+Ошибок нет.
+
+Исправь перечисленное. Остальное не меняй. Не добавляй фактов, которых нет в описании: если для исправления нужны такие данные — убери поле или строку.
+
+Верни документ целиком. Ответ — только документ на языке MD Card, начиная со строки ---.",
+      "model": [
+        "error:unclosed-frontmatter",
         "info:service-no-description",
       ],
     },

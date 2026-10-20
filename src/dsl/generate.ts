@@ -226,7 +226,7 @@ interface Checked {
  */
 function checkMarkdown(output: string, markdown: string, description: string): { model: CheckedStage; autofix: NonNullable<Attempt['autofix']> } {
   const fixed = applyAllFixes(markdown, { skip: MODEL_FIXES })
-  const cleaned = removePlaceholders(fixed.text)
+  const cleaned = removePlaceholders(fixed.text, description)
   const grounded = groundContacts(cleaned.text, description)
   const numbers = groundNumbers(grounded.text, description)
   const pruned = pruneEmptyBlocks(numbers.text)
@@ -602,6 +602,14 @@ export const PIPELINE_PROBES: { mode: PromptMode; description: string; output: s
     output:
       '---\nname: Маникюр Тольятти\nphone:\ncity: город — из описания\n---\n\n## О нас\nТекст о бизнесе — из описания\n\n' +
       '## Услуги\n:::services\ntitle: Маникюр 1 — из описания\nprice: 1500\n\ntitle: Педикюр\ndescription: Из описания\n:::\n',
+  },
+  // Незакрытая шапка, маркер у настоящего значения, «—», whatsapp из номера «по телефону», валюта не из описания
+  {
+    mode: 'markdown',
+    description: 'Студия «Лапки», Тольятти. Маникюр 1800. Запись по телефону 8 937 111-22-33 или в тг lapki_tlt',
+    output:
+      '---\nname: Лапки\nphone: 8 937 111-22-33\ncurrency: KZT\ncontacts:\n  telegram: lapki_tlt\n  whatsapp: 8 937 111-22-33\n\n' +
+      '## Услуги\n:::services\ntitle: Маникюр — из описания\nprice: 1800\nduration: —\n:::\n',
   },
   // Без названия: заглушку «Моё название» не вставляем — исправляет нейросеть
   { mode: 'markdown', description: 'Репетитор Анна', output: '---\ntitle: Математика\n---\n\n## О себе\nУчу.\n' },

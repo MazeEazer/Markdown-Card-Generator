@@ -586,7 +586,7 @@ describe('logRows: строки журнала generation_logs', () => {
 
 describe('pipelineFingerprint: версия обработки ответа', () => {
   const fingerprint = JSON.parse(pipelineFingerprint())
-  const [markdown, json, broken, placeholders, noName] = fingerprint.probes
+  const [markdown, json, broken, placeholders, unclosed, noName] = fingerprint.probes
 
   it('на зондах срабатывает каждый шаг обработки', () => {
     // Автоисправления, проверка по описанию и удаление пустых блоков
@@ -606,6 +606,12 @@ describe('pipelineFingerprint: версия обработки ответа', ()
     // Заглушки и пустые поля
     expect(placeholders.autofix.fixedCodes).toEqual(expect.arrayContaining(['empty-field', 'placeholder-value']))
     expect(placeholders.autofix.output).not.toMatch(/из описания|phone:|## О нас/i)
+    // Незакрытая шапка закрыта, и после этого отработали проверки по описанию
+    expect(unclosed.autofix.fixedCodes).toEqual(
+      expect.arrayContaining(['unclosed-frontmatter', 'placeholder-stripped', 'empty-field', 'ungrounded-contact', 'ungrounded-currency']),
+    )
+    expect(unclosed.autofix.output).toContain('title: Маникюр\nprice: 1800')
+    expect(unclosed.autofix.output).not.toMatch(/whatsapp|KZT/)
     // Ошибка схемы
     expect(broken.autofix).toBeNull()
     expect(broken.model).toEqual(['error:json-schema'])

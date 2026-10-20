@@ -53,6 +53,24 @@ function describe(code: string, text: string, range: Range): { message: string; 
   return { message: 'Ошибка в шапке: проверьте в этой строке отступы, двоеточие после названия поля и кавычки' }
 }
 
+/**
+ * Где закрыть шапку: после последнего непустого поля перед первым разделом «##» или блоком «:::».
+ * GigaChat-3-Lightning часто не пишет закрывающую строку --- (шаг 8: 6 из 13 ответов), а исправить по просьбе
+ * не может. Если между --- и разделом есть строки не вида «поле: значение» — граница неочевидна: это догадка.
+ */
+function closingPoint(text: string): { at: number; guess: boolean } | null {
+  const lines = text.split('\n')
+  const body = lines.findIndex((line, i) => i > 0 && /^(##(\s|$)|:::)/.test(line))
+  if (body < 0) return null
+  let last = body - 1
+  while (last > 0 && !lines[last].trim()) last--
+  if (last === 0) return null
+  const header = lines.slice(1, last + 1)
+  const yamlLike = header.every((line) => !line.trim() || /^\s*(#|-\s|[\w-]+\s*:)/.test(line) || /^\s+\S/.test(line))
+  const at = lines.slice(0, last + 1).join('\n').length + 1
+  return { at, guess: !yamlLike }
+}
+
 export const frontmatterSyntaxRule: Rule = ({ text, ast }) => {
   const frontmatter = ast.frontmatter
 
@@ -73,12 +91,14 @@ export const frontmatterSyntaxRule: Rule = ({ text, ast }) => {
 
   if (!frontmatter) {
     if (!/^---\r?\n/.test(text)) return []
+    const close = closingPoint(text)
     return [
       {
         ...lineAt(text, 0),
         severity: 'error',
         code: 'unclosed-frontmatter',
         message: 'Шапка не закрыта: после последнего поля шапки нужна строка ---',
+        fix: close ? { label: 'Закрыть шапку', replace: '---\n', from: close.at, to: close.at, ...(close.guess ? { guess: true } : {}) } : undefined,
       },
     ]
   }

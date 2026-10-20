@@ -68,6 +68,21 @@ describe('groundContacts: что считается найденным в опи
     expect(kept('phone: +7 903 111-22-33', 'Анна, 8-903-111-22-33')).toBe(true)
   })
 
+  it('whatsapp — номер для мессенджера или без уточнения; номер «по телефону» — не WhatsApp', () => {
+    expect(kept('contacts:\n  whatsapp: +7 912 345-67-89', 'Запись в Instagram olga.nails.ekb или по телефону 8 (912) 345-67-89')).toBe(false)
+    expect(kept('contacts:\n  whatsapp: +7 917 555-12-34', 'Телефон +7 917 555-12-34, Telegram topor_kzn')).toBe(false)
+    expect(kept('contacts:\n  whatsapp: +7 912 777-33-21', 'пишите в тг @ivan_barber или ватсап 8-912-777-33-21')).toBe(true)
+    expect(kept('contacts:\n  whatsapp: +7 912 777-33-21', 'Телефон и WhatsApp: 8-912-777-33-21')).toBe(true)
+    expect(kept('contacts:\n  whatsapp: +7 912 777-33-21', 'Анна, 8-912-777-33-21')).toBe(true)
+  })
+
+  it('ссылка на профиль подтверждается именем пользователя или номером', () => {
+    expect(kept('links:\n  - label: Портфолио\n    url: https://instagram.com/maria_foto_ekb', 'Портфолио: инстаграм maria_foto_ekb')).toBe(true)
+    expect(kept('links:\n  - label: Telegram\n    url: https://t.me/fizika_ilya', 'Пишите в тг fizika_ilya')).toBe(true)
+    expect(kept('links:\n  - label: WhatsApp\n    url: https://wa.me/79221234567', 'вотсап +79221234567')).toBe(true)
+    expect(kept('links:\n  - label: Instagram\n    url: https://instagram.com/other_name', 'инстаграм maria_foto_ekb')).toBe(false)
+  })
+
   it('имя пользователя — без @, из ссылки тоже', () => {
     expect(kept('contacts:\n  telegram: barber_ivan', 'пишите в тг @barber_ivan')).toBe(true)
     expect(kept('contacts:\n  telegram: barber_ivan', 'https://t.me/barber_ivan')).toBe(true)
@@ -146,6 +161,15 @@ describe('groundContacts: адрес и город', () => {
     expect(kept('city: Москва', 'Coffee shop in Moscow')).toBe(true)
     expect(kept('city: Тольятти', 'Маникюр тольятти')).toBe(true)
     expect(kept('city: Москва', 'Студия маникюра в Самаре')).toBe(false)
+  })
+
+  it('валюта, отличная от RUB, — только если названа в описании; «тг» — не тенге', () => {
+    expect(kept('currency: KZT', 'барбершоп стрижка 1500 тг ivan_borodach')).toBe(false)
+    expect(kept('currency: KZT', 'Стрижка 1500 тенге, Алматы')).toBe(true)
+    expect(kept('currency: KZT', 'Стрижка 1500 ₸')).toBe(true)
+    expect(kept('currency: USD', 'Haircut $20')).toBe(true)
+    expect(kept('currency: EUR', 'Стрижка 20 евро')).toBe(true)
+    expect(kept('currency: RUB', 'Стрижка 1500')).toBe(true)
   })
 
   it('primary без своего контакта убирается, даже если контакт не писала модель (m6: потерян telegram)', () => {

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { iconSchema } from './icons.ts'
-import { placeholder } from './placeholder.ts'
+import { PLACEHOLDER_BASES, placeholder } from './placeholder.ts'
 
 // Блоки `:::name … :::` внутри секций. Элементы блока разделяются пустой строкой, поля — `ключ: значение`.
 
@@ -155,7 +155,7 @@ rating: 5
       .strictObject({
         address: z
           .string()
-          .meta({ description: 'Другой адрес, если карта должна показывать не адрес из шапки', examples: ['ул. Ленина, 10'], promptExample: placeholder('улица и дом') })
+          .meta({ description: 'Другой адрес, если карта должна показывать не адрес из шапки', examples: ['ул. Ленина, 10'], promptExample: placeholder(PLACEHOLDER_BASES.address) })
           .optional(),
       })
       .meta({ description: 'Адрес для карты' }),

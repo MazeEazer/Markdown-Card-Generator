@@ -5,7 +5,7 @@ import { enumOptions, unwrap } from './rules/helpers.ts'
 import { BLOCK_NAMES, BLOCKS, type BlockDefinition } from './schema/blocks.ts'
 import { type DocumentJson, documentSchema } from './schema/document.ts'
 import { BUSINESSES, type BusinessName, FRONTMATTER_EXAMPLE, frontmatterSchema } from './schema/frontmatter.ts'
-import { placeholder } from './schema/placeholder.ts'
+import { PLACEHOLDER_BASES, placeholder } from './schema/placeholder.ts'
 
 export type PromptMode = 'markdown' | 'json'
 
@@ -27,7 +27,7 @@ function proseHint(schema: z.ZodType, n: number): string {
 }
 
 /** Текст раздела «О нас» в примерах. */
-const ABOUT_EXAMPLE = placeholder('Текст о бизнесе своими словами, без новых фактов')
+const ABOUT_EXAMPLE = placeholder(PLACEHOLDER_BASES.about)
 
 const hint = <B extends 'services' | 'accordion'>(block: B, key: keyof (typeof BLOCKS)[B]['item']['shape'], n: number) =>
   proseHint((BLOCKS[block].item.shape as Record<string, z.ZodType>)[key as string], n)
@@ -75,12 +75,12 @@ ${BLOCKS.contacts.example}
 /** Тот же пример в виде JSON — для режима «JSON по схеме». */
 export const EXAMPLE_JSON: DocumentJson = {
   name: 'Барбершоп «Борода»',
-  title: placeholder('чем занимаетесь, коротко'),
+  title: placeholder(PLACEHOLDER_BASES.title),
   theme: 'noir',
   business: 'barbershop',
   phone: '+7 900 000-00-00',
-  address: placeholder('улица и дом'),
-  city: placeholder('город'),
+  address: placeholder(PLACEHOLDER_BASES.address),
+  city: placeholder(PLACEHOLDER_BASES.city),
   currency: 'RUB',
   contacts: { telegram: 'vash_telegram', whatsapp: '+7 900 000-00-00', primary: 'telegram' },
   sections: [

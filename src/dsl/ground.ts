@@ -5,14 +5,29 @@
 // Адрес и город сравниваются по основам слов и числам: нейросеть склоняет («на Садовой» → «ул. Садовая»)
 // и сокращает («екб»), поэтому точное совпадение не подходит; ложное удаление хуже пропущенной выдумки.
 import { isMap, isScalar, isSeq, type Node, type Pair, type YAMLMap } from 'yaml'
-import { MAX_LINK, usernameFromLink } from './contacts.ts'
+import { MAX_LINK, USERNAME_CONTACTS, usernameFromLink } from './contacts.ts'
 import { parseDocument } from './parser.ts'
 import { parseRussianPhone } from './phone.ts'
 import type { ContactName } from './schema/frontmatter.ts'
 import type { Range } from './types.ts'
+import { letters, stemMatcher, wordsOf } from './words.ts'
 
 /** Код в журнале (fixed_codes) для каждого удалённого поля. */
 export const UNGROUNDED = 'ungrounded-contact'
+/** Код для валюты, не названной в описании. */
+export const UNGROUNDED_CURRENCY = 'ungrounded-currency'
+
+/**
+ * Как валюту называют в описании. «тг» сюда не входит: в описании «тг ivan_borodach» — это Telegram,
+ * а GigaChat-3-Lightning прочитал его как тенге (currency: KZT, «1500 тг»).
+ */
+const CURRENCY_WORDS: Record<string, RegExp> = {
+  KZT: /тенге|₸|\bkzt\b/i,
+  USD: /доллар|\$|\busd\b/i,
+  EUR: /евро|€|\beur\b/i,
+  BYN: /белорусск\S* руб|бел\.\s*руб|\bbyn\b/i,
+  UAH: /гривн|₴|\buah\b/i,
+}
 
 export interface GroundResult {
   text: string
@@ -29,11 +44,22 @@ const bareUrl = (url: string) => url.trim().toLowerCase().replace(/^[a-z]+:\/\//
 const CALL_WORDS = /звон|телефон|тел\.|phone|моб/i
 const MESSENGER_WORDS = /whats\s?app|в[ао]тс?апп?|вацап|viber|вайбер|telegram|телеграмм?|(?<![\p{L}])(?:тг|tg|wa|max|макс)(?![\p{L}])/iu
 
+/** Начало предложения до номера: по нему понятно, для чего номер дан. */
+function sentenceBefore(description: string, at: number): string {
+  const before = description.slice(Math.max(0, at - 40), at)
+  return before.slice(Math.max(...['.', '!', '?', ';', '\n'].map((c) => before.lastIndexOf(c))) + 1)
+}
+
 /** Номер для звонков: перед ним в том же предложении есть слово про звонок или нет слова про мессенджер. */
 function forCalls(description: string, at: number): boolean {
-  const before = description.slice(Math.max(0, at - 40), at)
-  const sentence = before.slice(Math.max(...['.', '!', '?', ';', '\n'].map((c) => before.lastIndexOf(c))) + 1)
+  const sentence = sentenceBefore(description, at)
   return CALL_WORDS.test(sentence) || !MESSENGER_WORDS.test(sentence)
+}
+
+/** Номер для мессенджера: есть слово про мессенджер или нет слова про звонок («по телефону 8 912…» — не WhatsApp). */
+function forMessenger(description: string, at: number): boolean {
+  const sentence = sentenceBefore(description, at)
+  return MESSENGER_WORDS.test(sentence) || !CALL_WORDS.test(sentence)
 }
 
 /** Служебные слова адреса: в описании их могут не писать или писать иначе. */
@@ -56,10 +82,6 @@ const CITY_ALIASES: Record<string, string[]> = {
   'ростов-на-дону': ['ростов', 'rostov'],
 }
 
-const letters = (text: string) => text.toLowerCase().replace(/ё/g, 'е')
-/** Основа слова: без окончания — «садовая» и «садовой» дают одну основу. */
-const stem = (word: string) => (word.length > 5 ? word.slice(0, -2) : word.length > 3 ? word.slice(0, -1) : word)
-const wordsOf = (text: string) => letters(text).match(/[a-zа-я]+(?:-[a-zа-я]+)*/g) ?? []
 const numbersOf = (text: string) => text.match(/\d+/g) ?? []
 
 /** Что есть в описании: телефоны, слова-имена и адреса. */
@@ -70,26 +92,20 @@ function groundTruth(description: string) {
   const matches = [...description.matchAll(/\+?\d[\d\s().-]{6,}\d/g)]
   const runs = matches.map((m) => m[0])
   const phones = new Set(runs.flatMap((run) => parseRussianPhone(run)?.e164 ?? []))
-  const digitRuns = new Set(runs.map((run) => run.replace(/\D/g, '')))
   // phone — кнопка «Позвонить»: только номер, данный для звонков (не «пишите в вотсап …»)
-  const callNumbers = new Set(
-    matches.filter((m) => forCalls(description, m.index)).flatMap((m) => [parseRussianPhone(m[0])?.e164 ?? m[0].replace(/\D/g, '')]),
-  )
+  const numberKey = (run: string) => parseRussianPhone(run)?.e164 ?? run.replace(/\D/g, '')
+  const callNumbers = new Set(matches.filter((m) => forCalls(description, m.index)).map((m) => numberKey(m[0])))
+  // whatsapp — номер, данный для мессенджера или без уточнения (Lightning записал в whatsapp номер «по телефону»)
+  const messengerNumbers = new Set(matches.filter((m) => forMessenger(description, m.index)).map((m) => numberKey(m[0])))
 
   // Граница имени: «olga.nails» не найдено в «olga.nails.ekb» — точка перед буквой продолжает имя
-  const descWords = wordsOf(description).flatMap((w) => [w, ...w.split('-')])
   const descNumbers = new Set(numbersOf(description))
-  const hasStem = (word: string) => {
-    const s = stem(word)
-    return descWords.some((w) => w.startsWith(s) || s.startsWith(stem(w)))
-  }
+  const hasStem = stemMatcher(description)
   const hasWord = (word: string) => new RegExp(`(?<![\\w.])${escape(word.toLowerCase())}(?![\\w]|\\.\\w)`, 'u').test(lower)
   return {
-    /** Номер есть в описании (для whatsapp) */
-    phone(value: string): boolean {
-      const parsed = parseRussianPhone(value)
-      if (parsed) return phones.has(parsed.e164)
-      return digitRuns.has(value.replace(/\D/g, ''))
+    /** Номер есть в описании и дан для мессенджера или без уточнения (для whatsapp) */
+    messengerPhone(value: string): boolean {
+      return messengerNumbers.has(parseRussianPhone(value)?.e164 ?? value.replace(/\D/g, ''))
     },
     /** Номер есть в описании и дан для звонков (для phone) */
     callPhone(value: string): boolean {
@@ -112,10 +128,20 @@ function groundTruth(description: string) {
       const words = wordsOf(value).flatMap((w) => w.split('-')).filter((w) => w.length >= 3 && w !== 'на')
       return words.length > 0 && words.every(hasStem)
     },
-    /** Ссылка с путём — нужен адрес целиком, без пути — достаточно домена */
+    /**
+     * Ссылка с путём — нужен адрес целиком, без пути — достаточно домена. Ссылка на профиль (t.me, vk.com,
+     * instagram.com, wa.me) — по имени пользователя или номеру: «инстаграм maria_foto_ekb» подтверждает
+     * https://instagram.com/maria_foto_ekb.
+     */
     url(value: string): boolean {
       const url = bareUrl(value)
-      return url.length > 0 && urls.includes(url)
+      if (url.length > 0 && urls.includes(url)) return true
+      for (const contact of USERNAME_CONTACTS) {
+        const name = usernameFromLink(contact, value)
+        if (name && /^(?:https?:\/\/)?(?:www\.|m\.)?[a-z.]+\//i.test(value.trim()) && hasWord(name)) return true
+      }
+      const wa = value.trim().match(/^(?:https?:\/\/)?(?:wa\.me|api\.whatsapp\.com\/send\?phone=)\/?(\+?\d+)/i)
+      return Boolean(wa && phones.has(parseRussianPhone(wa[1])?.e164 ?? ''))
     },
   }
 }
@@ -126,7 +152,7 @@ type Truth = ReturnType<typeof groundTruth>
 function grounded(truth: Truth, contact: string, value: string): boolean {
   switch (contact) {
     case 'whatsapp':
-      return truth.phone(value)
+      return truth.messengerPhone(value)
     case 'telegram':
     case 'vk':
     case 'instagram':
@@ -179,6 +205,14 @@ export function groundContacts(text: string, description: string): GroundResult 
     const key = scalarText(pair.key)
     if (key === 'phone') {
       if (phoneRemoved) cut(pair)
+    } else if (key === 'currency') {
+      // RUB — по умолчанию; другая валюта — только если она прямо названа в описании
+      const value = (scalarText(pair.value) ?? '').trim().toUpperCase()
+      const named = CURRENCY_WORDS[value] ?? new RegExp(`\\b${escape(value)}\\b`, 'i')
+      if (value && value !== 'RUB' && !named.test(description)) {
+        cuts.push(lines(pair))
+        removed.push(UNGROUNDED_CURRENCY)
+      }
     } else if (key === 'avatar' || key === 'address' || key === 'city') {
       const value = scalarText(pair.value)
       const ok = key === 'avatar' ? truth.url : key === 'address' ? truth.address : truth.city
