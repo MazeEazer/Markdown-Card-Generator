@@ -70,6 +70,8 @@ export const CONTACT_ALIASES: Record<string, string> = {
 export const PRIMARY_TARGETS = [...CONTACT_NAMES, 'phone'] as const
 
 const text = (description: string, example: string) => z.string().meta({ description, examples: [example] })
+/** Свободный текст: пример — для редактора, в промпт не попадает (как prose в blocks.ts). */
+const prose = (description: string, example: string) => z.string().meta({ description, examples: [example], prose: true })
 
 const linkSchema = z
   .strictObject({
@@ -101,7 +103,7 @@ export const contactsSchema = z
 export const frontmatterSchema = z
   .strictObject({
     name: text('Название бизнеса или имя мастера — главный заголовок сайта', 'Барбершоп «Борода»'),
-    title: text('Короткое описание под названием', 'Мужские стрижки и уход за бородой').optional(),
+    title: prose('Короткое описание под названием', 'Мужские стрижки и уход за бородой').optional(),
     theme: z
       .enum([...THEME_NAMES, 'auto'])
       .meta({
@@ -162,7 +164,7 @@ export const FRONTMATTER_ALIASES: Record<string, string> = {
 /** Пример шапки — для справки в редакторе и промпта. */
 export const FRONTMATTER_EXAMPLE = `---
 name: Барбершоп «Борода»
-title: Мужские стрижки и уход за бородой
+title: Чем занимаетесь — коротко, из описания
 theme: noir
 accent: "#c0392b"
 business: barbershop

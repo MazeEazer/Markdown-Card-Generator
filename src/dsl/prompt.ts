@@ -15,20 +15,51 @@ export interface PromptOptions {
   business?: BusinessName
 }
 
-/** Пример документа: показывает формат, данные в нём вымышленные. */
+/** Поле со свободным текстом (prose в схеме): пример значения нейросеть переписывает как факт. */
+function isProse(schema: z.ZodType): boolean {
+  return Boolean((unwrap(schema).meta() as { prose?: boolean } | undefined)?.prose)
+}
+
+/** Условное значение вместо правдоподобного: «Вопрос 2 — из описания». Номер — чтобы элементы не совпадали. */
+function proseHint(schema: z.ZodType, n: number): string {
+  return `${unwrap(schema).meta()?.description ?? 'Текст'} ${n} — из описания`
+}
+
+const hint = <B extends 'services' | 'accordion'>(block: B, key: keyof (typeof BLOCKS)[B]['item']['shape'], n: number) =>
+  proseHint((BLOCKS[block].item.shape as Record<string, z.ZodType>)[key as string], n)
+
+/**
+ * Пример блока для промпта: формат из примера в схеме, но значения полей со свободным текстом — условные.
+ * Пример в схеме остаётся правдоподобным: по нему редактор строит заготовку блока для человека.
+ */
+export function promptExample(block: BlockDefinition): string {
+  const shape = block.item?.shape as Record<string, z.ZodType> | undefined
+  if (!shape) return block.example
+  let n = 1
+  return block.example
+    .split('\n')
+    .map((line) => {
+      if (!line.trim()) n++ // элементы разделены пустой строкой
+      const key = line.match(/^(\w+): /)?.[1]
+      return key && shape[key] && isProse(shape[key]) ? `${key}: ${proseHint(shape[key], n)}` : line
+    })
+    .join('\n')
+}
+
+/** Пример документа: показывает формат; текст в нём условный, данные шапки — вымышленные. */
 export const EXAMPLE_DOCUMENT = `${FRONTMATTER_EXAMPLE}
 
 ## О нас
-Стрижём бороды и мужские головы с 2015 года. Работаем без спешки.
+Пересказ описания своими словами, без новых фактов.
 
 ## Услуги и цены
-${BLOCKS.services.example}
+${promptExample(BLOCKS.services)}
 
 ## Часы работы
 ${BLOCKS.hours.example}
 
 ## Вопросы
-${BLOCKS.accordion.example}
+${promptExample(BLOCKS.accordion)}
 
 ## Как добраться
 ${BLOCKS.map.example}
@@ -40,7 +71,7 @@ ${BLOCKS.contacts.example}
 /** Тот же пример в виде JSON — для режима «JSON по схеме». */
 export const EXAMPLE_JSON: DocumentJson = {
   name: 'Барбершоп «Борода»',
-  title: 'Мужские стрижки и уход за бородой',
+  title: 'Чем занимаетесь — коротко, из описания',
   theme: 'noir',
   accent: '#c0392b',
   business: 'barbershop',
@@ -50,14 +81,14 @@ export const EXAMPLE_JSON: DocumentJson = {
   currency: 'RUB',
   contacts: { telegram: 'barber_ivan', whatsapp: '+7 999 123-45-67', primary: 'telegram' },
   sections: [
-    { type: 'text', title: 'О нас', content: 'Стрижём бороды и мужские головы с 2015 года. Работаем без спешки.' },
+    { type: 'text', title: 'О нас', content: 'Пересказ описания своими словами, без новых фактов.' },
     {
       type: 'services',
       title: 'Услуги и цены',
       items: [
-        { title: 'Мужская стрижка', price: '1500', duration: '60 мин', description: 'Машинкой и ножницами, мытьё головы и укладка' },
+        { title: hint('services', 'title', 1), price: '1500', duration: '60 мин', description: hint('services', 'description', 1) },
         // Без description и duration: необязательные поля пишутся, только если они есть в описании
-        { title: 'Оформление бороды', price: 'от 800' },
+        { title: hint('services', 'title', 2), price: 'от 800' },
       ],
     },
     { type: 'hours', title: 'Часы работы', lines: ['пн–пт: 10:00–20:00', 'сб: 11:00–18:00', 'вс: выходной'] },
@@ -65,8 +96,8 @@ export const EXAMPLE_JSON: DocumentJson = {
       type: 'accordion',
       title: 'Вопросы',
       items: [
-        { title: 'Нужна ли запись заранее?', content: 'Лучше записаться за день, но можно и прийти без записи' },
-        { title: 'Можно ли оплатить картой?', content: 'Да, принимаем карты и СБП' },
+        { title: hint('accordion', 'title', 1), content: hint('accordion', 'content', 1) },
+        { title: hint('accordion', 'title', 2), content: hint('accordion', 'content', 2) },
       ],
     },
     { type: 'map', title: 'Как добраться' },
@@ -74,15 +105,24 @@ export const EXAMPLE_JSON: DocumentJson = {
   ],
 }
 
+/** Убирает примеры у полей со свободным текстом (prose в blocks.ts) и сам признак prose. */
+function withoutProseExamples(node: unknown): unknown {
+  if (Array.isArray(node)) return node.map(withoutProseExamples)
+  if (!node || typeof node !== 'object') return node
+  const { prose, examples, ...rest } = node as Record<string, unknown>
+  const cleaned = Object.fromEntries(Object.entries(rest).map(([key, value]) => [key, withoutProseExamples(value)]))
+  return prose || examples === undefined ? cleaned : { ...cleaned, examples }
+}
+
 /** JSON Schema документа — для structured output и для промпта в режиме json. */
 export function getJsonSchema(): Record<string, unknown> {
-  return z.toJSONSchema(documentSchema) as Record<string, unknown>
+  return withoutProseExamples(z.toJSONSchema(documentSchema)) as Record<string, unknown>
 }
 
 /** Строка описания поля: «- phone — Телефон для звонков. Пример: +7 999 123-45-67». Устаревшие поля не предлагаем. */
 function describeField(key: string, schema: z.ZodType, indent = ''): string[] {
   const inner = unwrap(schema)
-  const meta = inner.meta() as { description?: string; examples?: unknown[]; deprecated?: boolean } | undefined
+  const meta = inner.meta() as { description?: string; examples?: unknown[]; deprecated?: boolean; prose?: boolean } | undefined
   if (meta?.deprecated) return []
   const required = schema instanceof z.ZodOptional ? '' : ' (обязательно)'
   let line = `${indent}- ${key}${required} — ${meta?.description ?? ''}`
@@ -90,7 +130,8 @@ function describeField(key: string, schema: z.ZodType, indent = ''): string[] {
   const options = enumOptions(inner)
   // У тем, видов бизнеса и иконок варианты уже перечислены в описании с пояснениями
   if (options && !meta?.description?.includes(options[0])) line += `. Значения: ${options.join(', ')}`
-  const example = meta?.examples?.[0]
+  // У свободного текста пример не показываем: нейросеть переписывает его как факт
+  const example = meta?.prose ? undefined : meta?.examples?.[0]
   if (example !== undefined && !options) line += `. Пример: ${example}`
 
   if (inner instanceof z.ZodObject) {
@@ -120,7 +161,7 @@ function blocksReference(): string {
       `:::${name} — ${block.label}: ${block.description}.`,
       ...(attrs.length ? ['Атрибуты в строке открытия:', ...attrs] : []),
       ...(fields.length ? ['Поля элемента:', ...fields] : [block.body ?? 'Внутри — текст как есть.']),
-      `Пример:\n${block.example}`,
+      `Пример:\n${promptExample(block)}`,
     ].join('\n')
   }).join('\n\n')
 }
@@ -129,10 +170,12 @@ const RULES = `Правила:
 1. Используй только факты из описания пользователя. Не придумывай телефон, мессенджеры, адрес, цены, часы работы, отзывы, имена, годы работы и другие факты. Если чего-то нет в описании — не пиши это поле или раздел.
 2. Необязательные поля элементов — description и duration у услуг, rating и date у отзывов и другие — пиши, только если это есть в описании. Нет в описании — не пиши поле совсем. Не дописывай, из чего состоит услуга, сколько она длится, какие материалы используются.
 3. Текст разделов (например, «О нас») — только пересказ описания своими словами. Не добавляй новых фактов: услуг, опыта, материалов, гарантий, обещаний.
-4. Телефон пиши в виде +7 999 123-45-67. В telegram, vk, instagram — только имя пользователя, без @ и без ссылки. В whatsapp — номер телефона. В max — ссылка на профиль https://max.ru/…, если она есть в описании.
-5. primary — только один из указанных контактов или phone (если указан телефон).
-6. Пиши по-русски, коротко и понятно для клиентов бизнеса. Разделы — о том, что важно клиенту: услуги, цены, как добраться, частые вопросы.
-7. Данные из примеров ниже вымышлены: бери из примеров только формат. Не переноси из примеров названия и описания услуг, цены, отзывы и тексты.`
+4. Блок вопросов и ответов (:::accordion) — только с вопросами и ответами, которые есть в описании. Нет их в описании — не делай этот блок. Не придумывай вопросы про оплату, запись, парковку и т. п.
+5. Карту (:::map, раздел «Как добраться») делай, только если в описании есть адрес, куда приходят клиенты. Работа онлайн или на выезде без адреса — карты нет.
+6. Телефон пиши в виде +7 999 123-45-67. В telegram, vk, instagram — только имя пользователя, без @ и без ссылки. В whatsapp — номер телефона. В max — ссылка на профиль https://max.ru/…, если она есть в описании.
+7. primary — только один из указанных контактов или phone (если указан телефон).
+8. Пиши по-русски, коротко и понятно для клиентов бизнеса. Разделы — о том, что важно клиенту: услуги, цены, как добраться, частые вопросы.
+9. Примеры ниже показывают только формат. Текст «… — из описания» в них условный — подставляй вместо него данные из описания. Не переноси из примеров названия и описания услуг, цены, отзывы и тексты.`
 
 const MARKDOWN_SYNTAX = `Язык разметки MD Card:
 - Документ начинается с шапки между строками ---. В шапке — поля в формате YAML «поле: значение».

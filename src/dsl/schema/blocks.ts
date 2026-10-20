@@ -19,6 +19,13 @@ export interface BlockDefinition {
 
 const text = (description: string, example: string) => z.string().meta({ description, examples: [example] })
 
+/**
+ * Поле со свободным текстом (вопрос, отзыв, состав услуги). Пример значения нужен человеку в редакторе
+ * (справка, заготовка блока, «+ Блок»), но не нейросети: правдоподобный пример она переписывает как факт.
+ * В промпте у таких полей нет примера, а в примерах блоков значение заменено на условное (prompt.ts).
+ */
+const prose = (description: string, example: string) => z.string().meta({ description, examples: [example], prose: true })
+
 export const BLOCKS = {
   cards: {
     name: 'cards',
@@ -27,12 +34,12 @@ export const BLOCKS = {
     attrs: z.strictObject({}),
     item: z
       .strictObject({
-        title: text('Заголовок карточки', 'Мужская стрижка'),
-        description: text('Текст карточки', 'Машинкой и ножницами, мытьё головы').optional(),
+        title: prose('Заголовок карточки', 'Мужская стрижка'),
+        description: prose('Текст карточки', 'Машинкой и ножницами, мытьё головы').optional(),
         icon: iconSchema.optional(),
         url: z.url().meta({ description: 'Ссылка — карточка становится кликабельной', examples: ['https://t.me/barber_ivan'] }).optional(),
         link: z.url().meta({ description: 'То же, что url (устаревшее)', deprecated: true }).optional(),
-        tags: text('Метки через запятую', 'мужская, детская').optional(),
+        tags: prose('Метки через запятую', 'мужская, детская').optional(),
       })
       .meta({ description: 'Карточка' }),
     example: `:::cards
@@ -53,8 +60,8 @@ icon: zap
     attrs: z.strictObject({}),
     item: z
       .strictObject({
-        title: text('Вопрос', 'Нужна ли запись заранее?'),
-        content: text('Ответ', 'Лучше записаться за день, но можно и прийти без записи'),
+        title: prose('Вопрос', 'Нужна ли запись заранее?'),
+        content: prose('Ответ', 'Лучше записаться за день, но можно и прийти без записи'),
       })
       .meta({ description: 'Вопрос и ответ' }),
     example: `:::accordion
@@ -85,10 +92,10 @@ console.log('Привет!')
     attrs: z.strictObject({}),
     item: z
       .strictObject({
-        title: text('Название услуги', 'Мужская стрижка'),
+        title: prose('Название услуги', 'Мужская стрижка'),
         price: text('Цена числом, без ₽: 1500, «от 1500» или «1500–2000»; валюта — в шапке (currency)', '1500').optional(),
         duration: text('Сколько длится', '60 мин').optional(),
-        description: text('Что входит в услугу', 'Машинкой и ножницами, мытьё головы и укладка').optional(),
+        description: prose('Что входит в услугу', 'Машинкой и ножницами, мытьё головы и укладка').optional(),
       })
       .meta({ description: 'Услуга' }),
     example: `:::services
@@ -121,8 +128,8 @@ price: от 800
     attrs: z.strictObject({}),
     item: z
       .strictObject({
-        author: text('Имя клиента', 'Алексей'),
-        text: text('Текст отзыва', 'Лучший фейд в городе, мастер не торопится'),
+        author: prose('Имя клиента', 'Алексей'),
+        text: prose('Текст отзыва', 'Лучший фейд в городе, мастер не торопится'),
         rating: text('Оценка от 1 до 5', '5').optional(),
         date: text('Когда оставлен отзыв', 'март 2026').optional(),
       })

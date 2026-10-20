@@ -4,13 +4,20 @@ import type { CardData } from '../types/card.ts'
 import { toCardData } from './cardData.ts'
 import { fromJson } from './fromJson.ts'
 import { parseDocument } from './parser.ts'
-import { buildSystemPrompt, EXAMPLE_DOCUMENT, EXAMPLE_JSON, getJsonSchema } from './prompt.ts'
+import { buildSystemPrompt, EXAMPLE_DOCUMENT, EXAMPLE_JSON, getJsonSchema, promptExample } from './prompt.ts'
 import { BLOCK_NAMES, BLOCKS } from './schema/blocks.ts'
 import { documentSchema } from './schema/document.ts'
 import { BUSINESS_NAMES, CONTACT_NAMES, frontmatterSchema, THEME_NAMES } from './schema/frontmatter.ts'
 import { ICON_NAMES } from './schema/icons.ts'
 import { serialize } from './serialize.ts'
 import { validate } from './validate.ts'
+
+/** Копия JSON без указанных ключей на любой глубине. */
+function withoutKeys(node: unknown, keys: string[]): unknown {
+  if (Array.isArray(node)) return node.map((item) => withoutKeys(item, keys))
+  if (!node || typeof node !== 'object') return node
+  return Object.fromEntries(Object.entries(node).filter(([key]) => !keys.includes(key)).map(([key, value]) => [key, withoutKeys(value, keys)]))
+}
 
 const markdown = buildSystemPrompt({ mode: 'markdown' })
 const json = buildSystemPrompt({ mode: 'json' })
@@ -38,7 +45,7 @@ describe('buildSystemPrompt: всё из схемы попадает в пром
   it.each(BLOCK_NAMES)('блок %s: имя, описание и поля', (name) => {
     const block = BLOCKS[name]
     expect(markdown).toContain(`:::${name} — ${block.label}`)
-    expect(markdown).toContain(block.example)
+    expect(markdown).toContain(promptExample(block))
     for (const field of Object.keys(block.item?.shape ?? {}).filter((key) => key !== 'link')) {
       expect(markdown).toContain(`- ${field}`)
     }
@@ -69,7 +76,37 @@ describe('buildSystemPrompt: всё из схемы попадает в пром
   })
 })
 
+// Правдоподобные факты из примеров схемы (они остаются в редакторе — для человека). Нейросеть переписывала
+// такие примеры в сайт как правду: «Можно ли оплатить картой? — Да», «ножницами и машинкой, мытьё головы»
+const FACTS_FROM_EXAMPLES = [
+  'оплатить картой', 'принимаем карты', 'СБП', 'Нужна ли запись заранее', 'Лучше записаться за день', 'без записи',
+  'Машинкой и ножницами', 'мытьё головы', 'укладка', 'Моделирование', 'горячее полотенце',
+  'Лучший фейд', 'мастер не торопится', 'Привожу сына', 'всегда аккуратно', 'Алексей', 'Ольга',
+  'с 2015 года', 'без спешки', 'уход за бородой', 'мужская, классика', 'мужская, детская',
+]
+
 describe('правила против выдуманных фактов', () => {
+  it.each([['markdown', markdown], ['json', json]])('%s: в промпте нет правдоподобных фактов из примеров схемы', (_mode, prompt) => {
+    for (const phrase of FACTS_FROM_EXAMPLES) expect(prompt, phrase).not.toContain(phrase)
+  })
+
+  it('в редакторе примеры остаются правдоподобными', () => {
+    expect(BLOCKS.accordion.example).toContain('Можно ли оплатить картой?')
+    expect(BLOCKS.services.example).toContain('Машинкой и ножницами')
+  })
+
+  it('пример блока для промпта: формат тот же, свободный текст — условный и пронумерованный', () => {
+    expect(promptExample(BLOCKS.services)).toBe(
+      ':::services\ntitle: Название услуги 1 — из описания\nprice: 1500\nduration: 60 мин\ndescription: Что входит в услугу 1 — из описания\n\ntitle: Название услуги 2 — из описания\nprice: от 800\n:::',
+    )
+    expect(promptExample(BLOCKS.hours)).toBe(BLOCKS.hours.example)
+  })
+
+  it.each([['markdown', markdown], ['json', json]])('%s: вопросы — только из описания, карта — только при адресе', (_mode, prompt) => {
+    expect(prompt).toMatch(/:::accordion\) — только с вопросами и ответами, которые есть в описании/)
+    expect(prompt).toMatch(/Карту \(:::map.*только если в описании есть адрес, куда приходят клиенты/)
+  })
+
   it.each([['markdown', markdown], ['json', json]])('%s: необязательные поля — только из описания, текст — без новых фактов', (_mode, prompt) => {
     expect(prompt).toMatch(/description и duration у услуг.*пиши, только если это есть в описании/)
     expect(prompt).toMatch(/Нет в описании — не пиши поле совсем/)
@@ -130,7 +167,17 @@ describe('getJsonSchema', () => {
 
   it('JSON с выдуманным полем не проходит', () => {
     expect(documentSchema.safeParse({ ...EXAMPLE_JSON, rating: 5 }).success).toBe(false)
-    expect(z.toJSONSchema(documentSchema)).toEqual(schema)
+    // Схема в промпте — та же, что у Zod, без примеров у полей со свободным текстом
+    expect(withoutKeys(z.toJSONSchema(documentSchema), ['examples', 'prose'])).toEqual(withoutKeys(schema, ['examples']))
+  })
+
+  it('у полей со свободным текстом нет примеров, у полей формата — есть', () => {
+    const text = JSON.stringify(schema)
+    expect(text).not.toContain('"prose"')
+    expect(text).not.toContain('Лучше записаться за день')
+    expect(text).not.toContain('Машинкой и ножницами')
+    expect(text).toContain('"examples":["60 мин"]')
+    expect(text).toContain('"examples":["+7 999 123-45-67"]')
   })
 })
 
