@@ -16,7 +16,9 @@
 //   валиден              — итоговая строка (is_final) — документ после обработки без ошибок (stage autofix, errors_count 0)
 //   валиден с 1-й попытки — документ первой попытки после обработки без ошибок
 //   ответ модели валиден — сам ответ модели первой попытки без ошибок, до автоисправлений (насколько модель справляется сама)
-//   спасён обработкой    — валиден, но ответ модели в итоговой попытке был с ошибками: их убрали автоисправления
+//   спасён обработкой    — ответ модели первой попытки с ошибками, после автоисправлений — без
+//   исправлен моделью    — валиден, но первая попытка и после обработки с ошибками: помог запрос исправления
+//   (каскад по первой попытке: ответ модели валиден + спасён обработкой + исправлен моделью = валиден)
 //   модель из ответа     — response_model строк model; «не та модель» — имя без версии (до «:») не совпадает с запрошенным
 //   токены из кэша       — precached_prompt_tokens: в tokens_in не входят, полный вход = tokens_in + tokens_precached
 //   согласованность      — по описаниям, где есть ≥ 2 повтора: одинаковая валидность во всех повторах; одинаковый
@@ -137,6 +139,7 @@ interface Run {
   firstValid: boolean
   firstModelValid: boolean
   rescued: boolean
+  repaired: boolean
   attempts: number
   tokensIn: number
   tokensOut: number
@@ -165,6 +168,8 @@ const analysed: Run[] = runs.flatMap((record) => {
   const at = (attempt: number, stage: LogRow['stage']) => rows.find((row) => row.attempt === attempt && row.stage === stage)
   const finalModel = at(final.attempt, 'model') ?? final
   const valid = final.stage === 'autofix' && final.errors_count === 0
+  const firstValid = at(1, 'autofix')?.errors_count === 0
+  const firstModelValid = at(1, 'model')?.errors_count === 0
   const responseModels = [...new Set(modelRows.flatMap((row) => (row.response_model ? [row.response_model] : [])))]
   return [{
     record,
@@ -173,9 +178,10 @@ const analysed: Run[] = runs.flatMap((record) => {
     final,
     finalModel,
     valid,
-    firstValid: at(1, 'autofix')?.errors_count === 0,
-    firstModelValid: at(1, 'model')?.errors_count === 0,
-    rescued: valid && finalModel.errors_count > 0,
+    firstValid,
+    firstModelValid,
+    rescued: firstValid && !firstModelValid,
+    repaired: valid && !firstValid,
     attempts: Math.max(...rows.map((row) => row.attempt)),
     tokensIn: sum(modelRows.map((row) => row.tokens_in)),
     tokensOut: sum(modelRows.map((row) => row.tokens_out)),
@@ -204,6 +210,7 @@ writeFileSync(join(outDir, 'final.csv'), toCsv(analysed.map((run) => ({
   first_attempt_valid: yes(run.firstValid),
   first_model_valid: yes(run.firstModelValid),
   rescued_by_autofix: yes(run.rescued),
+  repaired_by_model: yes(run.repaired),
   attempts: run.attempts,
   final_errors: run.final.errors_count,
   final_warnings: run.final.warnings_count,
@@ -266,6 +273,7 @@ function metrics(group: Run[]) {
     first_attempt_valid_share: share(group, (run) => run.firstValid),
     first_model_valid_share: share(group, (run) => run.firstModelValid),
     rescued_by_autofix_share: share(group, (run) => run.rescued),
+    repaired_by_model_share: share(group, (run) => run.repaired),
     attempts_mean: round(mean(group.map((run) => run.attempts))),
     ...consistency(group),
     tokens_in_mean: round(mean(group.map((run) => run.tokensIn)), 0),
@@ -306,7 +314,7 @@ const tagRows = [...groups].flatMap(([key, group]) => {
     return {
       model, mode, tag, runs: m.runs, valid_share: m.valid_share, first_attempt_valid_share: m.first_attempt_valid_share,
       first_model_valid_share: m.first_model_valid_share, rescued_by_autofix_share: m.rescued_by_autofix_share,
-      attempts_mean: m.attempts_mean, seconds_median: m.seconds_median,
+      repaired_by_model_share: m.repaired_by_model_share, attempts_mean: m.attempts_mean, seconds_median: m.seconds_median,
     }
   })
 })
@@ -381,7 +389,7 @@ for (const id of annotationIds) {
     sheet.push({
       id, business: run.record.business ?? '', model: run.record.model, mode: run.record.mode, run_id: run.record.runId,
       outcome: run.final.outcome, attempts: run.attempts, completeness_1_5: '', invented_model: '', invented_reached: '',
-      misleading: '', inaccurate: '', false_deletions: '', rule_violations: '', site_language: '', details: '',
+      misleading: '', misleading_schema: '', inaccurate: '', false_deletions: '', rule_violations: '', site_language: '', details: '',
       annotator: '', author_check: '',
     })
   }
@@ -403,6 +411,8 @@ writeFileSync(join(annotationDir, 'README.md'), `# Ручная разметка
 - invented_model — выдуманных фактов в ответе модели (итоговая попытка, до обработки)
 - invented_reached — из них дошло до пользователя (документ после обработки)
 - misleading — ошибок, вводящих клиента в заблуждение (в дошедшем документе): неверные день, часы, цена у услуги, контакт не в том мессенджере
+- misleading_schema — из них вызванных схемой, а не моделью: цены в ₽ при другой валюте в описании (BYN, тенге, USD…) —
+  схема допускает только currency: RUB (src/dsl/schema/frontmatter.ts). Считается и в misleading, и здесь; в details — с пометкой «схема»
 - inaccurate — неточных переносов, которые клиента не подведут
 - false_deletions — настоящих данных из описания, удалённых обработкой
 - rule_violations — нарушений правил промпта (например, вопросы и ответы без вопросов в описании)
