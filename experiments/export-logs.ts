@@ -17,6 +17,8 @@
 //   валиден с 1-й попытки — документ первой попытки после обработки без ошибок
 //   ответ модели валиден — сам ответ модели первой попытки без ошибок, до автоисправлений (насколько модель справляется сама)
 //   спасён обработкой    — валиден, но ответ модели в итоговой попытке был с ошибками: их убрали автоисправления
+//   модель из ответа     — response_model строк model; «не та модель» — имя без версии (до «:») не совпадает с запрошенным
+//   токены из кэша       — precached_prompt_tokens: в tokens_in не входят, полный вход = tokens_in + tokens_precached
 //   согласованность      — по описаниям, где есть ≥ 2 повтора: одинаковая валидность во всех повторах; одинаковый
 //                          итоговый документ; среднее попарное сходство документов (Жаккар по непустым строкам)
 
@@ -82,6 +84,9 @@ interface LogRow {
   error: string | null
   tokens_in: number | null
   tokens_out: number | null
+  /** Колонки миграции 20261021120000: у запусков до неё — null */
+  precached_prompt_tokens?: number | null
+  response_model?: string | null
   latency_ms: number | null
   outcome: string
   is_final: boolean
@@ -135,10 +140,18 @@ interface Run {
   attempts: number
   tokensIn: number
   tokensOut: number
+  /** null — колонки ещё не было (журнал до миграции): «нет данных», а не ноль */
+  tokensPrecached: number | null
+  /** Имена моделей из ответов GigaChat по попыткам (без повторов); пусто — журнал до миграции */
+  responseModels: string[]
+  modelMismatch: boolean
   doc: string
 }
 
-const sum = (values: (number | null)[]) => values.reduce<number>((total, v) => total + (v ?? 0), 0)
+/** «GigaChat-3-Ultra:3.1.25.3» → «gigachat-3-ultra»: версия сборки после «:» не считается подменой */
+const baseName = (name: string) => name.split(':')[0].trim().toLowerCase()
+
+const sum = (values: (number | null | undefined)[]) => values.reduce<number>((total, v) => total + (v ?? 0), 0)
 
 const analysed: Run[] = runs.flatMap((record) => {
   const rows = byRun.get(record.runId)
@@ -152,6 +165,7 @@ const analysed: Run[] = runs.flatMap((record) => {
   const at = (attempt: number, stage: LogRow['stage']) => rows.find((row) => row.attempt === attempt && row.stage === stage)
   const finalModel = at(final.attempt, 'model') ?? final
   const valid = final.stage === 'autofix' && final.errors_count === 0
+  const responseModels = [...new Set(modelRows.flatMap((row) => (row.response_model ? [row.response_model] : [])))]
   return [{
     record,
     prompt: prompts.get(record.id),
@@ -165,6 +179,11 @@ const analysed: Run[] = runs.flatMap((record) => {
     attempts: Math.max(...rows.map((row) => row.attempt)),
     tokensIn: sum(modelRows.map((row) => row.tokens_in)),
     tokensOut: sum(modelRows.map((row) => row.tokens_out)),
+    tokensPrecached: modelRows.some((row) => typeof row.precached_prompt_tokens === 'number')
+      ? sum(modelRows.map((row) => row.precached_prompt_tokens))
+      : null,
+    responseModels,
+    modelMismatch: responseModels.some((name) => baseName(name) !== baseName(record.model)),
     doc: final.stage === 'autofix' ? final.output ?? '' : '',
   }]
 })
@@ -193,6 +212,9 @@ writeFileSync(join(outDir, 'final.csv'), toCsv(analysed.map((run) => ({
   finish_reason: run.finalModel.finish_reason ?? '',
   tokens_in: run.tokensIn,
   tokens_out: run.tokensOut,
+  tokens_precached: run.tokensPrecached,
+  response_model: run.responseModels,
+  model_mismatch: yes(run.modelMismatch),
   model_latency_s: sum(run.rows.map((row) => row.latency_ms)) / 1000,
   seconds: run.record.seconds,
   retries: run.record.retries.length,
@@ -248,10 +270,13 @@ function metrics(group: Run[]) {
     ...consistency(group),
     tokens_in_mean: round(mean(group.map((run) => run.tokensIn)), 0),
     tokens_out_mean: round(mean(group.map((run) => run.tokensOut)), 0),
-    tokens_total: sum(group.map((run) => run.tokensIn + run.tokensOut)),
+    tokens_precached_mean: round(mean(group.flatMap((run) => (run.tokensPrecached === null ? [] : [run.tokensPrecached]))), 0),
+    tokens_total: sum(group.map((run) => run.tokensIn + (run.tokensPrecached ?? 0) + run.tokensOut)),
     seconds_median: round(quantile(seconds, 0.5), 1),
     seconds_p90: round(quantile(seconds, 0.9), 1),
     ...Object.fromEntries(OUTCOMES.map((o) => [`outcome_${o}`, group.filter((run) => run.final.outcome === o).length])),
+    response_model: [...new Set(group.flatMap((run) => run.responseModels))],
+    model_mismatch: group.filter((run) => run.modelMismatch).length,
     pipeline_version: pipelines,
     prompt_base_version: bases,
     versions_mixed: yes(pipelines.length > 1 || bases.length > 1),
@@ -296,6 +321,15 @@ for (const mode of EXP_MODES) {
   const bases = versions(analysed.filter((run) => run.record.mode === mode), (row) => row.prompt_base_version)
   if (bases.length > 1) console.warn(`Внимание: в режиме ${mode} несколько версий промпта: ${bases.join(', ')}. Прогон смешан`)
 }
+
+// --- ответила ли запрошенная модель
+const mismatched = analysed.filter((run) => run.modelMismatch)
+for (const [model, runs] of Map.groupBy(mismatched, (run) => run.record.model)) {
+  console.warn(`Внимание: ${model} — в ${runs.length} запусках ответила другая модель: ` +
+    `${[...new Set(runs.flatMap((run) => run.responseModels))].join(', ')} (например, ${runs[0].record.key})`)
+}
+const unknown = analysed.filter((run) => !run.responseModels.length).length
+if (unknown) console.warn(`Внимание: у ${unknown} запусков нет имени модели из ответа (журнал до миграции 20261021120000 или ответа не было)`)
 
 // --- пакет для ручной разметки
 const annotationDir = join(outDir, 'annotation')

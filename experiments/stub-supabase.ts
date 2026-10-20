@@ -8,7 +8,8 @@
 //
 // STUB_PORT (54329), STUB_PASSWORD (stub), STUB_TOKEN_TTL — срок токена, с (3600);
 // STUB_FAIL — ответы по номеру вызова функции: busy@N, 500@N, net@N (обрыв соединения), limit@N, 401@N, 400@N;
-// STUB_MIX_VERSIONS=1 — у каждого пятого запуска другая pipeline_version (проверка предупреждения выгрузки).
+// STUB_MIX_VERSIONS=1 — у каждого пятого запуска другая pipeline_version (проверка предупреждения выгрузки);
+// STUB_WRONG_MODEL=имя — запросы к этой модели «отвечает» GigaChat-2 (проверка предупреждения о подмене).
 
 import { randomUUID } from 'node:crypto'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
@@ -17,6 +18,7 @@ const PORT = Number(process.env.STUB_PORT ?? 54329)
 const PASSWORD = process.env.STUB_PASSWORD ?? 'stub'
 const TOKEN_TTL = Number(process.env.STUB_TOKEN_TTL ?? 3600)
 const MIX_VERSIONS = process.env.STUB_MIX_VERSIONS === '1'
+const WRONG_MODEL = process.env.STUB_WRONG_MODEL
 const MODELS = ['GigaChat-2-Pro', 'GigaChat-2', 'GigaChat-2-Max', 'GigaChat-3-Lightning', 'GigaChat-3-Pro', 'GigaChat-3-Ultra']
 const failures = new Map(
   (process.env.STUB_FAIL ?? '').split(',').filter(Boolean).map((item) => {
@@ -88,12 +90,13 @@ function fakeRun(userId: string, input: Record<string, unknown>, runNo: number) 
     logs.push({
       ...shared, stage: 'model', output: '```markdown\n' + markdown + '```', diagnostics: [], errors_count: modelErrors,
       warnings_count: 1, missing_data_count: 1, fixed_codes: [], finish_reason: 'stop', error: null,
-      tokens_in: 4200 + a, tokens_out: 300 + runNo % 50, latency_ms: 3000 + Math.round(Math.random() * 9000), is_final: false,
+      tokens_in: 120 + a, tokens_out: 300 + runNo % 50, precached_prompt_tokens: 4096,
+      response_model: input.model === WRONG_MODEL ? 'GigaChat-2:2.0.28.2' : `${input.model}:3.1.25.3`, latency_ms: 3000 + Math.round(Math.random() * 9000), is_final: false,
     })
     logs.push({
       ...shared, stage: 'autofix', output: markdown, diagnostics: [], errors_count: finalErrors, warnings_count: 1,
       missing_data_count: 1, fixed_codes: modelErrors ? ['unclosed-frontmatter'] : [], finish_reason: null, error: null,
-      tokens_in: null, tokens_out: null, latency_ms: null, is_final: last,
+      tokens_in: null, tokens_out: null, precached_prompt_tokens: null, response_model: null, latency_ms: null, is_final: last,
     })
   }
   return { runId, outcome, markdown, message: null, attempts }
