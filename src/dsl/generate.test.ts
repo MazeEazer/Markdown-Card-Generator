@@ -17,7 +17,7 @@ import {
 import { buildSystemPrompt, EXAMPLE_DOCUMENT, EXAMPLE_JSON } from './prompt.ts'
 import { serialize } from './serialize.ts'
 
-const DESCRIPTION = 'Барбершоп «Борода» в Самаре, ул. Ленина, 10. Стрижка 1500, борода 800. Телефон 8-999-123-45-67'
+const DESCRIPTION = 'Барбершоп «Борода» в Самаре, ул. Ленина, 10. Стрижка 1500, борода 800. Телефон 8-999-123-45-67, Telegram @barber_ivan'
 
 const VALID = '---\nname: Борода\nphone: +7 999 123-45-67\n---\n\n## Услуги\n:::services\ntitle: Стрижка\nprice: 1500\n:::\n'
 /** Ошибка без автоисправления: неизвестный блок */
@@ -162,6 +162,27 @@ describe('generateSite: markdown', () => {
     }
     const [attempt] = (await run(model, { now: () => clock })).attempts
     expect(attempt).toMatchObject({ reachedModel: true, finishReason: 'stop', tokensIn: 5000, tokensOut: 300, latencyMs: 2500 })
+  })
+})
+
+describe('generateSite: контакты проверяются по описанию', () => {
+  it('выдуманный контакт удаляется до показа пользователю: в строке model он есть, в autofix — нет', async () => {
+    const invented = VALID.replace('---\n\n', 'contacts:\n  instagram: boroda_samara\n  primary: instagram\n---\n\n')
+    const result = await run(scripted(invented).model)
+    const { model, autofix } = result.attempts[0]
+    expect(model.output).toContain('instagram')
+    expect(autofix!.output).toBe(VALID)
+    expect(autofix!.fixedCodes).toEqual(['ungrounded-contact'])
+  })
+
+  it('удалены все контакты — появляется no-contacts, «Контакты» без адреса убираются', async () => {
+    const description = 'Студия маникюра «Лапки». Маникюр 900 ₽.'
+    const invented = '---\nname: Лапки\nphone: +7 999 123-45-67\n---\n\n## Услуги\n:::services\ntitle: Маникюр\nprice: 900\n:::\n\n## Контакты\n:::contacts\n:::\n'
+    const result = await generateSite({ description, mode: 'markdown', model: scripted(invented).model, deadlineMs: 60_000 })
+    const { autofix } = result.best!
+    expect(autofix!.fixedCodes).toEqual(['ungrounded-contact', 'contacts-block-empty'])
+    expect(autofix!.output).not.toMatch(/phone|:::contacts/)
+    expect(autofix!.diagnostics.map((d) => d.code)).toContain('no-contacts')
   })
 })
 

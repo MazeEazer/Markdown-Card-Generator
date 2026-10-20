@@ -3,6 +3,7 @@
 import { MISSING_DATA_CODES, MODEL_FIXABLE_CODES } from './codes.ts'
 import { applyAllFixes } from './fix.ts'
 import { fromJson } from './fromJson.ts'
+import { groundContacts } from './ground.ts'
 import { pruneEmptyBlocks } from './prune.ts'
 import { offsetToLineCol } from './position.ts'
 import { buildSystemPrompt, type PromptMode } from './prompt.ts'
@@ -215,23 +216,28 @@ interface Checked {
   autofix: Attempt['autofix']
 }
 
-/** Разметка → замечания до и после автоисправлений. Затем — удаление блоков, которым нечего показать (prune.ts). */
-function checkMarkdown(output: string, markdown: string): Omit<Checked, 'document'> {
+/**
+ * Разметка → замечания до и после обработки без нейросети: автоисправления валидатора, затем проверка
+ * контактов и ссылок по описанию (ground.ts), затем удаление блоков, которым нечего показать (prune.ts) —
+ * в этом порядке, чтобы «Контакты», опустевшие после проверки, тоже убрались.
+ */
+function checkMarkdown(output: string, markdown: string, description: string): Omit<Checked, 'document'> {
   const fixed = applyAllFixes(markdown, { skip: MODEL_FIXES })
-  const pruned = pruneEmptyBlocks(fixed.text)
+  const grounded = groundContacts(fixed.text, description)
+  const pruned = pruneEmptyBlocks(grounded.text)
   return {
     model: stageOf(output, validate(markdown)),
     autofix: {
       ...stageOf(pruned.text, validate(pruned.text)),
-      fixedCodes: [...fixed.applied.map((d) => d.code), ...pruned.removed],
+      fixedCodes: [...fixed.applied.map((d) => d.code), ...grounded.removed, ...pruned.removed],
     },
   }
 }
 
 /** Ответ нейросети → документ и замечания. В режиме json: JSON → схема → CardData → разметка. */
-function check(output: string, mode: PromptMode): Checked {
+function check(output: string, mode: PromptMode, description: string): Checked {
   const document = extractDocument(output, mode)
-  if (mode === 'markdown') return { document, ...checkMarkdown(output, document) }
+  if (mode === 'markdown') return { document, ...checkMarkdown(output, document, description) }
 
   const failed = (diagnostics: Diagnostic[]): Checked => ({ document, model: stageOf(output, diagnostics), autofix: null })
   let json: unknown
@@ -244,7 +250,7 @@ function check(output: string, mode: PromptMode): Checked {
   if (!parsed.success) {
     return failed(parsed.error.issues.map((issue) => jsonIssue('json-schema', `${zodPath(issue.path) || 'документ'}: ${issue.message}`)))
   }
-  return { document, ...checkMarkdown(output, serialize(fromJson(parsed.data))) }
+  return { document, ...checkMarkdown(output, serialize(fromJson(parsed.data)), description) }
 }
 
 /** Строка замечания для запроса на исправление: «строка 12 («price: abc»): сообщение». */
@@ -386,7 +392,7 @@ export async function generateSite({
       return result('blacklist')
     }
 
-    const checked = check(reply.text, mode)
+    const checked = check(reply.text, mode, description)
     const attempt: Attempt = { ...base, model: checked.model, autofix: checked.autofix }
     attempts.push(attempt)
 
