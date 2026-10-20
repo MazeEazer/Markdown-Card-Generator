@@ -83,6 +83,8 @@ const FACTS_FROM_EXAMPLES = [
   'Машинкой и ножницами', 'мытьё головы', 'укладка', 'Моделирование', 'горячее полотенце',
   'Лучший фейд', 'мастер не торопится', 'Привожу сына', 'всегда аккуратно', 'Алексей', 'Ольга',
   'с 2015 года', 'без спешки', 'уход за бородой', 'мужская, классика', 'мужская, детская',
+  // Контакты из примеров редактора: модель подставила этот номер в сайт без контактов (шаг 8, 6-no-contacts)
+  '999 123-45-67', 'barber_ivan', 'barber_samara', 'barber.ivan', 'f9LHodD0',
 ]
 
 describe('правила против выдуманных фактов', () => {
@@ -91,6 +93,8 @@ describe('правила против выдуманных фактов', () => 
   })
 
   it('в редакторе примеры остаются правдоподобными', () => {
+    const phone = frontmatterSchema.shape.phone.unwrap().meta() as { examples: string[] }
+    expect(phone.examples).toEqual(['+7 999 123-45-67'])
     expect(BLOCKS.accordion.example).toContain('Можно ли оплатить картой?')
     expect(BLOCKS.services.example).toContain('Машинкой и ножницами')
   })
@@ -173,7 +177,7 @@ describe('getJsonSchema', () => {
   it('JSON с выдуманным полем не проходит', () => {
     expect(documentSchema.safeParse({ ...EXAMPLE_JSON, rating: 5 }).success).toBe(false)
     // Схема в промпте — та же, что у Zod, без примеров у полей со свободным текстом
-    expect(withoutKeys(z.toJSONSchema(documentSchema), ['examples', 'prose'])).toEqual(withoutKeys(schema, ['examples']))
+    expect(withoutKeys(z.toJSONSchema(documentSchema), ['examples', 'prose', 'promptExample'])).toEqual(withoutKeys(schema, ['examples']))
   })
 
   it('у полей со свободным текстом нет примеров, у полей формата — есть', () => {
@@ -182,7 +186,10 @@ describe('getJsonSchema', () => {
     expect(text).not.toContain('Лучше записаться за день')
     expect(text).not.toContain('Машинкой и ножницами')
     expect(text).toContain('"examples":["60 мин"]')
-    expect(text).toContain('"examples":["+7 999 123-45-67"]')
+    // Контакты — заглушки вместо правдоподобных примеров редактора
+    expect(text).toContain('"examples":["+7 900 000-00-00"]')
+    expect(text).toContain('"examples":["vash_telegram"]')
+    expect(text).not.toContain('promptExample')
   })
 })
 

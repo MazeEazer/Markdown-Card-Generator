@@ -20,6 +20,8 @@ import { serialize } from './serialize.ts'
 const DESCRIPTION = 'Барбершоп «Борода» в Самаре, ул. Ленина, 10. Стрижка 1500, борода 800. Телефон 8-999-123-45-67, Telegram @barber_ivan'
 
 const VALID = '---\nname: Борода\nphone: +7 999 123-45-67\n---\n\n## Услуги\n:::services\ntitle: Стрижка\nprice: 1500\n:::\n'
+/** Описание с контактами-заглушками из примера промпта */
+const EXAMPLE_CONTACTS = 'Барбершоп «Борода». Звоните +7 900 000-00-00, Telegram vash_telegram'
 /** Ошибка без автоисправления: неизвестный блок */
 const UNKNOWN_BLOCK = VALID.replace(':::services', ':::prices')
 /** Две ошибки без автоисправления */
@@ -82,7 +84,8 @@ describe('generateSite: markdown', () => {
 
   it('пример документа из промпта проходит проверку без ошибок и исправлений', async () => {
     const { model, calls } = scripted(EXAMPLE_DOCUMENT)
-    const result = await run(model)
+    // Контакты примера — заглушки; чтобы проверка по описанию их не удалила, они должны быть в описании
+    const result = await run(model, { description: EXAMPLE_CONTACTS })
     expect(calls).toHaveLength(1)
     expect(result.outcome).toBe('valid')
     expect(result.best!.autofix!.fixedCodes).toEqual([])
@@ -417,7 +420,7 @@ describe('generateSite: json', () => {
 
   it('JSON по схеме → разметка через serialize', async () => {
     const { model, calls } = scripted(`\`\`\`json\n${example}\n\`\`\``)
-    const result = await runJson(model)
+    const result = await generateSite({ description: EXAMPLE_CONTACTS, mode: 'json', model, deadlineMs: 60_000 })
     expect(calls[0].messages[0].content).toBe(buildSystemPrompt({ mode: 'json' }))
     expect(result.outcome).toBe('valid')
     expect(result.best!.model.output).toBe(`\`\`\`json\n${example}\n\`\`\``)

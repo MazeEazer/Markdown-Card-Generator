@@ -70,24 +70,30 @@ export const CONTACT_ALIASES: Record<string, string> = {
 export const PRIMARY_TARGETS = [...CONTACT_NAMES, 'phone'] as const
 
 const text = (description: string, example: string) => z.string().meta({ description, examples: [example] })
+/**
+ * Контакт: правдоподобный пример — для редактора, а в промпт и JSON Schema идёт заглушка promptExample
+ * (как в шаблонах): нейросеть переносила номер из примера в сайт, где контактов в описании не было.
+ */
+const contact = (description: string, example: string, promptExample: string) =>
+  z.string().meta({ description, examples: [example], promptExample })
 /** Свободный текст: пример — для редактора, в промпт не попадает (как prose в blocks.ts). */
 const prose = (description: string, example: string) => z.string().meta({ description, examples: [example], prose: true })
 
 const linkSchema = z
   .strictObject({
     label: text('Подпись ссылки', 'Telegram'),
-    url: text('Адрес ссылки', 'https://t.me/barber_ivan'),
+    url: contact('Адрес ссылки', 'https://t.me/barber_ivan', 'https://t.me/vash_telegram'),
     icon: iconSchema.optional(),
   })
   .meta({ description: 'Ссылка в шапке сайта' })
 
 export const contactsSchema = z
   .strictObject({
-    telegram: text(CONTACTS.telegram, 'barber_ivan').optional(),
-    whatsapp: text(CONTACTS.whatsapp, '+7 999 123-45-67').optional(),
-    vk: text(CONTACTS.vk, 'barber_samara').optional(),
-    max: text(CONTACTS.max, 'https://max.ru/u/f9LHodD0cOKGmHmt').optional(),
-    instagram: text(CONTACTS.instagram, 'barber.ivan').optional(),
+    telegram: contact(CONTACTS.telegram, 'barber_ivan', 'vash_telegram').optional(),
+    whatsapp: contact(CONTACTS.whatsapp, '+7 999 123-45-67', '+7 900 000-00-00').optional(),
+    vk: contact(CONTACTS.vk, 'barber_samara', 'vasha_stranica').optional(),
+    max: contact(CONTACTS.max, 'https://max.ru/u/f9LHodD0cOKGmHmt', 'https://max.ru/u/vash_profil').optional(),
+    instagram: contact(CONTACTS.instagram, 'barber.ivan', 'vash.instagram').optional(),
     email: z.email().meta({ description: CONTACTS.email, examples: ['hello@example.ru'] }).optional(),
     website: z.url().meta({ description: CONTACTS.website, examples: ['https://example.ru'] }).optional(),
     primary: z
@@ -129,7 +135,7 @@ export const frontmatterSchema = z
         examples: ['barbershop'],
       })
       .optional(),
-    phone: text('Телефон для звонков', '+7 999 123-45-67').optional(),
+    phone: contact('Телефон для звонков', '+7 999 123-45-67', '+7 900 000-00-00').optional(),
     address: text('Адрес без города: улица, дом', 'ул. Ленина, 10').optional(),
     city: text('Город', 'Самара').optional(),
     currency: z
@@ -168,12 +174,12 @@ title: Чем занимаетесь — коротко, из описания
 theme: noir
 accent: "#c0392b"
 business: barbershop
-phone: +7 999 123-45-67
+phone: +7 900 000-00-00
 address: ул. Ленина, 10
 city: Самара
 currency: RUB
 contacts:
-  telegram: barber_ivan
-  whatsapp: +7 999 123-45-67
+  telegram: vash_telegram
+  whatsapp: +7 900 000-00-00
   primary: telegram
 ---`

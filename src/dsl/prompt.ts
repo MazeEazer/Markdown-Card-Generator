@@ -75,11 +75,11 @@ export const EXAMPLE_JSON: DocumentJson = {
   theme: 'noir',
   accent: '#c0392b',
   business: 'barbershop',
-  phone: '+7 999 123-45-67',
+  phone: '+7 900 000-00-00',
   address: 'ул. Ленина, 10',
   city: 'Самара',
   currency: 'RUB',
-  contacts: { telegram: 'barber_ivan', whatsapp: '+7 999 123-45-67', primary: 'telegram' },
+  contacts: { telegram: 'vash_telegram', whatsapp: '+7 900 000-00-00', primary: 'telegram' },
   sections: [
     { type: 'text', title: 'О нас', content: 'Пересказ описания своими словами, без новых фактов.' },
     {
@@ -105,13 +105,14 @@ export const EXAMPLE_JSON: DocumentJson = {
   ],
 }
 
-/** Убирает примеры у полей со свободным текстом (prose в blocks.ts) и сам признак prose. */
+/** Примеры для нейросети: у свободного текста (prose) — никаких, у контактов — заглушка promptExample. */
 function withoutProseExamples(node: unknown): unknown {
   if (Array.isArray(node)) return node.map(withoutProseExamples)
   if (!node || typeof node !== 'object') return node
-  const { prose, examples, ...rest } = node as Record<string, unknown>
+  const { prose, promptExample, examples, ...rest } = node as Record<string, unknown>
   const cleaned = Object.fromEntries(Object.entries(rest).map(([key, value]) => [key, withoutProseExamples(value)]))
-  return prose || examples === undefined ? cleaned : { ...cleaned, examples }
+  if (prose || examples === undefined) return cleaned
+  return { ...cleaned, examples: promptExample === undefined ? examples : [promptExample] }
 }
 
 /** JSON Schema документа — для structured output и для промпта в режиме json. */
@@ -119,10 +120,12 @@ export function getJsonSchema(): Record<string, unknown> {
   return withoutProseExamples(z.toJSONSchema(documentSchema)) as Record<string, unknown>
 }
 
-/** Строка описания поля: «- phone — Телефон для звонков. Пример: +7 999 123-45-67». Устаревшие поля не предлагаем. */
+/** Строка описания поля: «- phone — Телефон для звонков. Пример: +7 900 000-00-00». Устаревшие поля не предлагаем. */
 function describeField(key: string, schema: z.ZodType, indent = ''): string[] {
   const inner = unwrap(schema)
-  const meta = inner.meta() as { description?: string; examples?: unknown[]; deprecated?: boolean; prose?: boolean } | undefined
+  const meta = inner.meta() as
+    | { description?: string; examples?: unknown[]; deprecated?: boolean; prose?: boolean; promptExample?: string }
+    | undefined
   if (meta?.deprecated) return []
   const required = schema instanceof z.ZodOptional ? '' : ' (обязательно)'
   let line = `${indent}- ${key}${required} — ${meta?.description ?? ''}`
@@ -130,8 +133,8 @@ function describeField(key: string, schema: z.ZodType, indent = ''): string[] {
   const options = enumOptions(inner)
   // У тем, видов бизнеса и иконок варианты уже перечислены в описании с пояснениями
   if (options && !meta?.description?.includes(options[0])) line += `. Значения: ${options.join(', ')}`
-  // У свободного текста пример не показываем: нейросеть переписывает его как факт
-  const example = meta?.prose ? undefined : meta?.examples?.[0]
+  // У свободного текста пример не показываем, у контактов — заглушку: нейросеть переписывает пример как факт
+  const example = meta?.prose ? undefined : (meta?.promptExample ?? meta?.examples?.[0])
   if (example !== undefined && !options) line += `. Пример: ${example}`
 
   if (inner instanceof z.ZodObject) {
@@ -172,7 +175,7 @@ const RULES = `Правила:
 3. Текст разделов (например, «О нас») — только пересказ описания своими словами. Не добавляй новых фактов: услуг, опыта, материалов, гарантий, обещаний.
 4. Блок вопросов и ответов (:::accordion) — только с вопросами и ответами, которые есть в описании. Нет их в описании — не делай этот блок. Не придумывай вопросы про оплату, запись, парковку и т. п.
 5. Карту (:::map, раздел «Как добраться») делай, только если в описании есть адрес, куда приходят клиенты. Работа онлайн или на выезде без адреса — карты нет.
-6. phone — только если номер дан для звонков («звоните», «телефон», «тел.») или без указания мессенджера. Номер, данный только для WhatsApp или Telegram («пишите в вотсап»), пиши только в contacts (whatsapp), phone не заполняй: на сайте phone — это кнопка «Позвонить». Телефон пиши в виде +7 999 123-45-67. В telegram, vk, instagram — только имя пользователя, без @ и без ссылки. В whatsapp — номер телефона. В max — ссылка на профиль https://max.ru/…, если она есть в описании.
+6. phone — только если номер дан для звонков («звоните», «телефон», «тел.») или без указания мессенджера. Номер, данный только для WhatsApp или Telegram («пишите в вотсап»), пиши только в contacts (whatsapp), phone не заполняй: на сайте phone — это кнопка «Позвонить». Телефон пиши в виде +7 900 000-00-00. В telegram, vk, instagram — только имя пользователя, без @ и без ссылки. В whatsapp — номер телефона. В max — ссылка на профиль https://max.ru/…, если она есть в описании.
 7. primary — только один из указанных контактов или phone (если указан телефон).
 8. Пиши по-русски, коротко и понятно для клиентов бизнеса. Разделы — о том, что важно клиенту: услуги, цены, как добраться, частые вопросы.
 9. Примеры ниже показывают только формат. Текст «… — из описания» в них условный — подставляй вместо него данные из описания. Не переноси из примеров названия и описания услуг, цены, отзывы и тексты.`
