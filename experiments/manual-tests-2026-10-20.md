@@ -285,6 +285,8 @@ address: ул. Баумана, 15
 
 Что ввел
 английский текст: какой язык будет на сайте?
+Coffee shop in Moscow, latte 250, cappuccino 230, open daily 8–22, telegram coffee_msk
+(описание прислано отдельно 20.10.2026)
 Что получил
 ---
 name: Coffee shop в Москве

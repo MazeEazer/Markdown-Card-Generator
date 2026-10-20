@@ -53,8 +53,15 @@ describe('removePlaceholders: заглушки из примеров промп�
     expect(removePlaceholders(mixed).text).toBe('---\nname: A\n---\n\n## О нас\nСтрижём с утра.\n')
   })
 
+  it('m7 (кофейня): пустое «phone:» в настоящем ответе — удаляется только оно', () => {
+    const { text, removed } = removePlaceholders(manual('m7-english').markdown)
+    expect(removed).toEqual([EMPTY_FIELD])
+    expect(text).not.toMatch(/^phone:/m)
+    expect(text).toContain('telegram: coffee_msk')
+  })
+
   it('настоящие ответы без заглушек и пустых полей не меняются', () => {
-    for (const run of [...STEP8_RUNS, ...MANUAL_RUNS.filter((r) => !['m4-minimal-input', 'm5-car-service', 'm6-no-punctuation'].includes(r.id))]) {
+    for (const run of [...STEP8_RUNS, ...MANUAL_RUNS.filter((r) => !['m4-minimal-input', 'm5-car-service', 'm6-no-punctuation', 'm7-english'].includes(r.id))]) {
       expect(removePlaceholders(run.markdown).removed, run.id).toEqual([])
     }
   })

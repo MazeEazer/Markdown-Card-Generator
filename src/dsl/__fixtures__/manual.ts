@@ -1,6 +1,6 @@
 // Ручные тесты автора 20.10.2026 (experiments/manual-tests-2026-10-20.md): описание и итоговый документ, как его
 // увидел пользователь (промпт f856768f49ed, обработка 490b34d6f775). Модель не указана — в заметках её нет.
-// Тест с английским описанием не включён: в заметках нет самого описания.
+// Описание английского теста (кофейня) автор прислал отдельно — в заметках только итог.
 export interface ManualRun {
   id: string
   model: string | null
@@ -51,5 +51,12 @@ export const MANUAL_RUNS: ManualRun[] = [
     "business": "barbershop",
     "description": "барбершоп борода стрижка 1500 борода 800 тг ivan_borodach работаем каждый день 10 20 казань баумана 15",
     "markdown": "---\nname: Барбершоп «Борода»\ntitle: Стрижки и бритьё в Казани\ntheme: glass\naccent: \"#c0392b\"\nbusiness: barbershop\ncity: Казань\naddress: ул. Баумана, 15\ncurrency: RUB\ncontacts:\n  primary: telegram\n---\n\n## О нас\nБарбершоп «Борода» — работаем ежедневно с 10 до 20. Делаем мужские стрижки за 1500 руб., бороду — от 800 руб.\n\n## Услуги и цены\n:::services\ntitle: Мужская стрижка\nprice: 1500\ndescription: Из описания\n\ntitle: Борода\nprice: 800\n:::\n\n## Часы работы\n:::hours\nежедневно: 10:00–20:00\n:::\n\n## Вопросы\n:::accordion\ntitle: Как добраться?\ncontent: Адрес: ул. Баумана, 15. Работаем каждый день с 10 до 20.\n:::\n\n## Как добраться\n:::map\naddress: ул. Баумана, 15\n:::\n\n## Контакты\n:::contacts\n:::\n"
+  },
+  {
+    "id": "m7-english",
+    "model": null,
+    "business": "other",
+    "description": "Coffee shop in Moscow, latte 250, cappuccino 230, open daily 8–22, telegram coffee_msk",
+    "markdown": "---\nname: Coffee shop в Москве\ntitle: Кофейня с кофе и десертами, открытая 8–22\ntheme: glass\naccent: \"#c0392b\"\nbusiness: other\nphone:\ncontacts:\n  telegram: coffee_msk\ncurrency: RUB\ncity: Москва\naddress: ул. Ленина, 15\n---\n\n## О нас\nКофейня в Москве, где можно выпить свежесваренный кофе и взять десерты. Работаем ежедневно с 8 до 22.\n\n## Услуги и цены\n:::services\ntitle: Латте\nprice: 250\n\ntitle: Капучино\nprice: 230\n:::\n\n## Часы работы\n:::hours\nежедневно: 8:00–22:00\n:::\n\n## Вопросы\n:::accordion\ntitle: Какие напитки есть?\ncontent: Есть латте и капучино по ценам из меню.\n\ntitle: Когда вы работаете?\ncontent: С 8 утра до 10 вечера каждый день.\n:::\n\n## Как добраться\n:::map\n:::\n\n## Контакты\n:::contacts\n:::\n"
   }
 ]

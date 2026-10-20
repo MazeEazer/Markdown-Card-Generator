@@ -177,6 +177,8 @@ describe('groundContacts: адрес и город', () => {
       'run2/6-no-contacts': ['phone: +7 900 000-00-00', 'contacts:', '  whatsapp: +7 900 000-00-00', '  primary: whatsapp'],
       'manual/m4-minimal-input': ['contacts:', '  primary: telegram'],
       'manual/m6-no-punctuation': ['contacts:', '  primary: telegram'],
+      // Кофейня, описание по-английски: адреса в нём нет, город — через «Moscow»
+      'manual/m7-english': ['address: ул. Ленина, 15'],
     })
   })
 })
