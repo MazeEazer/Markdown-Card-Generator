@@ -254,15 +254,18 @@ contacts:
 
 Кнопка **«Создать сайт по описанию»** в списке сайтов: опишите бизнес своими словами (что делаете, цены, адрес, часы, как связаться) и выберите вид бизнеса. Edge Function `generate-site` просит GigaChat составить разметку, сама проверяет её валидатором и исправляет — сначала автоматически, оставшиеся ошибки отправляет нейросети (до 3 попыток). Перед показом контакты и ссылки сверяются с описанием: выдуманный телефон или аватар удаляется. Готовый сайт открывается в редакторе; то, чего не хватает (нет телефона, описаний услуг), редактор подскажет добавить.
 
-Каждое обращение к нейросети пишется в таблицу `generation_logs` (для эксперимента ВКР). Лимит — 20 генераций в сутки (`GENERATION_DAILY_LIMIT`). Проверка на наборе описаний:
+Каждое обращение к нейросети пишется в таблицу `generation_logs` (для эксперимента ВКР). Лимит — 20 генераций в сутки (`GENERATION_DAILY_LIMIT`).
+
+**Эксперимент 1** (протокол — `PLAN.md`, этап 7). Скрипты запускаются Node.js 24 без сборки; вход — по паролю тестового аккаунта из `experiments/.env.local` (`EXP_EMAIL`, `EXP_PASSWORD`; файл в git не попадает):
 
 ```bash
-# access_token приложения скопирован в буфер (DevTools → Application → Local Storage)
-./experiments/run-step8.sh               # описания из experiments/prompts.json × режимы markdown и json
-MODES=json MODEL=GigaChat-2-Max ./experiments/run-step8.sh
+node experiments/run-generation.ts --dry-run       # план: 48 описаний × 5 моделей × 2 режима × 3 повтора
+node experiments/run-generation.ts --models GigaChat-2-Pro --reps 1 --only b01-clean,t03-messenger-only
+node experiments/run-generation.ts                 # весь прогон; прервать — Ctrl+C, продолжить — та же команда
+node experiments/export-logs.ts                    # журнал → final.csv, metrics.csv, metrics-by-tag.csv, annotation/
 ```
 
-Ответы сохраняются в `experiments/results/<дата-время>/` (в git не попадают). Тесты функций — `npm run test:functions` (Deno).
+Результаты — в `experiments/results/exp1/` (в git не попадают). Проверка скриптов без GigaChat — на заглушке `experiments/stub-supabase.ts` (команды в её заголовке). Тесты функций — `npm run test:functions` (Deno).
 
 ## Редактор
 
