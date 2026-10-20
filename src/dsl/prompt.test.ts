@@ -69,9 +69,20 @@ describe('buildSystemPrompt: всё из схемы попадает в пром
   })
 })
 
+describe('правила против выдуманных фактов', () => {
+  it.each([['markdown', markdown], ['json', json]])('%s: необязательные поля — только из описания, текст — без новых фактов', (_mode, prompt) => {
+    expect(prompt).toMatch(/description и duration у услуг.*пиши, только если это есть в описании/)
+    expect(prompt).toMatch(/Нет в описании — не пиши поле совсем/)
+    expect(prompt).toMatch(/«О нас».*только пересказ описания.*Не добавляй новых фактов: услуг, опыта, материалов/)
+    expect(prompt).toMatch(/Не переноси из примеров названия и описания услуг/)
+  })
+})
+
 describe('примеры в промпте', () => {
-  it('пример документа проходит валидатор без замечаний', () => {
-    expect(validate(EXAMPLE_DOCUMENT)).toEqual([])
+  // Единственная подсказка — у второй услуги нет описания: пример показывает, что необязательные поля
+  // пишутся только при наличии данных (иначе нейросеть переписывает описания из примера)
+  it('пример документа проходит валидатор: только подсказка об услуге без описания', () => {
+    expect(validate(EXAMPLE_DOCUMENT).map((d) => d.code)).toEqual(['service-no-description'])
   })
 
   it('пример JSON проходит схему документа', () => {
@@ -83,8 +94,16 @@ describe('примеры в промпте', () => {
     expect(visible(fromJson(EXAMPLE_JSON))).toEqual(visible(fromDocument))
   })
 
+  it('в примерах есть услуга без описания и длительности — пример не подталкивает их выдумывать', () => {
+    const services = EXAMPLE_JSON.sections.flatMap((s) => (s.type === 'services' ? s.items : []))
+    expect(services.some((item) => !item.description && !item.duration)).toBe(true)
+    const blocks = parseDocument(EXAMPLE_DOCUMENT).sections.flatMap((s) => s.blocks).filter((b) => b.name === 'services')
+    const keys = blocks.flatMap((b) => b.items.map((item) => item.fields.map((f) => f.key)))
+    expect(keys.some((k) => !k.includes('description') && !k.includes('duration'))).toBe(true)
+  })
+
   it('JSON → CardData → разметка проходит валидатор', () => {
-    expect(validate(serialize(fromJson(EXAMPLE_JSON)))).toEqual([])
+    expect(validate(serialize(fromJson(EXAMPLE_JSON))).map((d) => d.code)).toEqual(['service-no-description'])
   })
 })
 
