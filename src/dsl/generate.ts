@@ -27,17 +27,22 @@ export type GenerationParams = typeof GENERATION_PARAMS
 
 export const MAX_ATTEMPTS = 3
 
-/** Модели для генерации (этап 1: доступны у физлица; GigaChat-3-Ultra — для эксперимента 1). Первая — по умолчанию. */
+/**
+ * Модели для генерации (доступны у физлица). Первая — по умолчанию: GigaChat-3-Ultra по итогам эксперимента 1
+ * (PLAN.md, этап 7); остальные оставлены для экспериментов.
+ */
 export const GENERATION_MODELS = [
+  'GigaChat-3-Ultra',
   'GigaChat-2-Pro',
   'GigaChat-2',
   'GigaChat-2-Max',
   'GigaChat-3-Lightning',
   'GigaChat-3-Pro',
-  'GigaChat-3-Ultra',
 ] as const
 export type GenerationModel = (typeof GENERATION_MODELS)[number]
 export const DEFAULT_MODEL: GenerationModel = GENERATION_MODELS[0]
+/** Режим по умолчанию — json (эксперимент 1: у Ultra 96/96 валидных, медиана 3,8 с). */
+export const DEFAULT_MODE: PromptMode = 'json'
 
 /** Длина описания бизнеса в символах — одинаково проверяют форма и Edge Function. */
 export const DESCRIPTION_LIMITS = { min: 10, max: 3000 } as const

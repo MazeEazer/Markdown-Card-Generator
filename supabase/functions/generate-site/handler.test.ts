@@ -107,10 +107,9 @@ Deno.test('пользователь из GENERATION_UNLIMITED_USERS — лими
 
 Deno.test('успех: документ, исход и журнал с prompt_version, params и одной итоговой строкой', async () => {
   const { handler, calls } = fakeDeps()
-  const res = await call(handler, post({ description: `  ${DESCRIPTION}  `, business: 'barbershop', siteId: SITE }))
+  const res = await call(handler, post({ description: `  ${DESCRIPTION}  `, business: 'barbershop', siteId: SITE, mode: 'markdown', model: 'GigaChat-2-Pro' }))
   assertEquals(res.status, 200)
   assertEquals(res.body, { runId: 'run-1', outcome: 'valid', markdown: VALID, message: null, attempts: 1 })
-  // По умолчанию — markdown и GigaChat-2-Pro
   assertEquals(calls.models, ['GigaChat-2-Pro'])
 
   const version = await promptVersion(buildSystemPrompt({ mode: 'markdown', business: 'barbershop' }))
@@ -143,6 +142,13 @@ Deno.test('GigaChat-3-Ultra принимается (эксперимент 1), �
   assertEquals(res.status, 200)
   assertEquals(calls.models, ['GigaChat-3-Ultra'])
   assertEquals((await call(handler, post({ description: DESCRIPTION, model: 'GigaChat-4' }))).status, 400)
+})
+
+Deno.test('по умолчанию — GigaChat-3-Ultra и режим json', async () => {
+  const { handler, calls } = fakeDeps()
+  await call(handler, post({ description: DESCRIPTION }))
+  assertEquals(calls.models, ['GigaChat-3-Ultra'])
+  assertEquals(calls.logs[0].mode, 'json')
 })
 
 Deno.test('нейросеть занята — 503 с code: busy, попытка записана с reached_model = false', async () => {
