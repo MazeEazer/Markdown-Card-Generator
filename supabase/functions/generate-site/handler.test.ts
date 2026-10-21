@@ -170,7 +170,7 @@ Deno.test('документа нет (отказ фильтра) — 200 с mark
 
 Deno.test('журнал не записался — сайт всё равно отдаётся', async () => {
   const { handler } = fakeDeps({ insertLogs: () => Promise.reject(new Error('db down')) })
-  const res = await call(handler, post({ description: DESCRIPTION }))
+  const res = await call(handler, post({ description: DESCRIPTION, mode: 'markdown' }))
   assertEquals(res.status, 200)
   assertEquals(res.body.markdown, VALID)
 })
