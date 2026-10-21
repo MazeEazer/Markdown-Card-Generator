@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { templateMarkdown, TEMPLATES } from '../data/templates/index.ts'
-import { applyAllFixes } from './fix.ts'
+import { addMissingMap, applyAllFixes, MAP_ADDED } from './fix.ts'
 import { validate } from './validate.ts'
 
 /** Исправимые замечания, которые остались в тексте. */
@@ -101,5 +101,46 @@ describe('applyAllFixes', () => {
       const { text: fixed } = applyAllFixes(text)
       expect(fixable(fixed).length, JSON.stringify(text)).toBeLessThanOrEqual(fixable(text).length)
     }
+  })
+})
+
+describe('addMissingMap', () => {
+  const HEAD = '---\nname: Аптека\nphone: +7 846 123-45-67\naddress: ул. Ленина, 10\ncity: Самара\n---\n\n'
+  const CONTACTS = '## Контакты\n:::contacts\n:::\n'
+
+  it.each(TEMPLATES.map((t) => t.id))('шаблон %s не меняется', (id) => {
+    const text = templateMarkdown(id, 'Тест')
+    expect(addMissingMap(text)).toEqual({ text, added: [] })
+  })
+
+  it('адрес есть, карты нет — раздел добавляется перед «Контактами»', () => {
+    const text = `${HEAD}## Адреса\n- ул. Ленина, 10\n- ул. Мира, 5\n\n${CONTACTS}`
+    const result = addMissingMap(text)
+    expect(result.added).toEqual([MAP_ADDED])
+    expect(result.text).toBe(`${HEAD}## Адреса\n- ул. Ленина, 10\n- ул. Мира, 5\n\n## Как добраться\n:::map\n:::\n\n${CONTACTS}`)
+    // результат проходит проверку: карта с адресом — без замечаний
+    expect(validate(result.text).filter((d) => d.code === 'map-no-address')).toEqual([])
+  })
+
+  it('«Контактов» нет — раздел добавляется в конец', () => {
+    expect(addMissingMap(`${HEAD}## О нас\nТекст.`).text).toBe(`${HEAD}## О нас\nТекст.\n\n## Как добраться\n:::map\n:::\n`)
+  })
+
+  it('«Контакты» без блока, только заголовок — тоже перед ними', () => {
+    const result = addMissingMap(`${HEAD}## Контакты\nЗвоните.\n`)
+    expect(result.text).toBe(`${HEAD}## Как добраться\n:::map\n:::\n\n## Контакты\nЗвоните.\n`)
+  })
+
+  it('адреса нет — не добавляется', () => {
+    const text = '---\nname: Репетитор\ncity: Самара\n---\n\n## О себе\nУчу онлайн.\n'
+    expect(addMissingMap(text)).toEqual({ text, added: [] })
+  })
+
+  it('карта уже есть — не дублируется', () => {
+    const text = `${HEAD}## Где мы\n:::map\n:::\n\n${CONTACTS}`
+    expect(addMissingMap(text)).toEqual({ text, added: [] })
+    // и повторный вызов ничего не меняет
+    const once = addMissingMap(`${HEAD}${CONTACTS}`).text
+    expect(addMissingMap(once)).toEqual({ text: once, added: [] })
   })
 })

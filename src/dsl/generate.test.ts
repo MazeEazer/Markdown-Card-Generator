@@ -472,7 +472,9 @@ describe('generateSite: json', () => {
     expect(calls).toHaveLength(1)
     expect(result.outcome).toBe('valid')
     const { autofix } = result.attempts[0]
-    expect(autofix!.fixedCodes).toEqual(['json-null-field', 'json-null-field', 'json-null-field'])
+    // Адрес есть, карты нет — обработка добавила «Как добраться»
+    expect(autofix!.fixedCodes).toEqual(['json-null-field', 'json-null-field', 'json-null-field', 'map-added'])
+    expect(autofix!.output).toContain(':::map')
     expect(autofix!.output).not.toMatch(/phone|title: $/m)
     expect(autofix!.diagnostics.map((d) => d.code)).toContain('no-contacts')
   })
@@ -605,7 +607,9 @@ describe('pipelineFingerprint: версия обработки ответа', ()
     expect(markdown.fixRequest).toMatch(/Ошибок нет\.\n\nЖелательно исправить:\n.*master/)
     expect(noName.fixRequest).toMatch(/Ошибки — исправь обязательно:\n.*нет названия/)
     // JSON: null и пустая строка удалены, выдуманный instagram удалён, «Контакты» с адресом остались
-    expect(json.autofix.fixedCodes).toEqual(['json-null-field', 'json-null-field', 'ungrounded-contact'])
+    expect(json.autofix.fixedCodes).toEqual(['json-null-field', 'json-null-field', 'ungrounded-contact', 'map-added'])
+    // Адрес в шапке есть, карты у модели не было — добавлена перед «Контактами»
+    expect(json.autofix.output).toMatch(/:::map\n:::\n\n## Контакты/)
     expect(json.autofix.output).toContain(':::contacts')
     expect(json.autofix.diagnostics).toContain('warning:no-contacts')
     // Заглушки и пустые поля
@@ -643,8 +647,9 @@ describe('несколько адресов: раздел «Адреса» пр�
     const best = result.best!
     expect(best.autofix!.counts.errors).toBe(0)
     expect(best.autofix!.diagnostics.map((d) => d.code)).not.toContain('address-without-city')
-    // ничего не удалено: ни из шапки (address, city), ни из текста раздела
-    expect(best.autofix!.fixedCodes).toEqual([])
+    // ничего не удалено: ни из шапки (address, city), ни из текста раздела; добавлена только карта
+    expect(best.autofix!.fixedCodes).toEqual(['map-added'])
+    expect(best.autofix!.output).toMatch(/## Как добраться\n:::map\n:::/)
     for (const address of ADDRESSES) expect(best.autofix!.output).toContain(address)
     expect(best.autofix!.output).toContain('address: ул. Ленина, 10')
   }

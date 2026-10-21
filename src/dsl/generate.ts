@@ -1,7 +1,7 @@
 // Цикл «генерация → проверка → исправление» (этап 5). Чистая функция: вызов нейросети передаётся
 // параметром, поэтому цикл проверяется тестами без сети, а Edge Function остаётся тонкой обёрткой.
 import { MISSING_DATA_CODES, MODEL_FIXABLE_CODES } from './codes.ts'
-import { applyAllFixes } from './fix.ts'
+import { addMissingMap, applyAllFixes } from './fix.ts'
 import { fromJson } from './fromJson.ts'
 import { groundContacts } from './ground.ts'
 import { groundNumbers } from './groundNumbers.ts'
@@ -239,7 +239,7 @@ interface Checked {
 /**
  * Разметка → замечания до и после обработки без нейросети: автоисправления валидатора, заглушки из примеров
  * и пустые поля (placeholders.ts), проверка по описанию контактов, ссылок и адреса (ground.ts), цен, длительностей
- * и часов (groundNumbers.ts), удаление блоков, которым нечего показать (prune.ts) — в этом порядке, чтобы
+ * и часов (groundNumbers.ts), добавление карты, если есть адрес (fix.ts, addMissingMap), удаление блоков, которым нечего показать (prune.ts) — в этом порядке, чтобы
  * опустевшие блоки тоже убрались.
  */
 function checkMarkdown(output: string, markdown: string, description: string): { model: CheckedStage; autofix: NonNullable<Attempt['autofix']> } {
@@ -247,12 +247,14 @@ function checkMarkdown(output: string, markdown: string, description: string): {
   const cleaned = removePlaceholders(fixed.text, description)
   const grounded = groundContacts(cleaned.text, description)
   const numbers = groundNumbers(grounded.text, description)
-  const pruned = pruneEmptyBlocks(numbers.text)
+  // После проверки по описанию (адрес настоящий), до удаления пустых блоков
+  const mapped = addMissingMap(numbers.text)
+  const pruned = pruneEmptyBlocks(mapped.text)
   return {
     model: stageOf(output, validate(markdown)),
     autofix: {
       ...stageOf(pruned.text, validate(pruned.text)),
-      fixedCodes: [...fixed.applied.map((d) => d.code), ...cleaned.removed, ...grounded.removed, ...numbers.removed, ...pruned.removed],
+      fixedCodes: [...fixed.applied.map((d) => d.code), ...cleaned.removed, ...grounded.removed, ...numbers.removed, ...mapped.added, ...pruned.removed],
     },
   }
 }

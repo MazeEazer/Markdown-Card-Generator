@@ -134,6 +134,7 @@ master: Иван
           "json-null-field",
           "json-null-field",
           "ungrounded-contact",
+          "map-added",
         ],
         "output": "---
 name: Лапки
@@ -145,6 +146,10 @@ city: Самара
 :::services
 title: Маникюр
 price: 900
+:::
+
+## Как добраться
+:::map
 :::
 
 ## Контакты
@@ -169,6 +174,10 @@ city: Самара
 :::services
 title: Маникюр
 price: 900
+:::
+
+## Как добраться
+:::map
 :::
 
 ## Контакты
