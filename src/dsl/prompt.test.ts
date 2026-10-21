@@ -125,6 +125,11 @@ describe('правила против выдуманных фактов', () => 
     expect(prompt).toMatch(/Карту \(:::map.*только если в описании есть адрес, куда приходят клиенты/)
   })
 
+  it.each([['markdown', markdown], ['json', json]])('%s: несколько адресов — первый в address, все — списком в разделе «Адреса»', (_mode, prompt) => {
+    expect(prompt).toMatch(/несколько адресов.*в address и city пиши первый.*раздел «Адреса» — список всех адресов из описания/)
+    expect(prompt).toMatch(/Не теряй ни один адрес и не придумывай новых/)
+  })
+
   it.each([['markdown', markdown], ['json', json]])('%s: необязательные поля — только из описания, текст — без новых фактов', (_mode, prompt) => {
     expect(prompt).toMatch(/description и duration у услуг.*пиши, только если это есть в описании/)
     expect(prompt).toMatch(/Нет в описании — не пиши поле совсем/)

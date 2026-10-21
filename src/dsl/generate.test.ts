@@ -631,3 +631,39 @@ describe('pipelineFingerprint: версия обработки ответа', ()
     expect(fingerprint).toMatchSnapshot()
   })
 })
+
+describe('несколько адресов: раздел «Адреса» проходит проверку и обработку', () => {
+  const PHARMACY =
+    'Аптека «Здоровье» в Самаре. Адреса: ул. Ленина, 10; ул. Мира, 5; пр. Кирова, 120. Работаем ежедневно с 8 до 22. Телефон 8-846-123-45-67'
+  const LIST = '- Самара, ул. Ленина, 10\n- Самара, ул. Мира, 5\n- Самара, пр. Кирова, 120'
+  const ADDRESSES = ['ул. Ленина, 10', 'ул. Мира, 5', 'пр. Кирова, 120']
+
+  const check = (result: Awaited<ReturnType<typeof generateSite>>) => {
+    expect(result.outcome).toBe('valid')
+    const best = result.best!
+    expect(best.autofix!.counts.errors).toBe(0)
+    expect(best.autofix!.diagnostics.map((d) => d.code)).not.toContain('address-without-city')
+    // ничего не удалено: ни из шапки (address, city), ни из текста раздела
+    expect(best.autofix!.fixedCodes).toEqual([])
+    for (const address of ADDRESSES) expect(best.autofix!.output).toContain(address)
+    expect(best.autofix!.output).toContain('address: ул. Ленина, 10')
+  }
+
+  it('markdown', async () => {
+    const doc = `---\nname: Здоровье\nphone: +7 846 123-45-67\naddress: ул. Ленина, 10\ncity: Самара\n---\n\n## Адреса\n${LIST}\n`
+    const { model } = scripted(doc)
+    check(await generateSite({ description: PHARMACY, mode: 'markdown', model, deadlineMs: 60_000 }))
+  })
+
+  it('json', async () => {
+    const json = JSON.stringify({
+      name: 'Здоровье',
+      phone: '+7 846 123-45-67',
+      address: 'ул. Ленина, 10',
+      city: 'Самара',
+      sections: [{ type: 'text', title: 'Адреса', content: LIST }],
+    })
+    const { model } = scripted(json)
+    check(await generateSite({ description: PHARMACY, mode: 'json', model, deadlineMs: 60_000 }))
+  })
+})
