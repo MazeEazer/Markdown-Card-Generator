@@ -119,7 +119,7 @@ describe('правила против выдуманных фактов', () => 
 
   it.each([['markdown', markdown], ['json', json]])('%s: без служебного текста на сайте; цвет — только если назван', (_mode, prompt) => {
     expect(prompt).toMatch(/не объясняй на сайте, почему какого-то раздела нет/)
-    expect(prompt).toMatch(/accent \(цвет\) пиши, только если цвет назван в описании/)
+    expect(prompt).toMatch(/accent \(цвет\) и theme \(оформление\) пиши, только если цвет или стиль названы в описании/)
   })
 
   it.each([['markdown', markdown], ['json', json]])('%s: вопросы — только из описания, карта — только при адресе', (_mode, prompt) => {
@@ -150,6 +150,42 @@ describe('правила против выдуманных фактов', () => 
     expect(prompt).toMatch(/нет улицы, но есть ориентир \(метро, торговый центр, остановка\), пиши в address ориентир так, как он назван в описании/)
     expect(prompt).toMatch(/а не слова «центр» или «район»/)
     expect(prompt).toMatch(/Нет ни улицы, ни ориентира — address не заполняй/)
+  })
+
+  describe('каркас ниши и вид бизнеса', () => {
+    const frame = (business: Parameters<typeof buildSystemPrompt>[0]['business']) => buildSystemPrompt({ mode: 'json', business })
+
+    it.each([
+      ['barbershop', ['«О нас»', '«Услуги и цены»', '«Часы работы»', '«Как добраться»', '«Контакты»']],
+      ['nails', ['«О студии»', '«Услуги и цены»', '«Часы работы»']],
+      ['tutor', ['«Обо мне»', '«Занятия и цены»', '«Расписание»']],
+      ['photographer', ['«Обо мне»', '«Услуги и цены»', '«Когда снимаю»']],
+    ] as const)('%s: короткий профиль с названиями разделов, без «Отзывов» и «Вопросов»', (business, expected) => {
+      const prompt = frame(business)
+      const line = prompt.split('\n').find((l) => l.startsWith('Каркас сайта'))!
+      for (const title of expected) expect(line).toContain(title)
+      expect(line).not.toMatch(/Отзывы|Вопросы/)
+      expect(line).toContain('Делай только разделы, для которых есть данные в описании; каркас не заполняй придуманным')
+      expect(line).toMatch(/Важное для этой ниши:/)
+    })
+
+    it('«важное для ниши» — без названий, цен и примеров, которые могли бы утечь на сайты', () => {
+      for (const business of ['barbershop', 'nails', 'tutor', 'photographer'] as const) {
+        const line = frame(business).split('\n').find((l) => l.startsWith('Каркас сайта'))!
+        expect(line, business).not.toMatch(/онлайн|очно|за час|за день|детск|борода|Ленина|\d/i)
+      }
+    })
+
+    it('other, «не важно» и без ниши — профиля нет', () => {
+      expect(frame('other')).not.toContain('Каркас сайта')
+      expect(frame(undefined)).not.toContain('Каркас сайта')
+    })
+
+    it.each([['markdown', markdown], ['json', json]])('%s: theme и accent — только если названы; business — не угадывать', (_mode, prompt) => {
+      expect(prompt).toMatch(/accent \(цвет\) и theme \(оформление\) пиши, только если цвет или стиль названы в описании/)
+      expect(prompt).toMatch(/Если не указан, пиши business, только когда вид бизнеса прямо назван в описании/)
+      expect(prompt).toMatch(/иначе business: other\. Не угадывай/)
+    })
   })
 
   it.each([['markdown', markdown], ['json', json]])('%s: описание — только источник фактов, отзывы — дословно', (_mode, prompt) => {

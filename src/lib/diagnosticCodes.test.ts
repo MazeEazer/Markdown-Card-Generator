@@ -25,8 +25,8 @@ function ruleCodes(): Map<string, Set<string>> {
 describe('классификация кодов для AI-генерации', () => {
   const codes = ruleCodes()
 
-  it('в правилах 38 кодов', () => {
-    expect(codes.size).toBe(38)
+  it('в правилах 41 код', () => {
+    expect(codes.size).toBe(41)
   })
 
   it('каждое предупреждение и подсказка — ровно в одном списке', () => {

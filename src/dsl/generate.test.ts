@@ -595,7 +595,7 @@ describe('logRows: строки журнала generation_logs', () => {
 
 describe('pipelineFingerprint: версия обработки ответа', () => {
   const fingerprint = JSON.parse(pipelineFingerprint())
-  const [markdown, json, broken, placeholders, unclosed, noName, amenities, phrases, reviews] = fingerprint.probes
+  const [markdown, json, broken, placeholders, unclosed, noName, amenities, phrases, profile, grooming, reviews] = fingerprint.probes
 
   it('на зондах срабатывает каждый шаг обработки', () => {
     // Автоисправления, проверка по описанию и удаление пустых блоков
@@ -635,6 +635,16 @@ describe('pipelineFingerprint: версия обработки ответа', ()
     expect(phrases.phraseRemoval.text).toBe(
       '---\nname: Зерно\nphone: +7 999 123-45-67\n---\n\n## О нас\nУютная кофейня.\n\n## Услуги\n:::services\ntitle: Кофе\nprice: 200\n:::\n',
     )
+    // Профиль: ниша выбрана — nails, разделы по порядку и с названиями профиля, тема и accent ниши
+    expect(profile.autofix.fixedCodes).toEqual(['business-fixed', 'profile-sections', 'profile-style'])
+    expect(profile.autofix.output).toContain('business: nails')
+    expect(profile.autofix.output).toContain('theme: glass')
+    expect(profile.autofix.output).toContain('accent: "#8e44ad"')
+    expect(profile.autofix.output).toMatch(/## О студии[\s\S]*## Услуги и цены[\s\S]*## Контакты/)
+    // Ниша не выбрана и слов барбершопа нет — other, оформление не задано
+    expect(grooming.autofix.fixedCodes).toEqual(['business-fixed'])
+    expect(grooming.autofix.output).toContain('business: other')
+    expect(grooming.autofix.output).not.toContain('theme:')
     // Отзывы: выдуманный удалён целиком, у настоящего убраны автор, оценка и дата, которых нет в описании
     expect(reviews.autofix.fixedCodes).toEqual(['ungrounded-review', 'ungrounded-review', 'ungrounded-review', 'ungrounded-review'])
     expect(reviews.autofix.output).toContain('text: Сдала ЕГЭ на 92')
@@ -843,5 +853,36 @@ describe('адрес-ориентир: «метро …» вместо «цен�
     const result = await generateSite({ description: DESCRIPTION, mode: 'markdown', model, deadlineMs: 60_000 })
     expect(result.best!.autofix!.output).not.toContain('address:')
     expect(result.best!.autofix!.fixedCodes).toContain('ungrounded-contact')
+  })
+})
+
+describe('профиль ниши в генерации', () => {
+  const DESCRIPTION = 'Мастер маникюра Лена, Самара, ул. Садовая, 5. Маникюр 1500. Звоните 8-999-000-33-44'
+  const messy =
+    '---\nname: Лена\nphone: +7 999 000-33-44\naddress: ул. Садовая, 5\ncity: Самара\nbusiness: nails\n---\n\n## Контакты\n:::contacts\n:::\n\n## Прайс\n:::services\ntitle: Маникюр\nprice: 1500\n:::\n'
+
+  it('business выбран: разделы по профилю, карта на своём месте, тема и accent ниши; новых разделов нет, кроме карты', async () => {
+    const { model } = scripted(messy)
+    const result = await generateSite({ description: DESCRIPTION, mode: 'markdown', business: 'nails', model, deadlineMs: 60_000 })
+    expect(result.outcome).toBe('valid')
+    const out = result.best!.autofix!.output
+    expect(out.match(/^## .*$/gm)).toEqual(['## Услуги и цены', '## Как добраться', '## Контакты'])
+    expect(out).toContain('theme: glass')
+    expect(out).toContain('accent: "#8e44ad"')
+    expect(result.best!.autofix!.fixedCodes).toEqual(['map-added', 'profile-sections', 'profile-style'])
+  })
+
+  it('business в запросе не передан, модель написала other — профиль не применяется, разделы как были', async () => {
+    const { model } = scripted(messy.replace('business: nails', 'business: other'))
+    const result = await generateSite({ description: DESCRIPTION, mode: 'markdown', model, deadlineMs: 60_000 })
+    const out = result.best!.autofix!.output
+    expect(out).not.toContain('theme:')
+    // other: порядок по слотам, но названия модели не трогаем
+    expect(out.match(/^## .*$/gm)).toEqual(['## Прайс', '## Как добраться', '## Контакты'])
+  })
+
+  it('processResponse принимает нишу', () => {
+    const { autofix } = processResponse(messy.replace('business: nails', 'business: other'), 'markdown', DESCRIPTION, { business: 'nails' })
+    expect(autofix!.output).toContain('business: nails')
   })
 })

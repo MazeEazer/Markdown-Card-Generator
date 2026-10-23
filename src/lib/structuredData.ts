@@ -1,14 +1,10 @@
 // Разметка для поисковиков и мессенджеров: JSON-LD Schema.org LocalBusiness, description, Open Graph.
 import { contactLinks } from '../dsl/contactLinks'
 import { parsePrice } from '../dsl/price'
+import { profileOf } from '../dsl/profiles/index'
 import { AMENITIES, type AmenityKey } from '../dsl/schema/amenities'
 import type { CardData, CardSection } from '../types/card'
 
-/** Тип Schema.org по виду бизнеса. BarberShop в Schema.org нет — ближайший HairSalon. */
-const BUSINESS_TYPES: Record<string, string> = {
-  barbershop: 'HairSalon',
-  nails: 'NailSalon',
-}
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
@@ -123,7 +119,8 @@ export function localBusiness(card: CardData): Record<string, unknown> | null {
 
   return {
     '@context': 'https://schema.org',
-    '@type': BUSINESS_TYPES[card.business ?? ''] ?? 'LocalBusiness',
+    // Тип по профилю ниши (BarberShop в Schema.org нет — HairSalon; у репетитора и фотографа подходящего подтипа LocalBusiness нет)
+    '@type': profileOf(card.business)?.schemaType ?? 'LocalBusiness',
     name: card.name,
     ...(siteDescription(card) ? { description: siteDescription(card) } : {}),
     ...(isAbsoluteUrl(card.avatar) ? { image: card.avatar } : {}),
@@ -143,6 +140,7 @@ export function localBusiness(card: CardData): Record<string, unknown> | null {
     ...(catalog ? { hasOfferCatalog: catalog } : {}),
     ...reviews(card),
     ...amenityFeatures(card),
+    ...(profileOf(card.business)?.schemaExtra ?? {}),
     ...(sameAs.length ? { sameAs } : {}),
   }
 }

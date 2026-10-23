@@ -15,6 +15,7 @@ exports[`pipelineFingerprint: версия обработки ответа > с�
     "no-contacts",
     "phone-format",
     "price-not-number",
+    "profile-section-missing",
     "rating-invalid",
     "service-no-description",
     "telegram-username",
@@ -24,6 +25,7 @@ exports[`pipelineFingerprint: версия обработки ответа > с�
     "accent-format",
     "accent-low-contrast",
     "accent-unquoted",
+    "amenity-duplicate",
     "contact-link",
     "contacts-block-text",
     "crlf-heading",
@@ -586,6 +588,151 @@ phone: +7 999 123-45-67
 title: Кофе
 price: 200
 :::
+",
+      },
+    },
+    {
+      "autofix": {
+        "diagnostics": [
+          "warning:profile-section-missing",
+          "info:service-no-description",
+        ],
+        "fixedCodes": [
+          "business-fixed",
+          "profile-sections",
+          "profile-style",
+        ],
+        "output": "---
+name: Лена
+phone: +7 999 000-33-44
+business: nails
+theme: glass
+accent: "#8e44ad"
+---
+
+## О студии
+Мастер маникюра.
+
+## Услуги и цены
+:::services
+title: Маникюр
+price: 1500
+:::
+
+## Контакты
+:::contacts
+:::
+",
+      },
+      "fixRequest": "Описание бизнеса от пользователя:
+Мастер маникюра Лена, Самара. Маникюр 1500. Звоните 8-999-000-33-44
+
+Твой ответ:
+---
+name: Лена
+phone: +7 999 000-33-44
+business: nails
+theme: glass
+accent: "#8e44ad"
+---
+
+## О студии
+Мастер маникюра.
+
+## Услуги и цены
+:::services
+title: Маникюр
+price: 1500
+:::
+
+## Контакты
+:::contacts
+:::
+
+
+Ошибок нет.
+
+Исправь перечисленное. Остальное не меняй. Не добавляй фактов, которых нет в описании: если для исправления нужны такие данные — убери поле или строку.
+
+Верни документ целиком. Ответ — только документ на языке MD Card, начиная со строки ---.",
+      "model": [
+        "info:service-no-description",
+      ],
+      "phraseRemoval": {
+        "removed": [],
+        "text": "---
+name: Лена
+phone: +7 999 000-33-44
+business: nails
+theme: glass
+accent: "#8e44ad"
+---
+
+## О студии
+Мастер маникюра.
+
+## Услуги и цены
+:::services
+title: Маникюр
+price: 1500
+:::
+
+## Контакты
+:::contacts
+:::
+",
+      },
+    },
+    {
+      "autofix": {
+        "diagnostics": [],
+        "fixedCodes": [
+          "business-fixed",
+        ],
+        "output": "---
+name: Груминг
+phone: +7 999 000-33-45
+business: other
+---
+
+## О нас
+Стрижка собак и кошек.
+",
+      },
+      "fixRequest": "Описание бизнеса от пользователя:
+Груминг: стрижка собак и кошек, Самара. Звоните 8-999-000-33-45
+
+Твой ответ:
+---
+name: Груминг
+phone: +7 999 000-33-45
+business: other
+---
+
+## О нас
+Стрижка собак и кошек.
+
+
+Ошибок нет.
+
+Исправь перечисленное. Остальное не меняй. Не добавляй фактов, которых нет в описании: если для исправления нужны такие данные — убери поле или строку.
+
+Верни документ целиком. Ответ — только документ на языке MD Card, начиная со строки ---.",
+      "model": [
+        "warning:profile-section-missing",
+        "warning:profile-section-missing",
+        "warning:profile-section-missing",
+      ],
+      "phraseRemoval": {
+        "removed": [],
+        "text": "---
+name: Груминг
+phone: +7 999 000-33-45
+business: other
+---
+
+## О нас
+Стрижка собак и кошек.
 ",
       },
     },

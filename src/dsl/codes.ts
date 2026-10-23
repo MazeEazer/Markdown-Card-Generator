@@ -15,6 +15,7 @@ export const MISSING_DATA_CODES: ReadonlySet<string> = new Set([
   'hours-empty', // блок часов без строк
   'hours-day-missing', // не указаны какие-то дни недели (подсказка)
   'service-no-description', // у услуги нет описания (подсказка)
+  'profile-section-missing', // для ниши обычно указывают раздел, которого нет (подсказка)
   'missing-item-field', // у отзыва нет автора, у услуги — названия…
   'telegram-username', // имя в Telegram не подходит — нужно настоящее
   'max-not-link', // в MAX нужна ссылка на профиль
@@ -39,6 +40,7 @@ export const MODEL_FIXABLE_CODES: ReadonlySet<string> = new Set([
   'hours-close-before-open', // закрытие раньше открытия
   'hours-day-twice', // день в двух строках
   'duplicate-service', // услуга дважды
+  'amenity-duplicate', // удобство дважды в одном блоке
   'contacts-block-text', // текст внутри :::contacts (автоисправление)
   'accent-unquoted', // автоисправление
   'accent-format', // автоисправление
