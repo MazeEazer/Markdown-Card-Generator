@@ -123,6 +123,26 @@ master: Иван
         "warning:stray-text",
         "warning:map-no-address",
       ],
+      "phraseRemoval": {
+        "removed": [],
+        "text": "---
+name: Барбершоп
+contacts:
+  telegram: probe_barber
+  primary: telegram
+---
+## Цены
+:::services
+title: Стрижка
+price: 1500
+master: Иван
+
+:::
+:::hours
+ежедневно: 10:00–20:00
+:::
+",
+      },
     },
     {
       "autofix": {
@@ -193,6 +213,29 @@ price: 900
       "model": [
         "info:service-no-description",
       ],
+      "phraseRemoval": {
+        "removed": [],
+        "text": "---
+name: Лапки
+address: ул. Ленинградская, 40
+city: Самара
+---
+
+## Услуги
+:::services
+title: Маникюр
+price: 900
+:::
+
+## Как добраться
+:::map
+:::
+
+## Контакты
+:::contacts
+:::
+",
+      },
     },
     {
       "autofix": null,
@@ -211,6 +254,7 @@ price: 900
       "model": [
         "error:json-schema",
       ],
+      "phraseRemoval": null,
     },
     {
       "autofix": {
@@ -264,6 +308,20 @@ title: Педикюр
         "warning:no-contacts",
         "info:service-no-description",
       ],
+      "phraseRemoval": {
+        "removed": [],
+        "text": "---
+name: Маникюр Тольятти
+---
+
+## Услуги
+:::services
+title: Маникюр 1
+
+title: Педикюр
+:::
+",
+      },
     },
     {
       "autofix": {
@@ -320,6 +378,22 @@ price: 1800
         "error:unclosed-frontmatter",
         "info:service-no-description",
       ],
+      "phraseRemoval": {
+        "removed": [],
+        "text": "---
+name: Лапки
+phone: +7 937 111-22-33
+contacts:
+  telegram: lapki_tlt
+---
+
+## Услуги
+:::services
+title: Маникюр
+price: 1800
+:::
+",
+      },
     },
     {
       "autofix": {
@@ -356,6 +430,16 @@ title: Математика
       "model": [
         "error:missing-name",
       ],
+      "phraseRemoval": {
+        "removed": [],
+        "text": "---
+title: Математика
+---
+
+## О себе
+Учу.
+",
+      },
     },
     {
       "autofix": {
@@ -400,6 +484,107 @@ key: card
 
 Верни документ целиком. Ответ — только документ на языке MD Card, начиная со строки ---.",
       "model": [],
+      "phraseRemoval": {
+        "removed": [],
+        "text": "---
+name: Лапки
+phone: +7 999 000-11-22
+---
+
+## Удобства
+:::amenities
+key: parking
+
+key: card
+:::
+",
+      },
+    },
+    {
+      "autofix": {
+        "diagnostics": [
+          "error:ungrounded-phrase",
+          "error:ungrounded-phrase",
+          "error:ungrounded-phrase",
+          "error:ungrounded-phrase",
+          "error:ungrounded-phrase",
+          "error:ungrounded-phrase",
+        ],
+        "fixedCodes": [],
+        "output": "---
+name: Зерно
+title: Кофе с собой в центре
+phone: +7 999 123-45-67
+---
+
+## О нас
+Уютная кофейня. Проводим индивидуальные уроки. Лучшие напитки!
+
+## Услуги
+:::services
+title: Кофе с собой
+price: 200
+description: Опыт бариста — 10 лет.
+:::
+",
+      },
+      "fixRequest": "Описание бизнеса от пользователя:
+Кофейня «Зерно», Самара. Кофе 200. Звоните 8-999-123-45-67
+
+Твой ответ:
+---
+name: Зерно
+title: Кофе с собой в центре
+phone: +7 999 123-45-67
+---
+
+## О нас
+Уютная кофейня. Проводим индивидуальные уроки. Лучшие напитки!
+
+## Услуги
+:::services
+title: Кофе с собой
+price: 200
+description: Опыт бариста — 10 лет.
+:::
+
+
+Ошибки — исправь обязательно:
+- строка 3 («title: Кофе с собой в центре»): Уберите «с собой» из title — этого нет в описании
+- строка 3 («title: Кофе с собой в центре»): Уберите «в центре» из title — этого нет в описании
+- строка 8 («Уютная кофейня. Проводим индивидуальные уроки. Лучшие напитки!»): Уберите «индивидуальные» из текста раздела — этого нет в описании
+- строка 8 («Уютная кофейня. Проводим индивидуальные уроки. Лучшие напитки!»): Уберите «Лучшие» из текста раздела — этого нет в описании
+- строка 12 («title: Кофе с собой»): Уберите «с собой» из названия услуги — этого нет в описании
+- строка 14 («description: Опыт бариста — 10 лет.»): Уберите «Опыт» из описания услуги — этого нет в описании
+
+Исправь перечисленное. Остальное не меняй. Не добавляй фактов, которых нет в описании: если для исправления нужны такие данные — убери поле или строку.
+
+Верни документ целиком. Ответ — только документ на языке MD Card, начиная со строки ---.",
+      "model": [],
+      "phraseRemoval": {
+        "removed": [
+          "ungrounded-phrase",
+          "ungrounded-phrase",
+          "ungrounded-phrase",
+          "ungrounded-phrase",
+          "ungrounded-phrase",
+          "ungrounded-phrase",
+        ],
+        "text": "---
+name: Зерно
+phone: +7 999 123-45-67
+---
+
+## О нас
+Уютная кофейня.
+
+## Услуги
+:::services
+title: Кофе
+price: 200
+:::
+",
+      },
     },
     {
       "autofix": {
@@ -442,6 +627,19 @@ text: Сдала ЕГЭ на 92
 
 Верни документ целиком. Ответ — только документ на языке MD Card, начиная со строки ---.",
       "model": [],
+      "phraseRemoval": {
+        "removed": [],
+        "text": "---
+name: Анна
+phone: +7 999 123-45-67
+---
+
+## Отзывы
+:::reviews
+text: Сдала ЕГЭ на 92
+:::
+",
+      },
     },
   ],
 }

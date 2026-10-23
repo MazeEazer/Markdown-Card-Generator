@@ -17,14 +17,20 @@ export function itemLines(text: string, from: number, to: number): Range {
   return { from: start, to: end }
 }
 
-/** Удаляет диапазоны; пересекающиеся (соседние элементы делят пустую строку) склеиваются. */
-export function applyCuts(text: string, cuts: Range[]): string {
+/** Склеивает пересекающиеся диапазоны (соседние элементы делят пустую строку). */
+export function mergeCuts(cuts: Range[]): Range[] {
   const merged: Range[] = []
   for (const cut of [...cuts].sort((a, b) => a.from - b.from)) {
     const last = merged.at(-1)
-    if (last && cut.from < last.to) last.to = Math.max(last.to, cut.to)
+    if (last && cut.from <= last.to) last.to = Math.max(last.to, cut.to)
     else merged.push({ ...cut })
   }
+  return merged
+}
+
+/** Удаляет диапазоны; пересекающиеся склеиваются. */
+export function applyCuts(text: string, cuts: Range[]): string {
+  const merged = mergeCuts(cuts)
   let result = text
   for (const { from, to } of merged.reverse()) result = result.slice(0, from) + result.slice(to)
   return result

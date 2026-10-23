@@ -4,6 +4,7 @@ import { MISSING_DATA_CODES, MODEL_FIXABLE_CODES } from './codes.ts'
 import { addMissingMap, applyAllFixes } from './fix.ts'
 import { fromJson } from './fromJson.ts'
 import { groundAmenities } from './groundAmenities.ts'
+import { findUngroundedPhrases, removeUngroundedPhrases, UNGROUNDED_PHRASE } from './groundPhrases.ts'
 import { groundReviews } from './groundReviews.ts'
 import { groundContacts } from './ground.ts'
 import { groundNumbers } from './groundNumbers.ts'
@@ -257,7 +258,8 @@ function checkMarkdown(output: string, markdown: string, description: string): {
   return {
     model: stageOf(output, validate(markdown)),
     autofix: {
-      ...stageOf(pruned.text, validate(pruned.text)),
+      // Фразы без подтверждения в описании — ошибка, исправляемая моделью (groundPhrases.ts)
+      ...stageOf(pruned.text, [...validate(pruned.text), ...findUngroundedPhrases(pruned.text, description)].sort((a, b) => a.from - b.from)),
       fixedCodes: [...fixed.applied.map((d) => d.code), ...cleaned.removed, ...grounded.removed, ...numbers.removed, ...amenities.removed, ...reviews.removed, ...mapped.added, ...pruned.removed],
     },
   }
@@ -311,9 +313,18 @@ function check(output: string, mode: PromptMode, description: string): Checked {
  * Обработка одного ответа нейросети без самой нейросети — для анализа: прогнать сохранённые в журнале
  * ответы через текущие правила (что удалилось бы, что осталось бы).
  */
-export function processResponse(output: string, mode: PromptMode, description: string): Pick<Attempt, 'model' | 'autofix'> {
+export function processResponse(
+  output: string,
+  mode: PromptMode,
+  description: string,
+  { cleanPhrases = true }: { cleanPhrases?: boolean } = {},
+): Pick<Attempt, 'model' | 'autofix'> {
   const { model, autofix } = check(output, mode, description)
-  return { model, autofix }
+  if (!autofix || !cleanPhrases) return { model, autofix }
+  // Как в цикле: фразы без подтверждения, которые модель не убрала, удаляются в конце
+  const cleaned = removeUngroundedPhrases(autofix.output, description)
+  if (!cleaned.removed.length) return { model, autofix }
+  return { model, autofix: { ...stageOf(cleaned.text, validate(cleaned.text)), fixedCodes: [...autofix.fixedCodes, ...cleaned.removed] } }
 }
 
 /** Строка замечания для запроса на исправление: «строка 12 («price: abc»): сообщение». */
@@ -406,7 +417,17 @@ export async function generateSite({
   // Когда ошибок нет, на исправимые предупреждения — не больше одной попытки
   let warningsPassUsed = false
 
+  // На фразы без подтверждения (ungrounded-phrase), когда других ошибок нет, — не больше одной попытки исправления
+  let phrasePassUsed = false
+
   const result = (outcome: Outcome): GenerationResult => {
+    // Фразы, которые модель не убрала, удаляем сами — до проверки «ошибок нет»
+    if (best?.autofix) {
+      const cleaned = removeUngroundedPhrases(best.autofix.output, description)
+      if (cleaned.removed.length) {
+        best.autofix = { ...stageOf(cleaned.text, validate(cleaned.text)), fixedCodes: [...best.autofix.fixedCodes, ...cleaned.removed] }
+      }
+    }
     const document = best?.autofix ? best : null
     // Попытки кончились или застряли на предупреждениях, но лучшая — без ошибок
     if ((outcome === 'no-progress' || outcome === 'max-attempts') && document?.autofix!.counts.errors === 0) outcome = 'valid'
@@ -465,6 +486,15 @@ export async function generateSite({
     if (!best || better(attempt, best)) best = attempt
 
     if (reply.finishReason === 'length') return result('length')
+    const phraseOnly =
+      attempt.autofix !== null && errorsOf(attempt.autofix.diagnostics).length > 0 && errorsOf(attempt.autofix.diagnostics).every((d) => d.code === UNGROUNDED_PHRASE)
+    if (phraseOnly) {
+      // Одна попытка исправления, затем result() удалит оставшееся (и сам решит, valid ли итог)
+      if (phrasePassUsed) return result('max-attempts')
+      phrasePassUsed = true
+      lastChecked = checked
+      continue
+    }
     if (attempt.autofix?.counts.errors === 0) {
       const canPolish = !warningsPassUsed && n < maxAttempts && fixableOf(attempt.autofix.diagnostics).length > 0
       if (!canPolish) return result('valid')
@@ -652,6 +682,13 @@ export const PIPELINE_PROBES: { mode: PromptMode; description: string; output: s
     output:
       '---\nname: Лапки\nphone: +7 999 000-11-22\n---\n\n## Удобства\n:::amenities\nkey: parking\ntext: бесплатная, 10 мест\n\nkey: wifi\n\nkey: card\n:::\n',
   },
+  // Рискованные фразы: ни одна не названа в описании (title, предложения, название и описание услуги)
+  {
+    mode: 'markdown',
+    description: 'Кофейня «Зерно», Самара. Кофе 200. Звоните 8-999-123-45-67',
+    output:
+      '---\nname: Зерно\ntitle: Кофе с собой в центре\nphone: +7 999 123-45-67\n---\n\n## О нас\nУютная кофейня. Проводим индивидуальные уроки. Лучшие напитки!\n\n## Услуги\n:::services\ntitle: Кофе с собой\nprice: 200\ndescription: Опыт бариста — 10 лет.\n:::\n',
+  },
   // Отзывы: первый — из описания, автор и дата не названы; второй выдуман
   {
     mode: 'markdown',
@@ -676,6 +713,8 @@ export function pipelineFingerprint(): string {
         diagnostics: checked.autofix.diagnostics.map((d) => `${d.severity}:${d.code}`),
       },
       fixRequest: buildFixRequest(description, mode, checked),
+      // Что осталось бы после удаления фраз, которые модель не убрала
+      phraseRemoval: checked.autofix && removeUngroundedPhrases(checked.autofix.output, description),
     }
   })
   return JSON.stringify({

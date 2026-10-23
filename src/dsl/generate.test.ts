@@ -11,10 +11,12 @@ import {
   type LogContext,
   logRows,
   pipelineFingerprint,
+  processResponse,
   ModelNotReachedError,
   type ModelReply,
   outcomeMessage,
 } from './generate.ts'
+import { UNGROUNDED_PHRASE } from './groundPhrases.ts'
 import { buildSystemPrompt, EXAMPLE_DOCUMENT, EXAMPLE_JSON } from './prompt.ts'
 import { serialize } from './serialize.ts'
 
@@ -593,7 +595,7 @@ describe('logRows: строки журнала generation_logs', () => {
 
 describe('pipelineFingerprint: версия обработки ответа', () => {
   const fingerprint = JSON.parse(pipelineFingerprint())
-  const [markdown, json, broken, placeholders, unclosed, noName, amenities, reviews] = fingerprint.probes
+  const [markdown, json, broken, placeholders, unclosed, noName, amenities, phrases, reviews] = fingerprint.probes
 
   it('на зондах срабатывает каждый шаг обработки', () => {
     // Автоисправления, проверка по описанию и удаление пустых блоков
@@ -626,6 +628,13 @@ describe('pipelineFingerprint: версия обработки ответа', ()
     expect(amenities.autofix.output).toContain('key: parking\n')
     expect(amenities.autofix.output).toContain('key: card')
     expect(amenities.autofix.output).not.toMatch(/wifi|10 мест/)
+    // Рискованные фразы: диагностика-ошибка на каждую (title, предложения, название и описание услуги), удаление — после цикла
+    expect(phrases.autofix.diagnostics.filter((d: string) => d === 'error:ungrounded-phrase')).toHaveLength(6)
+    expect(phrases.fixRequest).toMatch(/Уберите «с собой» из title — этого нет в описании/)
+    expect(phrases.phraseRemoval.removed).toHaveLength(6)
+    expect(phrases.phraseRemoval.text).toBe(
+      '---\nname: Зерно\nphone: +7 999 123-45-67\n---\n\n## О нас\nУютная кофейня.\n\n## Услуги\n:::services\ntitle: Кофе\nprice: 200\n:::\n',
+    )
     // Отзывы: выдуманный удалён целиком, у настоящего убраны автор, оценка и дата, которых нет в описании
     expect(reviews.autofix.fixedCodes).toEqual(['ungrounded-review', 'ungrounded-review', 'ungrounded-review', 'ungrounded-review'])
     expect(reviews.autofix.output).toContain('text: Сдала ЕГЭ на 92')
@@ -743,5 +752,73 @@ describe('отзывы: проверка по описанию в генерац
     expect(result.outcome).toBe('valid')
     expect(result.best!.autofix!.output).toContain('text: Сдала ЕГЭ на 92')
     expect(result.best!.autofix!.output).not.toMatch(/Клиент/)
+  })
+})
+
+describe('рискованные фразы (ungrounded-phrase): одна попытка исправления, затем удаление', () => {
+  const DESCRIPTION = 'Кофейня «Зерно», Самара. Кофе 200. Звоните 8-999-123-45-67'
+  const doc = (title: string, extra = '') =>
+    `---\nname: Зерно\n${title ? `title: ${title}\n` : ''}phone: +7 999 123-45-67\n---\n\n## О нас\nУютная кофейня.\n\n## Услуги\n:::services\ntitle: Кофе\nprice: 200\n:::\n${extra}`
+  const withPhrase = doc('Кофе с собой')
+
+  it('модель не послушалась — один запрос на исправление, затем удаление; итог valid', async () => {
+    const { model, calls } = scripted(withPhrase, withPhrase)
+    const result = await generateSite({ description: DESCRIPTION, mode: 'markdown', model, deadlineMs: 60_000 })
+    expect(calls).toHaveLength(2)
+    expect(request(calls, 1)).toMatch(/Ошибки — исправь обязательно:\n- строка \d+ \(«title: Кофе с собой»\): Уберите «с собой» из title — этого нет в описании/)
+    expect(result.outcome).toBe('valid')
+    expect(result.attempts).toHaveLength(2)
+    expect(result.best!.autofix!.output).toBe(doc(''))
+    expect(result.best!.autofix!.fixedCodes).toEqual([UNGROUNDED_PHRASE])
+    expect(result.best!.autofix!.counts.errors).toBe(0)
+  })
+
+  it('модель исправила — удалять нечего', async () => {
+    const { model, calls } = scripted(withPhrase, doc('Кофейня «Зерно»'))
+    const result = await generateSite({ description: DESCRIPTION, mode: 'markdown', model, deadlineMs: 60_000 })
+    expect(calls).toHaveLength(2)
+    expect(result.outcome).toBe('valid')
+    expect(result.best!.autofix!.output).toContain('title: Кофейня «Зерно»')
+    expect(result.best!.autofix!.fixedCodes).toEqual([])
+  })
+
+  it('без фраз — одна попытка, как раньше', async () => {
+    const { model, calls } = scripted(doc('Кофейня'))
+    const result = await generateSite({ description: DESCRIPTION, mode: 'markdown', model, deadlineMs: 60_000 })
+    expect(calls).toHaveLength(1)
+    expect(result.outcome).toBe('valid')
+  })
+
+  it('есть и другие ошибки — обычный цикл, затем одна попытка на фразы и удаление', async () => {
+    const withBlockError = withPhrase.replace(':::services', ':::prices')
+    const { model, calls } = scripted(withBlockError, withPhrase, withPhrase)
+    const result = await generateSite({ description: DESCRIPTION, mode: 'markdown', model, deadlineMs: 60_000 })
+    expect(calls).toHaveLength(3)
+    expect(result.attempts[0].autofix!.diagnostics.map((d) => d.code)).toContain('unknown-block')
+    expect(result.outcome).toBe('valid')
+    expect(result.best!.autofix!.output).toBe(doc(''))
+  })
+
+  it('json: то же — title удаляется, предложение убирается', async () => {
+    const json = JSON.stringify({
+      name: 'Зерно',
+      title: 'Кофе с собой',
+      phone: '+7 999 123-45-67',
+      sections: [{ type: 'text', title: 'О нас', content: 'Уютная кофейня. Проводим индивидуальные уроки.' }],
+    })
+    const { model, calls } = scripted(json, json)
+    const result = await generateSite({ description: DESCRIPTION, mode: 'json', model, deadlineMs: 60_000 })
+    expect(calls).toHaveLength(2)
+    expect(request(calls, 1)).toContain('Уберите «индивидуальные» из текста раздела')
+    expect(result.outcome).toBe('valid')
+    expect(result.best!.autofix!.output).toBe('---\nname: Зерно\nphone: +7 999 123-45-67\n---\n\n## О нас\nУютная кофейня.\n')
+    expect(result.best!.autofix!.fixedCodes).toEqual([UNGROUNDED_PHRASE, UNGROUNDED_PHRASE])
+  })
+
+  it('processResponse удаляет фразы, как цикл; без очистки — оставляет ошибки', () => {
+    expect(processResponse(withPhrase, 'markdown', DESCRIPTION).autofix!.output).toBe(doc(''))
+    const raw = processResponse(withPhrase, 'markdown', DESCRIPTION, { cleanPhrases: false }).autofix!
+    expect(raw.counts.errors).toBe(1)
+    expect(raw.output).toContain('title: Кофе с собой')
   })
 })
