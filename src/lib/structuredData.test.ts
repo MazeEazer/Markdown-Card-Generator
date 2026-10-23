@@ -188,3 +188,23 @@ describe('отзыв без автора', () => {
     expect(localBusiness(card)!.review).toEqual([{ '@type': 'Review', reviewBody: 'Сдала ЕГЭ на 92' }])
   })
 })
+
+describe('тип Schema.org — из профиля ниши', () => {
+  const ld = (business: string) => localBusiness(parseCardMarkdown(`---\nname: Тест\nphone: 8 (999) 123-45-67\nbusiness: ${business}\n---\n## Контакты\n:::contacts\n:::\n`).data!)!
+
+  it.each([
+    ['barbershop', 'HairSalon'],
+    ['nails', 'NailSalon'],
+    ['other', 'LocalBusiness'],
+  ])('%s → %s', (business, type) => expect(ld(business)['@type']).toBe(type))
+
+  it('репетитор: LocalBusiness + EducationalOrganization', () => {
+    expect(ld('tutor')['@type']).toEqual(['LocalBusiness', 'EducationalOrganization'])
+  })
+
+  it('фотограф: LocalBusiness (подтипа Photographer нет) и knowsAbout', () => {
+    expect(ld('photographer')['@type']).toBe('LocalBusiness')
+    expect(ld('photographer').knowsAbout).toEqual(['Фотосъёмка'])
+    expect(ld('barbershop').knowsAbout).toBeUndefined()
+  })
+})

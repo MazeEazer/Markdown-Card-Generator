@@ -22,7 +22,7 @@ import { serialize } from './serialize.ts'
 
 const DESCRIPTION = 'Барбершоп «Борода» в Самаре, ул. Ленина, 10. Стрижка 1500, борода 800. Телефон 8-999-123-45-67, Telegram @barber_ivan'
 
-const VALID = '---\nname: Борода\nphone: +7 999 123-45-67\n---\n\n## Услуги\n:::services\ntitle: Стрижка\nprice: 1500\n:::\n'
+const VALID = '---\nname: Борода\nphone: +7 999 123-45-67\ncity: Самара\n---\n\n## Услуги\n:::services\ntitle: Стрижка\nprice: 1500\n:::\n'
 /** Описание с контактами-заглушками из примера промпта */
 const EXAMPLE_CONTACTS = 'Барбершоп «Борода», Самара, ул. Ленина, 10. Звоните +7 900 000-00-00, Telegram vash_telegram'
 /** Ошибка без автоисправления: неизвестный блок */
@@ -100,7 +100,7 @@ describe('generateSite: markdown', () => {
 
   it('исправимое чинит валидатор — без второго запроса; замечания до и после исправлений', async () => {
     // Незакрытый блок перед следующим — ошибка с автоисправлением; телефон с восьмёркой — предупреждение
-    const dirty = '---\nname: Борода\nphone: 8-999-123-45-67\n---\n## Услуги\n:::services\ntitle: Стрижка\n\n:::hours\nпн–вс: 10:00–20:00\n:::\n'
+    const dirty = '---\nname: Борода\nphone: 8-999-123-45-67\ncity: Самара\n---\n## Услуги\n:::services\ntitle: Стрижка\n\n:::hours\nпн–вс: 10:00–20:00\n:::\n'
     const { model, calls } = scripted(dirty)
     const result = await run(model)
     expect(calls).toHaveLength(1)
@@ -136,7 +136,7 @@ describe('generateSite: markdown', () => {
     expect(text).toContain(DESCRIPTION)
     // Документ — уже с исправленным телефоном, чтобы модель не откатила исправление
     expect(text).toContain(UNKNOWN_BLOCK)
-    expect(text).toMatch(/Ошибки — исправь обязательно:\n- строка 7 \(«:::prices»\): .*prices/)
+    expect(text).toMatch(/Ошибки — исправь обязательно:\n- строка 8 \(«:::prices»\): .*prices/)
   })
 
   it('нет прогресса — остановка, результат — лучшая попытка, а не последняя', async () => {
@@ -198,13 +198,13 @@ describe('generateSite: контакты проверяются по описа�
 
 describe('generateSite: блоки без данных удаляются', () => {
   it('онлайн-репетитор: «Как добраться» без адреса удаляется, удаление — в fixedCodes', async () => {
-    const tutor = '---\nname: Репетитор Анна\nphone: +7 999 123-45-67\n---\n\n## Обо мне\nЗанимаюсь онлайн.\n\n## Как добраться\n:::map\n:::\n'
+    const tutor = '---\nname: Репетитор Анна\nphone: +7 999 123-45-67\ncity: Самара\n---\n\n## Обо мне\nЗанимаюсь онлайн.\n\n## Как добраться\n:::map\n:::\n'
     const { model, calls } = scripted(tutor)
     const result = await run(model)
     expect(calls).toHaveLength(1)
     const { model: before, autofix } = result.attempts[0]
     expect(before.diagnostics.map((d) => d.code)).toContain('map-no-address')
-    expect(autofix!.output).toBe('---\nname: Репетитор Анна\nphone: +7 999 123-45-67\n---\n\n## Обо мне\nЗанимаюсь онлайн.\n')
+    expect(autofix!.output).toBe('---\nname: Репетитор Анна\nphone: +7 999 123-45-67\ncity: Самара\n---\n\n## Обо мне\nЗанимаюсь онлайн.\n')
     expect(autofix!.fixedCodes).toEqual(['map-no-address'])
     expect(autofix!.diagnostics).toEqual([])
   })
@@ -221,7 +221,8 @@ describe('generateSite: предупреждения', () => {
   it('«нехватка данных» не уходит нейросети никогда — иначе она выдумает телефон', async () => {
     const noContacts = '---\nname: Борода\naddress: ул. Ленина, 10\n---\n\n## Где мы\n:::map\n:::\n'
     const { model, calls } = scripted(noContacts)
-    const result = await run(model)
+    // В описании города нет — city не заполняется, остаётся «адрес без города»
+    const result = await generateSite({ description: 'Барбершоп «Борода», ул. Ленина, 10. Стрижка 1500', mode: 'markdown', model, deadlineMs: 60_000 })
     expect(calls).toHaveLength(1)
     expect(result.outcome).toBe('valid')
     const { counts, diagnostics } = result.best!.autofix!
@@ -245,7 +246,7 @@ describe('generateSite: предупреждения', () => {
     expect(calls).toHaveLength(2)
     const text = request(calls, 1)
     expect(text).toContain('Ошибок нет.')
-    expect(text).toMatch(/Желательно исправить:\n- строка 10 \(«master: Иван»\): .*неизвестное поле «master»/)
+    expect(text).toMatch(/Желательно исправить:\n- строка 11 \(«master: Иван»\): .*неизвестное поле «master»/)
     expect(text).toMatch(/не добавляй фактов/i)
     expect(result.outcome).toBe('valid')
     expect(result.best).toBe(result.attempts[1])
@@ -595,7 +596,7 @@ describe('logRows: строки журнала generation_logs', () => {
 
 describe('pipelineFingerprint: версия обработки ответа', () => {
   const fingerprint = JSON.parse(pipelineFingerprint())
-  const [markdown, json, broken, placeholders, unclosed, noName, amenities, phrases, reviews] = fingerprint.probes
+  const [markdown, json, broken, placeholders, unclosed, noName, amenities, phrases, profile, grooming, reviews, oleg] = fingerprint.probes
 
   it('на зондах срабатывает каждый шаг обработки', () => {
     // Автоисправления, проверка по описанию и удаление пустых блоков
@@ -624,7 +625,7 @@ describe('pipelineFingerprint: версия обработки ответа', ()
     expect(unclosed.autofix.output).toContain('title: Маникюр\nprice: 1800')
     expect(unclosed.autofix.output).not.toMatch(/whatsapp|KZT/)
     // Удобства: выдуманный Wi-Fi удалён, число 10 из уточнения парковки — тоже, парковка и карта остались
-    expect(amenities.autofix.fixedCodes).toEqual(['ungrounded-amenity-text', 'ungrounded-amenity'])
+    expect(amenities.autofix.fixedCodes).toEqual(['ungrounded-amenity-text', 'ungrounded-amenity', 'city-filled'])
     expect(amenities.autofix.output).toContain('key: parking\n')
     expect(amenities.autofix.output).toContain('key: card')
     expect(amenities.autofix.output).not.toMatch(/wifi|10 мест/)
@@ -633,10 +634,25 @@ describe('pipelineFingerprint: версия обработки ответа', ()
     expect(phrases.fixRequest).toMatch(/Уберите «с собой» из title — этого нет в описании/)
     expect(phrases.phraseRemoval.removed).toHaveLength(7)
     expect(phrases.phraseRemoval.text).toBe(
-      '---\nname: Зерно\nphone: +7 999 123-45-67\n---\n\n## О нас\nУютная кофейня.\n\n## Услуги\n:::services\ntitle: Кофе\nprice: 200\n:::\n',
+      '---\nname: Зерно\nphone: +7 999 123-45-67\ncity: Самара\n---\n\n## О нас\nУютная кофейня.\n\n## Услуги\n:::services\ntitle: Кофе\nprice: 200\n:::\n',
+    )
+    // Профиль: ниша выбрана — nails, разделы по порядку и с названиями профиля, тема и accent ниши
+    expect(profile.autofix.fixedCodes).toEqual(['city-filled', 'business-fixed', 'profile-sections', 'profile-style'])
+    expect(profile.autofix.output).toContain('business: nails')
+    expect(profile.autofix.output).toContain('theme: glass')
+    expect(profile.autofix.output).toContain('accent: "#8e44ad"')
+    expect(profile.autofix.output).toMatch(/## О студии[\s\S]*## Услуги и цены[\s\S]*## Контакты/)
+    // Ниша не выбрана и слов барбершопа нет — other, оформление не задано
+    expect(grooming.autofix.fixedCodes).toEqual(['city-filled', 'business-fixed'])
+    expect(grooming.autofix.output).toContain('business: other')
+    expect(grooming.autofix.output).not.toContain('theme:')
+    // «Фотограф Олег, Тула»: город назван, а city нет — заполнен; title «Тула» убран; стиль не назван — тема и цвет ниши, а не модели
+    expect(oleg.autofix.fixedCodes).toEqual(['city-filled', 'title-is-city', 'profile-style'])
+    expect(oleg.autofix.output).toBe(
+      '---\nname: Фотограф Олег\nphone: +7 999 000-44-55\nbusiness: photographer\ntheme: vercel\naccent: "#ffffff"\ncity: Тула\n---\n\n## Обо мне\nФотограф Олег.\n',
     )
     // Отзывы: выдуманный удалён целиком, у настоящего убраны автор, оценка и дата, которых нет в описании
-    expect(reviews.autofix.fixedCodes).toEqual(['ungrounded-review', 'ungrounded-review', 'ungrounded-review', 'ungrounded-review'])
+    expect(reviews.autofix.fixedCodes).toEqual(['ungrounded-review', 'ungrounded-review', 'ungrounded-review', 'ungrounded-review', 'city-filled'])
     expect(reviews.autofix.output).toContain('text: Сдала ЕГЭ на 92')
     expect(reviews.autofix.output).not.toMatch(/Мария|Борис|rating|date/)
     // Ошибка схемы
@@ -693,7 +709,7 @@ describe('несколько адресов: раздел «Адреса» пр�
 
 describe('удобства: проверка по описанию в генерации', () => {
   const DESCRIPTION = 'Студия «Лапки», Самара. Маникюр 1500. Телефон 8-999-123-45-67. Есть бесплатная парковка.'
-  const HEAD = '---\nname: Лапки\nphone: +7 999 123-45-67\n---\n\n## Удобства\n'
+  const HEAD = '---\nname: Лапки\nphone: +7 999 123-45-67\ncity: Самара\n---\n\n## Удобства\n'
 
   it('markdown: названное остаётся, выдуманное удаляется, код — в журнале', async () => {
     const doc = `${HEAD}:::amenities\nkey: parking\ntext: бесплатная\n\nkey: wifi\n:::\n`
@@ -714,7 +730,7 @@ describe('удобства: проверка по описанию в генер
 
   it('json: раздел amenities проходит схему, неизвестный key — ошибка схемы', async () => {
     const section = (key: string) => ({ type: 'amenities', title: 'Удобства', items: [{ key }, { key: 'wifi' }] })
-    const json = (key: string) => JSON.stringify({ name: 'Лапки', phone: '+7 999 123-45-67', sections: [section(key)] })
+    const json = (key: string) => JSON.stringify({ name: 'Лапки', phone: '+7 999 123-45-67', city: 'Самара', sections: [section(key)] })
     const ok = scripted(json('parking'))
     const result = await generateSite({ description: DESCRIPTION, mode: 'json', model: ok.model, deadlineMs: 60_000 })
     expect(result.outcome).toBe('valid')
@@ -734,7 +750,7 @@ describe('отзывы: проверка по описанию в генерац
 
   it('markdown: пять выдуманных отзывов не доходят до сайта, раздел убран целиком', async () => {
     const items = fakes.map((f) => `author: ${f.author}\ntext: ${f.text}\nrating: ${f.rating}\ndate: ${f.date}`).join('\n\n')
-    const { model } = scripted(`---\nname: Анна\nphone: +7 999 123-45-67\n---\n\n## Отзывы\n:::reviews\n${items}\n:::\n`)
+    const { model } = scripted(`---\nname: Анна\nphone: +7 999 123-45-67\ncity: Самара\n---\n\n## Отзывы\n:::reviews\n${items}\n:::\n`)
     const result = await generateSite({ description: INJECTION, mode: 'markdown', model, deadlineMs: 60_000 })
     expect(result.outcome).toBe('valid')
     expect(result.best!.autofix!.fixedCodes).toEqual([...Array(5).fill('ungrounded-review'), 'empty-block'])
@@ -745,6 +761,7 @@ describe('отзывы: проверка по описанию в генерац
     const json = JSON.stringify({
       name: 'Анна',
       phone: '+7 999 123-45-67',
+      city: 'Самара',
       sections: [{ type: 'reviews', title: 'Отзывы', items: fakes }, { type: 'reviews', title: 'Ещё', items: [{ text: 'Сдала ЕГЭ на 92' }] }],
     })
     const { model } = scripted(json)
@@ -758,7 +775,7 @@ describe('отзывы: проверка по описанию в генерац
 describe('рискованные фразы (ungrounded-phrase): одна попытка исправления, затем удаление', () => {
   const DESCRIPTION = 'Кофейня «Зерно», Самара. Кофе 200. Звоните 8-999-123-45-67'
   const doc = (title: string, extra = '') =>
-    `---\nname: Зерно\n${title ? `title: ${title}\n` : ''}phone: +7 999 123-45-67\n---\n\n## О нас\nУютная кофейня.\n\n## Услуги\n:::services\ntitle: Кофе\nprice: 200\n:::\n${extra}`
+    `---\nname: Зерно\n${title ? `title: ${title}\n` : ''}phone: +7 999 123-45-67\ncity: Самара\n---\n\n## О нас\nУютная кофейня.\n\n## Услуги\n:::services\ntitle: Кофе\nprice: 200\n:::\n${extra}`
   const withPhrase = doc('Кофе с собой')
 
   it('модель не послушалась — один запрос на исправление, затем удаление; итог valid', async () => {
@@ -804,6 +821,7 @@ describe('рискованные фразы (ungrounded-phrase): одна поп
       name: 'Зерно',
       title: 'Кофе с собой',
       phone: '+7 999 123-45-67',
+      city: 'Самара',
       sections: [{ type: 'text', title: 'О нас', content: 'Уютная кофейня. Проводим индивидуальные уроки.' }],
     })
     const { model, calls } = scripted(json, json)
@@ -811,7 +829,7 @@ describe('рискованные фразы (ungrounded-phrase): одна поп
     expect(calls).toHaveLength(2)
     expect(request(calls, 1)).toContain('Уберите «индивидуальные» из текста раздела')
     expect(result.outcome).toBe('valid')
-    expect(result.best!.autofix!.output).toBe('---\nname: Зерно\nphone: +7 999 123-45-67\n---\n\n## О нас\nУютная кофейня.\n')
+    expect(result.best!.autofix!.output).toBe('---\nname: Зерно\nphone: +7 999 123-45-67\ncity: Самара\n---\n\n## О нас\nУютная кофейня.\n')
     expect(result.best!.autofix!.fixedCodes).toEqual([UNGROUNDED_PHRASE, UNGROUNDED_PHRASE])
   })
 
@@ -843,5 +861,58 @@ describe('адрес-ориентир: «метро …» вместо «цен�
     const result = await generateSite({ description: DESCRIPTION, mode: 'markdown', model, deadlineMs: 60_000 })
     expect(result.best!.autofix!.output).not.toContain('address:')
     expect(result.best!.autofix!.fixedCodes).toContain('ungrounded-contact')
+  })
+})
+
+describe('профиль ниши в генерации', () => {
+  const DESCRIPTION = 'Мастер маникюра Лена, Самара, ул. Садовая, 5. Маникюр 1500. Звоните 8-999-000-33-44'
+  const messy =
+    '---\nname: Лена\nphone: +7 999 000-33-44\naddress: ул. Садовая, 5\ncity: Самара\nbusiness: nails\n---\n\n## Контакты\n:::contacts\n:::\n\n## Прайс\n:::services\ntitle: Маникюр\nprice: 1500\n:::\n'
+
+  it('business выбран: разделы по профилю, карта на своём месте, тема и accent ниши; новых разделов нет, кроме карты', async () => {
+    const { model } = scripted(messy)
+    const result = await generateSite({ description: DESCRIPTION, mode: 'markdown', business: 'nails', model, deadlineMs: 60_000 })
+    expect(result.outcome).toBe('valid')
+    const out = result.best!.autofix!.output
+    expect(out.match(/^## .*$/gm)).toEqual(['## Услуги и цены', '## Как добраться', '## Контакты'])
+    expect(out).toContain('theme: glass')
+    expect(out).toContain('accent: "#8e44ad"')
+    expect(result.best!.autofix!.fixedCodes).toEqual(['map-added', 'profile-sections', 'profile-style'])
+  })
+
+  it('business в запросе не передан, модель написала other — профиль не применяется, разделы как были', async () => {
+    const { model } = scripted(messy.replace('business: nails', 'business: other'))
+    const result = await generateSite({ description: DESCRIPTION, mode: 'markdown', model, deadlineMs: 60_000 })
+    const out = result.best!.autofix!.output
+    expect(out).not.toContain('theme:')
+    // other: порядок по слотам, но названия модели не трогаем
+    expect(out.match(/^## .*$/gm)).toEqual(['## Прайс', '## Как добраться', '## Контакты'])
+  })
+
+  it('маникюр: стиль в описании не назван — модель написала theme: minimal и свой цвет, но берётся профиль (glass)', async () => {
+    const { model } = scripted(messy.replace('business: nails', 'business: nails\ntheme: minimal\naccent: "#6a0dad"'))
+    const result = await generateSite({ description: DESCRIPTION, mode: 'markdown', business: 'nails', model, deadlineMs: 60_000 })
+    const out = result.best!.autofix!.output
+    expect(out).toContain('theme: glass')
+    expect(out).toContain('accent: "#8e44ad"')
+    expect(out).not.toMatch(/minimal|6a0dad/)
+    expect(result.best!.autofix!.fixedCodes).toContain('profile-style')
+  })
+
+  it('«Фотограф Олег, Тула»: город назван — city заполнен, title «Тула» убран', async () => {
+    const description = 'Фотограф Олег, Тула. Звоните 8-999-000-44-55'
+    const reply = JSON.stringify({ name: 'Фотограф Олег', title: 'Тула', phone: '+7 999 000-44-55', business: 'photographer', sections: [] })
+    const { model } = scripted(reply)
+    const result = await generateSite({ description, mode: 'json', business: 'photographer', model, deadlineMs: 60_000 })
+    const out = result.best!.autofix!.output
+    expect(out).toContain('city: Тула')
+    expect(out).not.toContain('title:')
+    expect(out).toContain('theme: vercel')
+    expect(result.best!.autofix!.fixedCodes).toEqual(['city-filled', 'title-is-city', 'profile-style'])
+  })
+
+  it('processResponse принимает нишу', () => {
+    const { autofix } = processResponse(messy.replace('business: nails', 'business: other'), 'markdown', DESCRIPTION, { business: 'nails' })
+    expect(autofix!.output).toContain('business: nails')
   })
 })

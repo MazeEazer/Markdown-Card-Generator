@@ -109,7 +109,10 @@ Deno.test('успех: документ, исход и журнал с prompt_ve
   const { handler, calls } = fakeDeps()
   const res = await call(handler, post({ description: `  ${DESCRIPTION}  `, business: 'barbershop', siteId: SITE, mode: 'markdown', model: 'GigaChat-2-Pro' }))
   assertEquals(res.status, 200)
-  assertEquals(res.body, { runId: 'run-1', outcome: 'valid', markdown: VALID, message: null, attempts: 1 })
+  // Ниша выбрана — после обработки: business, тема и accent ниши, название раздела по профилю барбершопа
+  const profiled =
+    '---\nname: Борода\nphone: +7 999 123-45-67\nbusiness: barbershop\ntheme: noir\naccent: "#cb5d51"\n---\n\n## Услуги и цены\n:::services\ntitle: Стрижка\nprice: 1500\n:::\n'
+  assertEquals(res.body, { runId: 'run-1', outcome: 'valid', markdown: profiled, message: null, attempts: 1 })
   assertEquals(calls.models, ['GigaChat-2-Pro'])
 
   const version = await promptVersion(buildSystemPrompt({ mode: 'markdown', business: 'barbershop' }))
