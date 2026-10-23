@@ -3,6 +3,7 @@
 import type { SectionNode } from '../ast.ts'
 import { parseDocument } from '../parser.ts'
 import type { BusinessName } from '../schema/frontmatter.ts'
+import { letters } from '../words.ts'
 import { NICHES, profileOf, type Slot } from './index.ts'
 
 /** Коды в журнале (fixed_codes). */
@@ -113,21 +114,36 @@ export function applySectionOrder(text: string, business: string | undefined): P
   return { text: `${preamble}\n\n${pieces.join('\n\n')}\n`, applied: [PROFILE_SECTIONS] }
 }
 
-/** theme и accent ниши — только если модель не задала (нет поля или auto). */
-export function applyStyle(text: string, business: string | undefined): ProfileResult {
+/**
+ * Слова о стиле и цвете сайта в описании (начала слов, без учёта регистра, ё = е). Нет ни одного — пользователь стиль не
+ * называл, и оформление берётся из профиля, даже если модель задала своё. Нарочно нет «дизайн» и «оформление»: это услуги
+ * («дизайн ногтей», «оформление бороды»).
+ */
+export const STYLE_WORDS = new RegExp(
+  '(?<![\\p{L}])(?:темн|светл|минимал|ярк|цвет|оттенк|пастел|нейтральн|строг|монохром|контрастн|розов|красн|оранж|желт|зелен|голуб|фиолет|сиренев|бордов|черн|золот|серебр|бежев|коричнев|син(?:ий|яя|ее|ие|его|ей|ем|их|им)|бел(?:ый|ая|ое|ые|ого|ой|ым)|стиль сайта|тема сайта|noir|glass|vercel)',
+  'iu',
+)
+
+/**
+ * theme и accent ниши. Стиль в описании не назван — всегда из профиля (модель любит писать `theme: minimal`, и сайт получался
+ * в чужой теме с цветом ниши). Назван — ставятся только если модель их не задала (нет или `auto`).
+ */
+export function applyStyle(text: string, business: string | undefined, description: string): ProfileResult {
   const profile = profileOf(business)
   if (!profile || (!profile.theme && !profile.accent)) return { text, applied: [] }
+  const named = STYLE_WORDS.test(letters(description))
   let result = text
-  const unset = (key: string) => {
+  const needs = (key: string, target: string) => {
     const value = fieldOf(result, key)
+    if (!named) return value !== target
     return value === undefined || value === 'auto' || value.trim() === ''
   }
   let changed = false
-  if (profile.theme && unset('theme')) {
+  if (profile.theme && needs('theme', profile.theme)) {
     result = setFrontmatterField(result, 'theme', profile.theme)
     changed = true
   }
-  if (profile.accent && unset('accent')) {
+  if (profile.accent && needs('accent', profile.accent)) {
     result = setFrontmatterField(result, 'accent', `"${profile.accent}"`)
     changed = true
   }
@@ -138,6 +154,6 @@ export function applyStyle(text: string, business: string | undefined): ProfileR
 export function applyNicheProfile(text: string, requested: BusinessName | undefined, description: string): ProfileResult {
   const business = resolveBusiness(text, requested, description)
   const order = applySectionOrder(business.text, fieldOf(business.text, 'business'))
-  const style = applyStyle(order.text, fieldOf(order.text, 'business'))
+  const style = applyStyle(order.text, fieldOf(order.text, 'business'), description)
   return { text: style.text, applied: [...business.applied, ...order.applied, ...style.applied] }
 }

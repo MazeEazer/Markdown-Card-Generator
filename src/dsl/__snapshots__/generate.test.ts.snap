@@ -61,6 +61,7 @@ exports[`pipelineFingerprint: версия обработки ответа > с�
           "ungrounded-contact",
           "ungrounded-contact",
           "ungrounded-number",
+          "city-filled",
           "map-no-address",
           "empty-block",
         ],
@@ -69,6 +70,7 @@ name: Барбершоп
 contacts:
   telegram: probe_barber
   primary: telegram
+city: Самара
 ---
 ## Цены
 :::services
@@ -91,6 +93,7 @@ name: Барбершоп
 contacts:
   telegram: probe_barber
   primary: telegram
+city: Самара
 ---
 ## Цены
 :::services
@@ -107,7 +110,7 @@ master: Иван
 Ошибок нет.
 
 Желательно исправить:
-- строка 11 («master: Иван»): Строка «master: Иван» читается как неизвестное поле «master» — этот текст пропадёт с сайта. Если это продолжение предыдущего текста, присоедините строку к нему. Возможные поля: title, price, duration, description
+- строка 12 («master: Иван»): Строка «master: Иван» читается как неизвестное поле «master» — этот текст пропадёт с сайта. Если это продолжение предыдущего текста, присоедините строку к нему. Возможные поля: title, price, duration, description
 
 Исправь перечисленное. Остальное не меняй. Не добавляй фактов, которых нет в описании: если для исправления нужны такие данные — убери поле или строку.
 
@@ -132,6 +135,7 @@ name: Барбершоп
 contacts:
   telegram: probe_barber
   primary: telegram
+city: Самара
 ---
 ## Цены
 :::services
@@ -272,9 +276,11 @@ price: 900
           "placeholder-stripped",
           "placeholder-value",
           "ungrounded-number",
+          "city-filled",
         ],
         "output": "---
 name: Маникюр Тольятти
+city: Тольятти
 ---
 
 ## Услуги
@@ -291,6 +297,7 @@ title: Педикюр
 Твой ответ:
 ---
 name: Маникюр Тольятти
+city: Тольятти
 ---
 
 ## Услуги
@@ -314,6 +321,7 @@ title: Педикюр
         "removed": [],
         "text": "---
 name: Маникюр Тольятти
+city: Тольятти
 ---
 
 ## Услуги
@@ -338,12 +346,14 @@ title: Педикюр
           "empty-field",
           "ungrounded-currency",
           "ungrounded-contact",
+          "city-filled",
         ],
         "output": "---
 name: Лапки
 phone: +7 937 111-22-33
 contacts:
   telegram: lapki_tlt
+city: Тольятти
 ---
 
 ## Услуги
@@ -362,6 +372,7 @@ name: Лапки
 phone: +7 937 111-22-33
 contacts:
   telegram: lapki_tlt
+city: Тольятти
 ---
 
 ## Услуги
@@ -387,6 +398,7 @@ name: Лапки
 phone: +7 937 111-22-33
 contacts:
   telegram: lapki_tlt
+city: Тольятти
 ---
 
 ## Услуги
@@ -449,10 +461,12 @@ title: Математика
         "fixedCodes": [
           "ungrounded-amenity-text",
           "ungrounded-amenity",
+          "city-filled",
         ],
         "output": "---
 name: Лапки
 phone: +7 999 000-11-22
+city: Самара
 ---
 
 ## Удобства
@@ -470,6 +484,7 @@ key: card
 ---
 name: Лапки
 phone: +7 999 000-11-22
+city: Самара
 ---
 
 ## Удобства
@@ -491,6 +506,7 @@ key: card
         "text": "---
 name: Лапки
 phone: +7 999 000-11-22
+city: Самара
 ---
 
 ## Удобства
@@ -513,11 +529,14 @@ key: card
           "error:ungrounded-phrase",
           "error:ungrounded-phrase",
         ],
-        "fixedCodes": [],
+        "fixedCodes": [
+          "city-filled",
+        ],
         "output": "---
 name: Зерно
 title: Кофе с собой в центре
 phone: +7 999 123-45-67
+city: Самара
 ---
 
 ## О нас
@@ -539,6 +558,7 @@ description: Опыт бариста — 10 лет.
 name: Зерно
 title: Кофе с собой в центре
 phone: +7 999 123-45-67
+city: Самара
 ---
 
 ## О нас
@@ -555,11 +575,11 @@ description: Опыт бариста — 10 лет.
 Ошибки — исправь обязательно:
 - строка 3 («title: Кофе с собой в центре»): Уберите «с собой» из title — этого нет в описании
 - строка 3 («title: Кофе с собой в центре»): Уберите «в центре» из title — этого нет в описании
-- строка 8 («Уютная кофейня. Проводим индивидуальные уроки. Лучшие напитки и другие вкусные позиции!»): Уберите «индивидуальные» из текста раздела — этого нет в описании
-- строка 8 («Уютная кофейня. Проводим индивидуальные уроки. Лучшие напитки и другие вкусные позиции!»): Уберите «Лучшие» из текста раздела — этого нет в описании
-- строка 8 («Уютная кофейня. Проводим индивидуальные уроки. Лучшие напитки и другие вкусные позиции!»): Уберите «и другие вкусные позиции» из текста раздела — этого нет в описании
-- строка 12 («title: Кофе с собой»): Уберите «с собой» из названия услуги — этого нет в описании
-- строка 14 («description: Опыт бариста — 10 лет.»): Уберите «Опыт» из описания услуги — этого нет в описании
+- строка 9 («Уютная кофейня. Проводим индивидуальные уроки. Лучшие напитки и другие вкусные позиции!»): Уберите «индивидуальные» из текста раздела — этого нет в описании
+- строка 9 («Уютная кофейня. Проводим индивидуальные уроки. Лучшие напитки и другие вкусные позиции!»): Уберите «Лучшие» из текста раздела — этого нет в описании
+- строка 9 («Уютная кофейня. Проводим индивидуальные уроки. Лучшие напитки и другие вкусные позиции!»): Уберите «и другие вкусные позиции» из текста раздела — этого нет в описании
+- строка 13 («title: Кофе с собой»): Уберите «с собой» из названия услуги — этого нет в описании
+- строка 15 («description: Опыт бариста — 10 лет.»): Уберите «Опыт» из описания услуги — этого нет в описании
 
 Исправь перечисленное. Остальное не меняй. Не добавляй фактов, которых нет в описании: если для исправления нужны такие данные — убери поле или строку.
 
@@ -578,6 +598,7 @@ description: Опыт бариста — 10 лет.
         "text": "---
 name: Зерно
 phone: +7 999 123-45-67
+city: Самара
 ---
 
 ## О нас
@@ -598,6 +619,7 @@ price: 200
           "info:service-no-description",
         ],
         "fixedCodes": [
+          "city-filled",
           "business-fixed",
           "profile-sections",
           "profile-style",
@@ -607,6 +629,7 @@ name: Лена
 phone: +7 999 000-33-44
 business: nails
 theme: glass
+city: Самара
 accent: "#8e44ad"
 ---
 
@@ -633,6 +656,7 @@ name: Лена
 phone: +7 999 000-33-44
 business: nails
 theme: glass
+city: Самара
 accent: "#8e44ad"
 ---
 
@@ -665,6 +689,7 @@ name: Лена
 phone: +7 999 000-33-44
 business: nails
 theme: glass
+city: Самара
 accent: "#8e44ad"
 ---
 
@@ -687,12 +712,14 @@ price: 1500
       "autofix": {
         "diagnostics": [],
         "fixedCodes": [
+          "city-filled",
           "business-fixed",
         ],
         "output": "---
 name: Груминг
 phone: +7 999 000-33-45
 business: other
+city: Самара
 ---
 
 ## О нас
@@ -707,6 +734,7 @@ business: other
 name: Груминг
 phone: +7 999 000-33-45
 business: other
+city: Самара
 ---
 
 ## О нас
@@ -729,6 +757,7 @@ business: other
 name: Груминг
 phone: +7 999 000-33-45
 business: other
+city: Самара
 ---
 
 ## О нас
@@ -744,10 +773,12 @@ business: other
           "ungrounded-review",
           "ungrounded-review",
           "ungrounded-review",
+          "city-filled",
         ],
         "output": "---
 name: Анна
 phone: +7 999 123-45-67
+city: Самара
 ---
 
 ## Отзывы
@@ -763,6 +794,7 @@ text: Сдала ЕГЭ на 92
 ---
 name: Анна
 phone: +7 999 123-45-67
+city: Самара
 ---
 
 ## Отзывы
@@ -782,12 +814,81 @@ text: Сдала ЕГЭ на 92
         "text": "---
 name: Анна
 phone: +7 999 123-45-67
+city: Самара
 ---
 
 ## Отзывы
 :::reviews
 text: Сдала ЕГЭ на 92
 :::
+",
+      },
+    },
+    {
+      "autofix": {
+        "diagnostics": [
+          "warning:profile-section-missing",
+          "warning:profile-section-missing",
+          "warning:profile-section-missing",
+        ],
+        "fixedCodes": [
+          "city-filled",
+          "title-is-city",
+          "profile-style",
+        ],
+        "output": "---
+name: Фотограф Олег
+phone: +7 999 000-44-55
+business: photographer
+theme: vercel
+accent: "#ffffff"
+city: Тула
+---
+
+## Обо мне
+Фотограф Олег.
+",
+      },
+      "fixRequest": "Описание бизнеса от пользователя:
+Фотограф Олег, Тула. Звоните 8-999-000-44-55
+
+Твой ответ:
+---
+name: Фотограф Олег
+phone: +7 999 000-44-55
+business: photographer
+theme: vercel
+accent: "#ffffff"
+city: Тула
+---
+
+## Обо мне
+Фотограф Олег.
+
+
+Ошибок нет.
+
+Исправь перечисленное. Остальное не меняй. Не добавляй фактов, которых нет в описании: если для исправления нужны такие данные — убери поле или строку.
+
+Верни документ целиком. Ответ — только документ на языке MD Card, начиная со строки ---.",
+      "model": [
+        "warning:profile-section-missing",
+        "warning:profile-section-missing",
+        "warning:profile-section-missing",
+      ],
+      "phraseRemoval": {
+        "removed": [],
+        "text": "---
+name: Фотограф Олег
+phone: +7 999 000-44-55
+business: photographer
+theme: vercel
+accent: "#ffffff"
+city: Тула
+---
+
+## Обо мне
+Фотограф Олег.
 ",
       },
     },

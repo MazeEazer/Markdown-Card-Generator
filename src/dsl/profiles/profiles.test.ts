@@ -4,6 +4,7 @@ import { nails as nailsTemplate } from '../../data/templates/nails.ts'
 import { photographer as photographerTemplate } from '../../data/templates/photographer.ts'
 import { tutor as tutorTemplate } from '../../data/templates/tutor.ts'
 import { parseDocument } from '../parser.ts'
+import { letters } from '../words.ts'
 import {
   applyNicheProfile,
   applySectionOrder,
@@ -13,6 +14,7 @@ import {
   PROFILE_STYLE,
   resolveBusiness,
   setFrontmatterField,
+  STYLE_WORDS,
 } from './apply.ts'
 import { detectNiche, NICHES, PROFILES, profileOf } from './index.ts'
 
@@ -164,20 +166,46 @@ describe('applySectionOrder', () => {
 
 describe('applyStyle', () => {
   it('theme и accent ниши — если модель не задала (нет или auto)', () => {
-    const result = applyStyle(head('barbershop'), 'barbershop')
+    const result = applyStyle(head('barbershop'), 'barbershop', 'Мужские стрижки')
     expect(parseDocument(result.text).frontmatter!.data).toMatchObject({ theme: 'noir', accent: '#cb5d51' })
     expect(result.applied).toEqual([PROFILE_STYLE])
-    const auto = applyStyle(head('nails', 'theme: auto\naccent: auto\n'), 'nails')
+    const auto = applyStyle(head('nails', 'theme: auto\naccent: auto\n'), 'nails', 'Маникюр')
     expect(parseDocument(auto.text).frontmatter!.data).toMatchObject({ theme: 'glass', accent: '#8e44ad' })
   })
 
   it('заданное моделью не трогаем', () => {
     const text = head('barbershop', 'theme: minimal\naccent: "#112233"\n')
-    expect(applyStyle(text, 'barbershop')).toEqual({ text, applied: [] })
+    expect(applyStyle(text, 'barbershop', 'Хочу тёмный сайт')).toEqual({ text, applied: [] })
+  })
+
+  it('стиль в описании не назван — профиль даже поверх выбора модели (theme: minimal и свой цвет)', () => {
+    const text = head('nails', 'theme: minimal\naccent: "#8e44ad"\n')
+    const result = applyStyle(text, 'nails', 'Мастер маникюра Лена, гель-лак, дизайн ногтей')
+    expect(parseDocument(result.text).frontmatter!.data).toMatchObject({ theme: 'glass', accent: '#8e44ad' })
+    expect(result.applied).toEqual([PROFILE_STYLE])
+    // другой цвет у модели — тоже заменяется
+    const purple = applyStyle(head('nails', 'theme: minimal\naccent: "#ff00ff"\n'), 'nails', 'Маникюр')
+    expect(parseDocument(purple.text).frontmatter!.data).toMatchObject({ theme: 'glass', accent: '#8e44ad' })
+  })
+
+  it('стиль назван (тёмный, минимализм, розовый…) — выбор модели остаётся', () => {
+    for (const description of ['Хочу тёмный сайт', 'Минималистичный сайт', 'Розовые тона', 'Яркий сайт', 'Любимый цвет — зелёный']) {
+      const text = head('nails', 'theme: minimal\naccent: "#ff00ff"\n')
+      expect(applyStyle(text, 'nails', description), description).toEqual({ text, applied: [] })
+    }
+  })
+
+  it('слова стиля: услуги («дизайн ногтей», «оформление бороды») и обычные слова стилем не считаются', () => {
+    for (const description of ['Маникюр, дизайн ногтей', 'Оформление бороды', 'Стрижка 1500, Самара', 'Фотограф в синхронном плавании', 'Белок и углеводы']) {
+      expect(STYLE_WORDS.test(letters(description)), description).toBe(false)
+    }
+    for (const description of ['тёмный', 'светлая тема', 'Минимализм', 'яркие цвета', 'розовый', 'синий сайт', 'белый фон', 'в чёрных тонах']) {
+      expect(STYLE_WORDS.test(letters(description)), description).toBe(true)
+    }
   })
 
   it('other и без ниши — оформление не задаём', () => {
-    expect(applyStyle(head('other'), 'other')).toEqual({ text: head('other'), applied: [] })
+    expect(applyStyle(head('other'), 'other', 'Маникюр')).toEqual({ text: head('other'), applied: [] })
   })
 })
 
