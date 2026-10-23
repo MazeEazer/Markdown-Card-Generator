@@ -3,6 +3,7 @@ import type { DocumentNode } from './ast.ts'
 import { parseDocument } from './parser.ts'
 import { accentRule } from './rules/accent.ts'
 import { addressRule } from './rules/address.ts'
+import { amenitiesRule } from './rules/amenities.ts'
 import { contactsBlockRule } from './rules/contactsBlock.ts'
 import { contactUsernameRule } from './rules/contactUsername.ts'
 import { frontmatterSyntaxRule } from './rules/frontmatterSyntax.ts'
@@ -45,6 +46,7 @@ export const RULES: Rule[] = [
   servicesRule,
   hoursRule,
   reviewsRule,
+  amenitiesRule,
   mapRule,
   unclosedFenceRule,
   unknownBlockRule,

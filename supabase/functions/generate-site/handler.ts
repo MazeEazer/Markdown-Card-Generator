@@ -5,6 +5,7 @@
 
 import {
   type ChatModel,
+  DEFAULT_MODE,
   DEFAULT_MODEL,
   DESCRIPTION_LIMITS,
   type GenerationLogRow,
@@ -81,7 +82,7 @@ interface Input {
 
 function parseInput(body: unknown): Input {
   if (!body || typeof body !== 'object') throw new PublicError('Не получилось прочитать запрос')
-  const { description, business, mode = 'markdown', model = DEFAULT_MODEL, siteId } = body as Record<string, unknown>
+  const { description, business, mode = DEFAULT_MODE, model = DEFAULT_MODEL, siteId } = body as Record<string, unknown>
 
   if (typeof description !== 'string' || description.trim().length < DESCRIPTION_LIMITS.min) {
     throw new PublicError('Опишите бизнес хотя бы одним-двумя предложениями: чем занимаетесь, где, как с вами связаться')

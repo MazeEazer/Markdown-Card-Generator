@@ -1,3 +1,5 @@
+import { toCardData } from './cardData.ts'
+import { parseDocument } from './parser.ts'
 import type { Diagnostic } from './types.ts'
 import { validate } from './validate.ts'
 
@@ -68,4 +70,36 @@ export function applyAllFixes(text: string, { skip, guesses = false, maxRounds =
   }
 
   return { text, applied }
+}
+
+/** Код в журнале (fixed_codes): в документ добавлен раздел «Как добраться» с картой. */
+export const MAP_ADDED = 'map-added'
+
+const MAP_SECTION = '## Как добраться\n:::map\n:::\n'
+
+export interface AddMapResult {
+  text: string
+  /** [MAP_ADDED], если карта добавлена, иначе [] — для fixed_codes журнала */
+  added: string[]
+}
+
+/**
+ * Только для AI-генерации (generate.ts): в шапке есть адрес, а карты в документе нет — добавляет раздел
+ * «Как добраться» с :::map перед «Контактами» (а если их нет — в конец). Нейросеть часто забывает карту, хотя
+ * адрес дан; в редакторе человек решает сам. Вызывать после проверки по описанию: адрес в шапке должен быть настоящим.
+ */
+export function addMissingMap(text: string): AddMapResult {
+  const ast = parseDocument(text)
+  const card = toCardData(ast).data
+  if (!card?.address?.trim()) return { text, added: [] }
+  if (ast.sections.some((section) => section.blocks.some((block) => block.name === 'map'))) return { text, added: [] }
+
+  const contacts =
+    ast.sections.find((section) => section.blocks.some((block) => block.name === 'contacts')) ??
+    ast.sections.find((section) => /^контакт/i.test(section.title.trim()))
+  const at = contacts ? contacts.from : text.length
+  const before = text.slice(0, at)
+  const gap = before.endsWith('\n\n') ? '' : before.endsWith('\n') ? '\n' : '\n\n'
+  const after = contacts ? `\n${text.slice(at)}` : ''
+  return { text: `${before}${gap}${MAP_SECTION}${after}`, added: [MAP_ADDED] }
 }

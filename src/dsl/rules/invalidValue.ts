@@ -97,7 +97,11 @@ export const invalidValueRule: Rule = ({ ast }) => {
       if (!item) continue
       const shape = item.shape as Record<string, z.ZodType>
       for (const element of block.items) {
-        for (const field of element.fields) diagnostics.push(...check(field.key, field.value, shape[field.key], field.valueRange))
+        for (const field of element.fields) {
+          // key удобства проверяет правило amenities: там ошибка с подсказкой, а не предупреждение
+          if (block.name === 'amenities' && field.key === 'key') continue
+          diagnostics.push(...check(field.key, field.value, shape[field.key], field.valueRange))
+        }
       }
     }
   }

@@ -1,0 +1,10 @@
+{
+  "comment": "Эксперимент 1: 16 описаний для ручной разметки, выбраны до прогона (по 3 на нишу и 4 «другое», все виды сложности). Размечается первый повтор, все модели и режимы.",
+  "ids": [
+    "b02-dirty", "b06-trap-ig-tg", "b09-english",
+    "t03-messenger-only", "t04-minimal", "t06-foreign-phone",
+    "n03-trap-call-not-wa", "n07-long", "n10-no-punctuation",
+    "p01-clean", "p02-dirty", "p05-trap-call-not-wa",
+    "o02-no-niche-dirty", "o03-no-niche-trap-ig-tg", "o06-no-niche-minimal", "o08-no-punctuation-foreign"
+  ]
+}

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { BLOCK_NAMES } from '../dsl/schema/blocks'
 import { BUSINESS_NAMES, CONTACT_NAMES, THEME_NAMES } from '../dsl/schema/frontmatter'
+import { AMENITY_KEYS } from '../dsl/schema/amenities'
 import { ICON_NAMES } from '../dsl/schema/icons'
 import { blockSnippet, completionsAt } from './complete'
 
@@ -150,12 +151,34 @@ describe('автодополнение полей', () => {
 
   it('обязательное поле помечено', () => {
     const result = at(':::reviews\n|\n:::')
-    expect(result?.options.filter((o) => o.detail === 'обязательное').map((o) => o.label)).toEqual(['author', 'text'])
+    expect(result?.options.filter((o) => o.detail === 'обязательное').map((o) => o.label)).toEqual(['text'])
   })
 
   it('в блоках без полей (hours, code, contacts) и вне блоков — нет', () => {
     expect(at(':::hours\np|\n:::')).toBeNull()
     expect(at(':::code\nco|\n:::')).toBeNull()
     expect(at('## О нас\nNo|')).toBeNull()
+  })
+})
+
+describe('автодополнение удобств', () => {
+  it('key: в блоке amenities — все удобства с названиями', () => {
+    const result = at('---\nname: A\n---\n\n## Удобства\n:::amenities\nkey: |\n:::')
+    expect(result?.labels).toEqual(AMENITY_KEYS)
+    expect(result?.options.find((o) => o.label === 'wifi')?.detail).toBe('Wi-Fi')
+  })
+
+  it('начатое слово заменяется', () => {
+    expect(at('---\nname: A\n---\n\n## Удобства\n:::amenities\nkey: par|\n:::')?.word).toBe('par')
+  })
+
+  it('поля элемента: key и text; блок есть в списке «:::»', () => {
+    const fields = at('---\nname: A\n---\n\n## Удобства\n:::amenities\n|\n:::')
+    expect(fields?.labels).toEqual(['key', 'text'])
+    expect(at('---\nname: A\n---\n\n## X\n:::|')?.labels).toContain(':::amenities')
+  })
+
+  it('«+ Блок»: заготовка с key', () => {
+    expect(blockSnippet('amenities')).toContain('key: ')
   })
 })

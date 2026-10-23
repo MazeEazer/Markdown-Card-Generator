@@ -93,7 +93,8 @@ export async function getToken(mode: TlsMode = defaultMode(), signal?: AbortSign
 
 export interface ChatResult {
   text: string
-  usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
+  /** precached_prompt_tokens — входные токены из кэша промпта, в prompt_tokens не входят */
+  usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number; precached_prompt_tokens?: number }
   model?: string
   /** stop — ответ закончен; length — обрезан по max_tokens; blacklist — сработал фильтр */
   finishReason?: string

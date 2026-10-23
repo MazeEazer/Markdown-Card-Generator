@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { AMENITY_KEYS, AMENITY_LIST } from './amenities.ts'
 import { iconSchema } from './icons.ts'
 import { PLACEHOLDER_BASES, placeholder } from './placeholder.ts'
 
@@ -129,7 +130,7 @@ price: от 800
     attrs: z.strictObject({}),
     item: z
       .strictObject({
-        author: prose('Имя клиента', 'Алексей'),
+        author: prose('Имя клиента — только если оно есть в описании', 'Алексей').optional(),
         text: prose('Текст отзыва', 'Лучший фейд в городе, мастер не торопится'),
         rating: text('Оценка от 1 до 5', '5').optional(),
         date: text('Когда оставлен отзыв', 'март 2026').optional(),
@@ -144,6 +145,28 @@ date: март 2026
 author: Ольга
 text: Привожу сына уже год, всегда аккуратно
 rating: 5
+:::`,
+  },
+  amenities: {
+    name: 'amenities',
+    label: 'Удобства',
+    description: 'Удобства для клиентов: парковка, Wi-Fi, оплата картой и т. п. Название и иконку сайт подставляет сам. Только те, что названы в описании',
+    attrs: z.strictObject({}),
+    item: z
+      .strictObject({
+        key: z
+          .enum(AMENITY_KEYS)
+          .meta({ description: `Какое удобство: ${AMENITY_LIST}`, examples: ['parking'] }),
+        text: prose('Уточнение к удобству', 'бесплатная, 10 мест').optional(),
+      })
+      .meta({ description: 'Удобство' }),
+    example: `:::amenities
+key: parking
+text: бесплатная, 10 мест
+
+key: wifi
+
+key: card
 :::`,
   },
   map: {

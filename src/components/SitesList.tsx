@@ -7,9 +7,11 @@ import { GenerateSiteDialog } from './GenerateSiteDialog'
 interface SitesListProps {
   onEditSite: (site: Site) => void
   onSignOut: () => void
+  /** Есть — в шапке появляется пункт «Песочница» (только для разрешённых пользователей) */
+  onOpenPlayground?: () => void
 }
 
-export function SitesList({ onEditSite, onSignOut }: SitesListProps) {
+export function SitesList({ onEditSite, onSignOut, onOpenPlayground }: SitesListProps) {
   const { sites, loading, createSite, deleteSite } = useSites()
   const { profile } = useAuth()
   const [showCreate, setShowCreate] = useState(false)
@@ -55,6 +57,14 @@ export function SitesList({ onEditSite, onSignOut }: SitesListProps) {
           <div className="flex items-center gap-3">
             {profile?.email && (
               <span className="text-sm text-zinc-500">{profile.email}</span>
+            )}
+            {onOpenPlayground && (
+              <button
+                onClick={onOpenPlayground}
+                className="text-sm px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              >
+                Песочница
+              </button>
             )}
             <button
               onClick={onSignOut}

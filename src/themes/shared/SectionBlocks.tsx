@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import type {
   AccordionItem,
+  AmenityItem,
   CardData,
   CardGridItem,
   CardSection,
@@ -16,6 +17,8 @@ import { formatDays, formatHoursTime, hoursStatus } from '../../dsl/hours'
 import { mapLinks, mapQuery } from '../../dsl/mapLinks'
 import { formatPrice } from '../../dsl/price'
 import { TOKEN_COLORS, highlightCode } from '../../lib/highlight'
+import { AMENITIES, type AmenityKey } from '../../dsl/schema/amenities'
+import { AmenityIcon } from './AmenityIcons'
 import { Icon } from './Icons'
 import { SectionContent, SkillsTags, isMonochromeAccent, isSkillsSection } from './ThemeParts'
 
@@ -564,13 +567,48 @@ export function ReviewsBlock({ reviews, colors }: { reviews: ReviewItem[]; color
             {review.rating && <Stars rating={review.rating} colors={colors} />}
             <blockquote style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.55, color: colors.text }}>«{review.text}»</blockquote>
             <figcaption style={{ fontSize: '0.8rem', color: colors.textMuted }}>
-              <span style={{ fontWeight: 600 }}>{review.author}</span>
-              {review.date && <span> · {review.date}</span>}
+              {review.author && <span style={{ fontWeight: 600 }}>{review.author}</span>}
+              {review.date && <span>{review.author ? ' · ' : ''}{review.date}</span>}
             </figcaption>
           </figure>
         ))}
       </div>
     </div>
+  )
+}
+
+/** Блок :::amenities — удобства: иконка, название (по умолчанию из списка) и необязательное уточнение. */
+export function AmenitiesBlock({ amenities, colors }: { amenities: AmenityItem[]; colors: ThemeColors }) {
+  if (!amenities.length) return null
+
+  return (
+    <ul
+      className="md-amenities"
+      style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '0.6rem' }}
+    >
+      {amenities.map((amenity, i) => (
+        <li
+          key={i}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.7rem',
+            padding: '0.7rem 0.9rem',
+            borderRadius: '0.75rem',
+            background: `${colors.accent}0f`,
+            border: `1px solid ${colors.accent}26`,
+          }}
+        >
+          <span style={{ display: 'flex', flexShrink: 0 }}>
+            <AmenityIcon amenity={amenity.key} color={colors.accent} />
+          </span>
+          <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: colors.text }}>{AMENITIES[amenity.key as AmenityKey]?.label ?? amenity.key}</span>
+            {amenity.text && <span style={{ fontSize: '0.8rem', color: colors.textMuted }}>{amenity.text}</span>}
+          </span>
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -630,6 +668,8 @@ export function SectionBody({ section, card, colors }: { section: CardSection; c
       return <HoursBlock hours={section.hours ?? []} colors={colors} />
     case 'reviews':
       return <ReviewsBlock reviews={section.reviews ?? []} colors={colors} />
+    case 'amenities':
+      return <AmenitiesBlock amenities={section.amenities ?? []} colors={colors} />
     case 'map':
       return <MapBlock address={section.map?.address} card={card} colors={colors} />
     case 'services':

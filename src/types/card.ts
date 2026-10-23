@@ -6,7 +6,7 @@ export interface CardLink {
   icon?: string
 }
 
-export type SectionType = 'text' | 'table' | 'accordion' | 'code-block' | 'card-grid' | 'contacts' | 'services' | 'hours' | 'reviews' | 'map'
+export type SectionType = 'text' | 'table' | 'accordion' | 'code-block' | 'card-grid' | 'contacts' | 'services' | 'hours' | 'reviews' | 'amenities' | 'map'
 
 export interface TableData {
   headers: string[]
@@ -55,6 +55,13 @@ export interface ServiceItem {
   description?: string
 }
 
+export interface AmenityItem {
+  /** Ключ из списка удобств (src/dsl/schema/amenities.ts); неизвестный показывается как есть */
+  key: string
+  /** Уточнение: «бесплатная, 10 мест» */
+  text?: string
+}
+
 export interface CardGridItem {
   title: string
   description: string
@@ -84,6 +91,8 @@ export interface CardSection {
   hours?: HoursRow[]
   /** Заполняется при type: 'reviews' */
   reviews?: ReviewItem[]
+  /** Заполняется при type: 'amenities' */
+  amenities?: AmenityItem[]
   /** Заполняется при type: 'map': свой адрес блока; без него — адрес из шапки */
   map?: { address?: string }
 }
