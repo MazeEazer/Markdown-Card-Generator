@@ -629,9 +629,9 @@ describe('pipelineFingerprint: версия обработки ответа', ()
     expect(amenities.autofix.output).toContain('key: card')
     expect(amenities.autofix.output).not.toMatch(/wifi|10 мест/)
     // Рискованные фразы: диагностика-ошибка на каждую (title, предложения, название и описание услуги), удаление — после цикла
-    expect(phrases.autofix.diagnostics.filter((d: string) => d === 'error:ungrounded-phrase')).toHaveLength(6)
+    expect(phrases.autofix.diagnostics.filter((d: string) => d === 'error:ungrounded-phrase')).toHaveLength(7)
     expect(phrases.fixRequest).toMatch(/Уберите «с собой» из title — этого нет в описании/)
-    expect(phrases.phraseRemoval.removed).toHaveLength(6)
+    expect(phrases.phraseRemoval.removed).toHaveLength(7)
     expect(phrases.phraseRemoval.text).toBe(
       '---\nname: Зерно\nphone: +7 999 123-45-67\n---\n\n## О нас\nУютная кофейня.\n\n## Услуги\n:::services\ntitle: Кофе\nprice: 200\n:::\n',
     )
@@ -820,5 +820,28 @@ describe('рискованные фразы (ungrounded-phrase): одна поп
     const raw = processResponse(withPhrase, 'markdown', DESCRIPTION, { cleanPhrases: false }).autofix!
     expect(raw.counts.errors).toBe(1)
     expect(raw.output).toContain('title: Кофе с собой')
+  })
+})
+
+describe('адрес-ориентир: «метро …» вместо «центр»', () => {
+  const DESCRIPTION = 'Кофейня «Зерно», Москва, в самом центре, у метро Кремлёвская. Кофе 200. Звоните 8-999-123-45-67'
+  const doc = (address: string) =>
+    `---\nname: Зерно\nphone: +7 999 123-45-67\ncity: Москва\n${address ? `address: ${address}\n` : ''}---\n\n## Услуги\n:::services\ntitle: Кофе\nprice: 200\n:::\n`
+
+  it('ориентир из описания остаётся в address, карта добавляется для него', async () => {
+    const { model } = scripted(doc('метро Кремлёвская'))
+    const result = await generateSite({ description: DESCRIPTION, mode: 'markdown', model, deadlineMs: 60_000 })
+    expect(result.outcome).toBe('valid')
+    const output = result.best!.autofix!.output
+    expect(output).toContain('address: метро Кремлёвская')
+    expect(output).toMatch(/## Как добраться\n:::map\n:::/)
+    expect(result.best!.autofix!.fixedCodes).toEqual(['map-added'])
+  })
+
+  it('выдуманный ориентир (метро, которого нет в описании) удаляется', async () => {
+    const { model } = scripted(doc('метро Площадь Революции'))
+    const result = await generateSite({ description: DESCRIPTION, mode: 'markdown', model, deadlineMs: 60_000 })
+    expect(result.best!.autofix!.output).not.toContain('address:')
+    expect(result.best!.autofix!.fixedCodes).toContain('ungrounded-contact')
   })
 })
