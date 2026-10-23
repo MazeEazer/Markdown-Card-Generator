@@ -3,6 +3,7 @@
 // CardData строится из текста секции этими функциями, а позиции для диагностики даёт AST (parser.ts).
 import type {
   AccordionItem,
+  AmenityItem,
   CardGridItem,
   CardSection,
   CodeBlockData,
@@ -204,6 +205,19 @@ export function parseReviews(content: string): ReviewItem[] {
     .filter((review) => review.author || review.text)
 }
 
+/** Парсит блок :::amenities в список удобств. */
+export function parseAmenities(content: string): AmenityItem[] {
+  const fence = extractFence(content, 'amenities')
+  if (!fence) return []
+
+  return splitBlocks(fence.body)
+    .map((block) => {
+      const fields = parseFields(block)
+      return { key: (fields.key ?? '').trim(), text: fields.text || undefined }
+    })
+    .filter((amenity) => amenity.key)
+}
+
 /** Парсит блок :::map: необязательный свой адрес. */
 export function parseMap(content: string): { address?: string } {
   const fence = extractFence(content, 'map')
@@ -228,6 +242,7 @@ export function detectSectionType(content: string): SectionType {
   if (extractFence(content, 'services')) return 'services'
   if (extractFence(content, 'hours')) return 'hours'
   if (extractFence(content, 'reviews')) return 'reviews'
+  if (extractFence(content, 'amenities')) return 'amenities'
   if (extractFence(content, 'map')) return 'map'
   if (extractFence(content, 'contacts')) return 'contacts'
   if (isTableContent(content)) return 'table'
@@ -246,6 +261,7 @@ export function buildSection(title: string, content: string): CardSection {
   else if (type === 'services') section.services = parseServices(content)
   else if (type === 'hours') section.hours = parseHours(content)
   else if (type === 'reviews') section.reviews = parseReviews(content)
+  else if (type === 'amenities') section.amenities = parseAmenities(content)
   else if (type === 'map') section.map = parseMap(content)
 
   return section

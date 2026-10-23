@@ -3,6 +3,7 @@
 import { MISSING_DATA_CODES, MODEL_FIXABLE_CODES } from './codes.ts'
 import { addMissingMap, applyAllFixes } from './fix.ts'
 import { fromJson } from './fromJson.ts'
+import { groundAmenities } from './groundAmenities.ts'
 import { groundContacts } from './ground.ts'
 import { groundNumbers } from './groundNumbers.ts'
 import { removePlaceholders } from './placeholders.ts'
@@ -247,14 +248,15 @@ function checkMarkdown(output: string, markdown: string, description: string): {
   const cleaned = removePlaceholders(fixed.text, description)
   const grounded = groundContacts(cleaned.text, description)
   const numbers = groundNumbers(grounded.text, description)
+  const amenities = groundAmenities(numbers.text, description)
   // После проверки по описанию (адрес настоящий), до удаления пустых блоков
-  const mapped = addMissingMap(numbers.text)
+  const mapped = addMissingMap(amenities.text)
   const pruned = pruneEmptyBlocks(mapped.text)
   return {
     model: stageOf(output, validate(markdown)),
     autofix: {
       ...stageOf(pruned.text, validate(pruned.text)),
-      fixedCodes: [...fixed.applied.map((d) => d.code), ...cleaned.removed, ...grounded.removed, ...numbers.removed, ...mapped.added, ...pruned.removed],
+      fixedCodes: [...fixed.applied.map((d) => d.code), ...cleaned.removed, ...grounded.removed, ...numbers.removed, ...amenities.removed, ...mapped.added, ...pruned.removed],
     },
   }
 }
@@ -641,6 +643,13 @@ export const PIPELINE_PROBES: { mode: PromptMode; description: string; output: s
   },
   // Без названия: заглушку «Моё название» не вставляем — исправляет нейросеть
   { mode: 'markdown', description: 'Репетитор Анна', output: '---\ntitle: Математика\n---\n\n## О себе\nУчу.\n' },
+  // Удобства: парковка названа в описании, но «10 мест» — нет; Wi-Fi выдуман
+  {
+    mode: 'markdown',
+    description: 'Студия маникюра «Лапки», Самара. Есть парковка и оплата картой. Звоните 8-999-000-11-22',
+    output:
+      '---\nname: Лапки\nphone: +7 999 000-11-22\n---\n\n## Удобства\n:::amenities\nkey: parking\ntext: бесплатная, 10 мест\n\nkey: wifi\n\nkey: card\n:::\n',
+  },
 ]
 
 /**

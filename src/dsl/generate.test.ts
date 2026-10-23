@@ -593,7 +593,7 @@ describe('logRows: строки журнала generation_logs', () => {
 
 describe('pipelineFingerprint: версия обработки ответа', () => {
   const fingerprint = JSON.parse(pipelineFingerprint())
-  const [markdown, json, broken, placeholders, unclosed, noName] = fingerprint.probes
+  const [markdown, json, broken, placeholders, unclosed, noName, amenities] = fingerprint.probes
 
   it('на зондах срабатывает каждый шаг обработки', () => {
     // Автоисправления, проверка по описанию и удаление пустых блоков
@@ -621,6 +621,11 @@ describe('pipelineFingerprint: версия обработки ответа', ()
     )
     expect(unclosed.autofix.output).toContain('title: Маникюр\nprice: 1800')
     expect(unclosed.autofix.output).not.toMatch(/whatsapp|KZT/)
+    // Удобства: выдуманный Wi-Fi удалён, число 10 из уточнения парковки — тоже, парковка и карта остались
+    expect(amenities.autofix.fixedCodes).toEqual(['ungrounded-amenity-text', 'ungrounded-amenity'])
+    expect(amenities.autofix.output).toContain('key: parking\n')
+    expect(amenities.autofix.output).toContain('key: card')
+    expect(amenities.autofix.output).not.toMatch(/wifi|10 мест/)
     // Ошибка схемы
     expect(broken.autofix).toBeNull()
     expect(broken.model).toEqual(['error:json-schema'])
@@ -670,5 +675,42 @@ describe('несколько адресов: раздел «Адреса» пр�
     })
     const { model } = scripted(json)
     check(await generateSite({ description: PHARMACY, mode: 'json', model, deadlineMs: 60_000 }))
+  })
+})
+
+describe('удобства: проверка по описанию в генерации', () => {
+  const DESCRIPTION = 'Студия «Лапки», Самара. Маникюр 1500. Телефон 8-999-123-45-67. Есть бесплатная парковка.'
+  const HEAD = '---\nname: Лапки\nphone: +7 999 123-45-67\n---\n\n## Удобства\n'
+
+  it('markdown: названное остаётся, выдуманное удаляется, код — в журнале', async () => {
+    const doc = `${HEAD}:::amenities\nkey: parking\ntext: бесплатная\n\nkey: wifi\n:::\n`
+    const { model } = scripted(doc)
+    const result = await generateSite({ description: DESCRIPTION, mode: 'markdown', model, deadlineMs: 60_000 })
+    expect(result.outcome).toBe('valid')
+    expect(result.best!.autofix!.fixedCodes).toEqual(['ungrounded-amenity'])
+    expect(result.best!.autofix!.output).toContain('key: parking\ntext: бесплатная')
+    expect(result.best!.autofix!.output).not.toContain('wifi')
+  })
+
+  it('markdown: ни одно не подтверждено — раздел «Удобства» убран целиком', async () => {
+    const { model } = scripted(`${HEAD}:::amenities\nkey: wifi\n\nkey: card\n:::\n`)
+    const result = await generateSite({ description: DESCRIPTION, mode: 'markdown', model, deadlineMs: 60_000 })
+    expect(result.best!.autofix!.fixedCodes).toEqual(['ungrounded-amenity', 'ungrounded-amenity', 'empty-block'])
+    expect(result.best!.autofix!.output).not.toMatch(/Удобства|amenities/)
+  })
+
+  it('json: раздел amenities проходит схему, неизвестный key — ошибка схемы', async () => {
+    const section = (key: string) => ({ type: 'amenities', title: 'Удобства', items: [{ key }, { key: 'wifi' }] })
+    const json = (key: string) => JSON.stringify({ name: 'Лапки', phone: '+7 999 123-45-67', sections: [section(key)] })
+    const ok = scripted(json('parking'))
+    const result = await generateSite({ description: DESCRIPTION, mode: 'json', model: ok.model, deadlineMs: 60_000 })
+    expect(result.outcome).toBe('valid')
+    expect(result.best!.autofix!.output).toContain(':::amenities\nkey: parking\n:::')
+    expect(result.best!.autofix!.fixedCodes).toEqual(['ungrounded-amenity'])
+
+    const bad = scripted(json('sauna'), json('parking'))
+    const fixed = await generateSite({ description: DESCRIPTION, mode: 'json', model: bad.model, deadlineMs: 60_000 })
+    expect(fixed.attempts[0].model.diagnostics[0].code).toBe('json-schema')
+    expect(fixed.outcome).toBe('valid')
   })
 })

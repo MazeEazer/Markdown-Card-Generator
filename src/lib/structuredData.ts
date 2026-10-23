@@ -1,6 +1,7 @@
 // Разметка для поисковиков и мессенджеров: JSON-LD Schema.org LocalBusiness, description, Open Graph.
 import { contactLinks } from '../dsl/contactLinks'
 import { parsePrice } from '../dsl/price'
+import { AMENITIES, type AmenityKey } from '../dsl/schema/amenities'
 import type { CardData, CardSection } from '../types/card'
 
 /** Тип Schema.org по виду бизнеса. BarberShop в Schema.org нет — ближайший HairSalon. */
@@ -25,7 +26,7 @@ export function isBusinessSite(card: CardData): boolean {
   return Boolean(
     card.business ||
       card.address ||
-      card.sections.some((section) => ['services', 'hours', 'reviews', 'map', 'contacts'].includes(section.type)),
+      card.sections.some((section) => ['services', 'hours', 'reviews', 'amenities', 'map', 'contacts'].includes(section.type)),
   )
 }
 
@@ -69,6 +70,19 @@ function offerCatalog(card: CardData, currency: string): object | undefined {
       return offer
     }),
   }
+}
+
+/** Удобства → amenityFeature (LocationFeatureSpecification): название, value: true и уточнение как description. */
+function amenityFeatures(card: CardData): Record<string, unknown> {
+  const features = sectionsOf(card, 'amenities')
+    .flatMap((section) => section.amenities ?? [])
+    .map((amenity) => ({
+      '@type': 'LocationFeatureSpecification',
+      name: AMENITIES[amenity.key as AmenityKey]?.label ?? amenity.key,
+      value: true,
+      ...(amenity.text ? { description: amenity.text } : {}),
+    }))
+  return features.length ? { amenityFeature: features } : {}
 }
 
 function reviews(card: CardData): Record<string, unknown> {
@@ -128,6 +142,7 @@ export function localBusiness(card: CardData): Record<string, unknown> | null {
     ...(hours.length ? { openingHoursSpecification: hours } : {}),
     ...(catalog ? { hasOfferCatalog: catalog } : {}),
     ...reviews(card),
+    ...amenityFeatures(card),
     ...(sameAs.length ? { sameAs } : {}),
   }
 }

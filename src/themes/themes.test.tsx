@@ -75,6 +75,21 @@ rating: 4
 :::
 `
 
+const amenities = `---
+name: Студия «Лапки»
+phone: +7 999 123-45-67
+---
+## Удобства
+:::amenities
+key: parking
+text: бесплатная, 10 мест
+
+key: wifi
+
+key: sauna
+:::
+`
+
 describe.each(THEME_NAMES)('тема %s', (theme) => {
   it('одна <section> на секцию и один <header> — по ним превью находит строку в редакторе', async () => {
     const { barbershop } = await import('../data/templates/barbershop')
@@ -100,6 +115,17 @@ describe.each(THEME_NAMES)('тема %s', (theme) => {
     expect(html).toContain('Алексей')
     expect(html).toContain('март 2026')
     expect(html).toContain('aria-label="Оценка 4 из 5"')
+  })
+
+  it(':::amenities — иконка, название по умолчанию и уточнение; неизвестный key — как есть', () => {
+    const html = render(amenities, theme)
+    expect(html).toContain('Парковка')
+    expect(html).toContain('бесплатная, 10 мест')
+    expect(html).toContain('Wi-Fi')
+    expect(html).toContain('sauna')
+    expect(html.match(/class="md-amenities"/g)).toHaveLength(1)
+    expect(html.match(/<li[\s>]/g)).toHaveLength(3)
+    expect(html.match(/<svg[\s>]/g)!.length).toBeGreaterThanOrEqual(3)
   })
 
   it(':::hours — таблица часов и бейдж со статусом', () => {

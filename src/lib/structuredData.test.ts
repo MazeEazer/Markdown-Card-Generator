@@ -154,3 +154,30 @@ describe('headTags', () => {
     expect(tags).toContain('\\u003c/script>')
   })
 })
+
+describe('удобства → amenityFeature', () => {
+  const withAmenities = parseCardMarkdown(`---
+name: Студия
+business: nails
+phone: 8 (999) 123-45-67
+---
+## Удобства
+:::amenities
+key: parking
+text: бесплатная, 10 мест
+
+key: wifi
+:::
+`).data!
+
+  it('LocationFeatureSpecification: название, value: true, уточнение — description', () => {
+    expect(localBusiness(withAmenities)!.amenityFeature).toEqual([
+      { '@type': 'LocationFeatureSpecification', name: 'Парковка', value: true, description: 'бесплатная, 10 мест' },
+      { '@type': 'LocationFeatureSpecification', name: 'Wi-Fi', value: true },
+    ])
+  })
+
+  it('без блока удобств поля нет', () => {
+    expect(localBusiness(barbershop)!.amenityFeature).toBeUndefined()
+  })
+})
