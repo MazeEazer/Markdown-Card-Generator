@@ -1,6 +1,7 @@
 // Проверка удобств по описанию: удобство остаётся, только если описание его называет (фразы — в schema/amenities.ts).
 // Только для AI-генерации (generate.ts): на коротком описании модель дописывала «парковку» и «Wi-Fi» по примеру промпта.
 // Числа в уточнении («10 мест») тоже сверяются с описанием: нет числа — убирается уточнение, удобство остаётся.
+import { applyCuts, itemLines } from './cuts.ts'
 import { parseDocument } from './parser.ts'
 import { AMENITIES, type AmenityKey } from './schema/amenities.ts'
 import type { Range } from './types.ts'
@@ -13,16 +14,6 @@ export const UNGROUNDED_AMENITY_TEXT = 'ungrounded-amenity-text'
 export interface GroundAmenitiesResult {
   text: string
   removed: string[]
-}
-
-/** Строки целиком вокруг [from, to) и одна пустая строка между элементами: после, а у последнего элемента — перед. */
-function itemLines(text: string, from: number, to: number): Range {
-  let start = text.lastIndexOf('\n', from - 1) + 1
-  const newline = text.indexOf('\n', Math.max(from, to - 1))
-  let end = newline === -1 ? text.length : newline + 1
-  if (text[end] === '\n') end++
-  else if (start >= 2 && text[start - 2] === '\n') start--
-  return { from: start, to: end }
 }
 
 const numbersIn = (text: string) => new Set(text.match(/\d+/g)?.map((n) => String(Number(n))) ?? [])
@@ -55,14 +46,6 @@ export function groundAmenities(text: string, description: string): GroundAmenit
     }
   }
 
-  // Соседние удаляемые элементы делят пустую строку между собой — склеиваем пересекающиеся диапазоны
-  const merged: Range[] = []
-  for (const cut of cuts.sort((a, b) => a.from - b.from)) {
-    const last = merged.at(-1)
-    if (last && cut.from < last.to) last.to = Math.max(last.to, cut.to)
-    else merged.push({ ...cut })
-  }
-  let result = text
-  for (const { from, to } of merged.reverse()) result = result.slice(0, from) + result.slice(to)
+  const result = applyCuts(text, cuts)
   return { text: result, removed }
 }

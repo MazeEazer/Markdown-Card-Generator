@@ -151,7 +151,7 @@ describe('автодополнение полей', () => {
 
   it('обязательное поле помечено', () => {
     const result = at(':::reviews\n|\n:::')
-    expect(result?.options.filter((o) => o.detail === 'обязательное').map((o) => o.label)).toEqual(['author', 'text'])
+    expect(result?.options.filter((o) => o.detail === 'обязательное').map((o) => o.label)).toEqual(['text'])
   })
 
   it('в блоках без полей (hours, code, contacts) и вне блоков — нет', () => {

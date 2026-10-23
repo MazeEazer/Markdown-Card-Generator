@@ -130,7 +130,7 @@ price: от 800
     attrs: z.strictObject({}),
     item: z
       .strictObject({
-        author: prose('Имя клиента', 'Алексей'),
+        author: prose('Имя клиента — только если оно есть в описании', 'Алексей').optional(),
         text: prose('Текст отзыва', 'Лучший фейд в городе, мастер не торопится'),
         rating: text('Оценка от 1 до 5', '5').optional(),
         date: text('Когда оставлен отзыв', 'март 2026').optional(),

@@ -181,3 +181,10 @@ key: wifi
     expect(localBusiness(barbershop)!.amenityFeature).toBeUndefined()
   })
 })
+
+describe('отзыв без автора', () => {
+  it('review без author в JSON-LD, а не автор с пустым именем', () => {
+    const card = parseCardMarkdown('---\nname: Анна\nphone: 8 (999) 123-45-67\nbusiness: tutor\n---\n## Отзывы\n:::reviews\ntext: Сдала ЕГЭ на 92\n:::\n').data!
+    expect(localBusiness(card)!.review).toEqual([{ '@type': 'Review', reviewBody: 'Сдала ЕГЭ на 92' }])
+  })
+})

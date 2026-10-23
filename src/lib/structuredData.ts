@@ -93,7 +93,7 @@ function reviews(card: CardData): Record<string, unknown> {
   return {
     review: list.map((review) => ({
       '@type': 'Review',
-      author: { '@type': 'Person', name: review.author },
+      ...(review.author ? { author: { '@type': 'Person', name: review.author } } : {}),
       reviewBody: review.text,
       ...(review.rating ? { reviewRating: { '@type': 'Rating', ratingValue: review.rating, bestRating: 5, worstRating: 1 } } : {}),
     })),

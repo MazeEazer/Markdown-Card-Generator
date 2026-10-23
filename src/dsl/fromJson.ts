@@ -54,7 +54,7 @@ function section(json: SectionJson): CardSection {
         ...base,
         type: 'reviews',
         reviews: json.items.map((item) => ({
-          author: item.author.trim(),
+          author: item.author?.trim() ?? '',
           text: item.text.trim(),
           // Нейросеть может ответить «5/5» — приводим так же, как исправил бы валидатор
           rating: item.rating ? (parseRating(item.rating) ?? normalizeRating(item.rating) ?? undefined) : undefined,

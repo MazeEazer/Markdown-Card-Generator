@@ -567,8 +567,8 @@ export function ReviewsBlock({ reviews, colors }: { reviews: ReviewItem[]; color
             {review.rating && <Stars rating={review.rating} colors={colors} />}
             <blockquote style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.55, color: colors.text }}>«{review.text}»</blockquote>
             <figcaption style={{ fontSize: '0.8rem', color: colors.textMuted }}>
-              <span style={{ fontWeight: 600 }}>{review.author}</span>
-              {review.date && <span> · {review.date}</span>}
+              {review.author && <span style={{ fontWeight: 600 }}>{review.author}</span>}
+              {review.date && <span>{review.author ? ' · ' : ''}{review.date}</span>}
             </figcaption>
           </figure>
         ))}

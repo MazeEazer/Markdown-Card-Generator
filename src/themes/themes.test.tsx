@@ -128,6 +128,14 @@ describe.each(THEME_NAMES)('тема %s', (theme) => {
     expect(html.match(/<svg[\s>]/g)!.length).toBeGreaterThanOrEqual(3)
   })
 
+  it(':::reviews — отзыв без автора (анонимный из описания) показывается без пустого имени', () => {
+    const html = render(reviews.replace(/author: Алексей\n/, '').replace(/author: Ольга\n/, ''), theme)
+    expect(html).toContain('«Лучший фейд в городе»')
+    expect(html).toContain('март 2026')
+    expect(html).not.toContain('<span style="font-weight:600"></span>')
+    expect(html).not.toContain('> · март')
+  })
+
   it(':::hours — таблица часов и бейдж со статусом', () => {
     const html = render(hours, theme)
     expect(html).toContain('Пн–пт')
