@@ -639,7 +639,7 @@ describe('pipelineFingerprint: версия обработки ответа', ()
 describe('несколько адресов: раздел «Адреса» проходит проверку и обработку', () => {
   const PHARMACY =
     'Аптека «Здоровье» в Самаре. Адреса: ул. Ленина, 10; ул. Мира, 5; пр. Кирова, 120. Работаем ежедневно с 8 до 22. Телефон 8-846-123-45-67'
-  const LIST = '- Самара, ул. Ленина, 10\n- Самара, ул. Мира, 5\n- Самара, пр. Кирова, 120'
+  const CARDS = ':::cards\ntitle: ул. Ленина, 10\nicon: map-pin\n\ntitle: ул. Мира, 5\nicon: map-pin\n\ntitle: пр. Кирова, 120\nicon: map-pin\n:::'
   const ADDRESSES = ['ул. Ленина, 10', 'ул. Мира, 5', 'пр. Кирова, 120']
 
   const check = (result: Awaited<ReturnType<typeof generateSite>>) => {
@@ -655,7 +655,7 @@ describe('несколько адресов: раздел «Адреса» пр�
   }
 
   it('markdown', async () => {
-    const doc = `---\nname: Здоровье\nphone: +7 846 123-45-67\naddress: ул. Ленина, 10\ncity: Самара\n---\n\n## Адреса\n${LIST}\n`
+    const doc = `---\nname: Здоровье\nphone: +7 846 123-45-67\naddress: ул. Ленина, 10\ncity: Самара\n---\n\n## Адреса\n${CARDS}\n`
     const { model } = scripted(doc)
     check(await generateSite({ description: PHARMACY, mode: 'markdown', model, deadlineMs: 60_000 }))
   })
@@ -666,7 +666,7 @@ describe('несколько адресов: раздел «Адреса» пр�
       phone: '+7 846 123-45-67',
       address: 'ул. Ленина, 10',
       city: 'Самара',
-      sections: [{ type: 'text', title: 'Адреса', content: LIST }],
+      sections: [{ type: 'cards', title: 'Адреса', items: ADDRESSES.map((title) => ({ title, icon: 'map-pin' })) }],
     })
     const { model } = scripted(json)
     check(await generateSite({ description: PHARMACY, mode: 'json', model, deadlineMs: 60_000 }))
