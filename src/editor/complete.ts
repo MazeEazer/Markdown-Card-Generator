@@ -6,6 +6,7 @@ import type { z } from 'zod'
 import { unwrap } from '../dsl/rules/helpers'
 import { BLOCK_NAMES, BLOCKS, type BlockName } from '../dsl/schema/blocks'
 import { BUSINESSES, CONTACTS, frontmatterSchema, PRIMARY_TARGETS, THEMES } from '../dsl/schema/frontmatter'
+import { AMENITIES, AMENITY_KEYS } from '../dsl/schema/amenities'
 import { ICONS } from '../dsl/schema/icons'
 import { canonical, fieldMeta, lineContext, parentKey, TOP_KEY } from './context'
 
@@ -42,6 +43,7 @@ const TOP_LEVEL_VALUES: Record<string, ValueOption[]> = {
 }
 
 const ICON_OPTIONS = fromRecord(ICONS)
+const AMENITY_OPTIONS: ValueOption[] = AMENITY_KEYS.map((key) => ({ label: key, detail: AMENITIES[key].label }))
 
 /** Строка «ключ: значение» до курсора: отступ, ключ, начатое значение. */
 const KEY_VALUE = /^(\s*)(?:-\s+)?([A-Za-zА-Яа-яЁё][\wА-Яа-яЁё-]*)\s*:[ \t]*(\S*)$/
@@ -180,6 +182,7 @@ export function completionsAt(text: string, pos: number): ValueCompletion | null
     }
 
     if (state.block === 'cards' && key === 'icon') return { from, options: ICON_OPTIONS, kind: 'value' }
+    if (state.block === 'amenities' && key === 'key') return { from, options: AMENITY_OPTIONS, kind: 'value' }
     return null
   }
 

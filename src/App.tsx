@@ -7,9 +7,12 @@ import { resolveTheme } from './lib/themeEngine'
 import { persistTheme, resolveInitialTheme, type ThemePreference } from './lib/themePreference'
 import type { CardData } from './types/card'
 import { EditorPane, type EditorHandle } from './components/EditorPane'
+import { applyTextChange, frontmatterFieldChange } from './dsl/frontmatterEdit'
 import { PreviewPane } from './components/PreviewPane'
 import { Toolbar } from './components/Toolbar'
 import { SitesList } from './components/SitesList'
+import { PlaygroundPage } from './components/PlaygroundPage'
+import { isPlaygroundPath, PLAYGROUND_PATH, playgroundAllowed } from './lib/playground'
 import { useAuth } from './contexts/AuthContext'
 import { AuthPage } from './components/auth/AuthPage'
 import { useSites, type Site } from './hooks/useSites'
@@ -26,7 +29,23 @@ function getInitialCard(): CardData {
 export default function App() {
   // === АВТОРИЗАЦИЯ И БАЗА ДАННЫХ ===
   const { user, loading: authLoading, signOut } = useAuth()
-  const { currentSiteId, setCurrentSiteId, saveSite } = useSites()
+  const { currentSiteId, setCurrentSiteId, saveSite, createSite } = useSites()
+
+  // === ПЕСОЧНИЦА (/playground) ===
+  const [onPlaygroundPath, setOnPlaygroundPath] = useState(() => isPlaygroundPath(window.location.pathname))
+  useEffect(() => {
+    const sync = () => setOnPlaygroundPath(isPlaygroundPath(window.location.pathname))
+    window.addEventListener('popstate', sync)
+    return () => window.removeEventListener('popstate', sync)
+  }, [])
+  const canPlayground = playgroundAllowed(user?.id, {
+    dev: import.meta.env.DEV,
+    ids: import.meta.env.VITE_PLAYGROUND_USER_IDS,
+  })
+  const navigate = useCallback((path: string) => {
+    window.history.pushState(null, '', path)
+    setOnPlaygroundPath(isPlaygroundPath(path))
+  }, [])
 
   // === СОСТОЯНИЕ ИНТЕРФЕЙСА ===
   const [view, setView] = useState<View>('list')
@@ -156,16 +175,10 @@ export default function App() {
     saveAs(blob, filename)
   }, [parsed.data, resolved])
 
+  // Фото, перетащенное на превью, — в поле avatar шапки (раньше дописывалось в конец документа — за пределы шапки)
   const handleImageUpload = useCallback((dataUrl: string) => {
-    setMarkdown(prev => {
-      if (/^avatar:\s*.+$/m.test(prev)) {
-        return prev.replace(/^avatar:\s*.+$/m, `avatar: ${dataUrl}`)
-      }
-      if (/^location:\s*.+$/m.test(prev)) {
-        return prev.replace(/^location:\s*.+$/m, match => `${match}\navatar: ${dataUrl}`)
-      }
-      return prev + `\navatar: ${dataUrl}\n`
-    })
+    if (editorRef.current?.setFrontmatterField('avatar', dataUrl)) return
+    setMarkdown(prev => applyTextChange(prev, frontmatterFieldChange(prev, 'avatar', dataUrl)))
   }, [])
 
   const handleEditSite = useCallback((site: Site) => {
@@ -256,8 +269,8 @@ const { url, error } = await deployToVercel(html, currentSiteId)
 }, [currentSiteId, currentSite, parsed.data, resolved])  // === РЕНДЕР: ЗАГРУЗКА ===
   if (authLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-zinc-100 dark:bg-zinc-950">
-        <div className="text-zinc-500">Загрузка...</div>
+      <div className="ui-page flex items-center justify-center">
+        <div className="text-ink-muted">Загрузка…</div>
       </div>
     )
   }
@@ -267,9 +280,29 @@ const { url, error } = await deployToVercel(html, currentSiteId)
     return <AuthPage />
   }
 
+  // === РЕНДЕР: ПЕСОЧНИЦА ===
+  if (onPlaygroundPath && canPlayground) {
+    return (
+      <PlaygroundPage
+        createSite={(name, md) => createSite(name, md)}
+        onSiteCreated={(site) => {
+          navigate('/')
+          handleEditSite(site)
+        }}
+        onBack={() => navigate('/')}
+      />
+    )
+  }
+
   // === РЕНДЕР: СПИСОК САЙТОВ ===
   if (view === 'list') {
-    return <SitesList onEditSite={handleEditSite} onSignOut={signOut} />
+    return (
+      <SitesList
+        onEditSite={handleEditSite}
+        onSignOut={signOut}
+        onOpenPlayground={canPlayground ? () => navigate(PLAYGROUND_PATH) : undefined}
+      />
+    )
   }
 
   // === РЕНДЕР: РЕДАКТОР ===

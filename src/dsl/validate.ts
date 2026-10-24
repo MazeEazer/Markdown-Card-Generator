@@ -3,6 +3,7 @@ import type { DocumentNode } from './ast.ts'
 import { parseDocument } from './parser.ts'
 import { accentRule } from './rules/accent.ts'
 import { addressRule } from './rules/address.ts'
+import { amenitiesRule } from './rules/amenities.ts'
 import { contactsBlockRule } from './rules/contactsBlock.ts'
 import { contactUsernameRule } from './rules/contactUsername.ts'
 import { frontmatterSyntaxRule } from './rules/frontmatterSyntax.ts'
@@ -14,6 +15,7 @@ import { missingRequiredRule } from './rules/missingRequired.ts'
 import { noContactsRule } from './rules/noContacts.ts'
 import { phoneRule } from './rules/phone.ts'
 import { primaryRule } from './rules/primary.ts'
+import { profileRule } from './rules/profile.ts'
 import { reviewsRule } from './rules/reviews.ts'
 import { servicesRule } from './rules/services.ts'
 import { strayTextRule } from './rules/strayText.ts'
@@ -45,6 +47,8 @@ export const RULES: Rule[] = [
   servicesRule,
   hoursRule,
   reviewsRule,
+  amenitiesRule,
+  profileRule,
   mapRule,
   unclosedFenceRule,
   unknownBlockRule,

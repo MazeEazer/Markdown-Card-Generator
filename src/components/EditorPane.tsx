@@ -1,18 +1,24 @@
 import { type Ref, useCallback, useDeferredValue, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { EditorState, Transaction } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
+import { frontmatterFieldChange } from '../dsl/frontmatterEdit'
 import type { Diagnostic } from '../dsl/types'
 import { validate } from '../dsl/validate'
+import { historyEdit } from '../editor/historyEdit'
+import { imageDrop } from '../editor/imageDrop'
 import { insertBlock } from '../editor/insertBlock'
 import { applyFixInView } from '../editor/lint'
 import { baseExtensions } from '../editor/setup'
 import { createEditorLogger } from '../lib/editorEvents'
+import { compressImage } from '../lib/imageCompress'
 import { AddBlockDialog } from './AddBlockDialog'
 import { ProblemsPanel } from './ProblemsPanel'
 
-/** Что редактор умеет по просьбе снаружи: перевести курсор к позиции (клик по превью). */
+/** Что редактор умеет по просьбе снаружи: перевести курсор к позиции (клик по превью), записать поле шапки (фото). */
 export interface EditorHandle {
   jumpTo: (offset: number) => void
+  /** Записать поле в шапку одной правкой (фото → avatar); false — редактора ещё нет */
+  setFrontmatterField: (key: string, value: string) => boolean
 }
 
 interface EditorPaneProps {
@@ -42,6 +48,12 @@ export function EditorPane({ value, onChange, ref, siteId }: EditorPaneProps) {
         doc: value,
         extensions: [
           baseExtensions(logger),
+          // Фото бросили прямо в редактор — сжимаем и пишем в avatar шапки, как при броске на превью
+          imageDrop((file) => {
+            compressImage(file)
+              .then((dataUrl) => setFrontmatterField('avatar', dataUrl))
+              .catch((err) => console.error('Не удалось обработать фото:', err))
+          }),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) onChangeRef.current(update.state.doc.toString())
           }),
@@ -97,7 +109,15 @@ export function EditorPane({ value, onChange, ref, siteId }: EditorPaneProps) {
     view.focus()
   }, [])
 
-  useImperativeHandle(ref, () => ({ jumpTo: jumpToOffset }), [jumpToOffset])
+  // Фото перетащили на превью или в редактор: правим только строку шапки, одной транзакцией в истории — Cmd+Z отменяет её целиком
+  const setFrontmatterField = useCallback((key: string, value: string) => {
+    const view = viewRef.current
+    if (!view) return false
+    view.dispatch(historyEdit(frontmatterFieldChange(view.state.doc.toString(), key, value), `input.${key}`))
+    return true
+  }, [])
+
+  useImperativeHandle(ref, () => ({ jumpTo: jumpToOffset, setFrontmatterField }), [jumpToOffset, setFrontmatterField])
 
   const jumpTo = useCallback((diagnostic: Diagnostic) => jumpToOffset(diagnostic.from), [jumpToOffset])
 

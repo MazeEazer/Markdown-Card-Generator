@@ -4,6 +4,7 @@
 import { stringify } from 'yaml'
 import type {
   AccordionItem,
+  AmenityItem,
   CardData,
   CardGridItem,
   CardSection,
@@ -105,6 +106,11 @@ function reviews(list: ReviewItem[]): string {
   return `:::reviews\n${body}\n:::`
 }
 
+function amenities(list: AmenityItem[]): string {
+  const body = items(list.map((amenity) => [['key', amenity.key], ['text', amenity.text]]))
+  return `:::amenities\n${body}\n:::`
+}
+
 function code({ lang, code }: CodeBlockData): string {
   return `:::code${lang ? ` lang="${lang}"` : ''}\n${code}\n:::`
 }
@@ -125,6 +131,8 @@ function sectionBody(section: CardSection): string {
       return `:::hours\n${(section.hours ?? []).map(formatHoursLine).join('\n')}\n:::`
     case 'reviews':
       return reviews(section.reviews ?? [])
+    case 'amenities':
+      return amenities(section.amenities ?? [])
     case 'map':
       return section.map?.address ? `:::map\naddress: ${oneLine(section.map.address)}\n:::` : ':::map\n:::'
     case 'contacts':

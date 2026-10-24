@@ -22,9 +22,9 @@ export function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
 
   if (success) {
     return (
-      <div className="max-w-sm mx-auto text-center space-y-4">
-        <h2 className="text-2xl font-bold">Проверьте почту!</h2>
-        <p className="text-zinc-600 dark:text-zinc-400">
+      <div className="text-center space-y-3">
+        <h2 className="text-xl font-semibold tracking-tight">Проверьте почту</h2>
+        <p className="text-ink-muted">
           Мы отправили ссылку для подтверждения на <strong>{email}</strong>
         </p>
       </div>
@@ -32,48 +32,50 @@ export function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-sm mx-auto">
-      <h2 className="text-2xl font-bold text-center">Регистрация</h2>
+    <form onSubmit={handleSubmit} className="space-y-3">
       {error && (
-        <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 text-sm border border-red-200 dark:border-red-800">
+        <div className="p-3 rounded-md bg-red-50 text-red-700 text-sm border border-red-200" role="alert">
           {error}
         </div>
       )}
       <input
         type="text"
         placeholder="Имя"
+        aria-label="Имя"
         value={fullName}
         onChange={e => setFullName(e.target.value)}
         required
-        className="w-full px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+        className="ui-field"
       />
       <input
         type="email"
         placeholder="Email"
+        aria-label="Email"
         value={email}
         onChange={e => setEmail(e.target.value)}
         required
-        className="w-full px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+        className="ui-field"
       />
       <input
         type="password"
         placeholder="Пароль (мин. 6 символов)"
+        aria-label="Пароль (мин. 6 символов)"
         value={password}
         onChange={e => setPassword(e.target.value)}
         required
         minLength={6}
-        className="w-full px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+        className="ui-field"
       />
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+        className="ui-btn-primary w-full"
       >
         {loading ? 'Регистрируемся...' : 'Зарегистрироваться'}
       </button>
-      <p className="text-center text-sm text-zinc-500">
+      <p className="text-center text-sm text-ink-muted">
         Уже есть аккаунт?{' '}
-        <button type="button" onClick={onSwitch} className="text-indigo-600 hover:underline">
+        <button type="button" onClick={onSwitch} className="font-medium text-ink underline underline-offset-4">
           Войти
         </button>
       </p>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseCardMarkdown } from '../../lib/parser.ts'
+import { contrast } from '../color.ts'
 import { doc, findAll, findOne, fixAndRecheck, underlined } from './testHelpers.ts'
 
 describe('accent-unquoted', () => {
@@ -43,3 +44,33 @@ describe('invalid-value: accent', () => {
 function validateAccent(text: string) {
   return [...findAll(text, 'accent-format'), ...findAll(text, 'accent-unquoted'), ...findAll(text, 'invalid-value')]
 }
+
+describe('accent-low-contrast', () => {
+  it('жёлтый на светлой теме (ручной тест 1, minimal) — предупреждение и читаемый оттенок', () => {
+    const text = doc('theme: minimal\naccent: "#ffd700"')
+    const d = findOne(text, 'accent-low-contrast')
+    expect(d.message).toMatch(/контраст 1,4 : 1/)
+    const fixed = fixAndRecheck(text, d)
+    const accent = parseCardMarkdown(fixed).data!.accent
+    expect(contrast(accent, '#ffffff')).toBeGreaterThanOrEqual(4.5)
+    // Тот же оттенок — темнее, не другой цвет: красный и зелёный каналы остаются в пропорции жёлтого
+    expect(accent).toMatch(/^#[0-9a-f]{6}$/)
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(accent.slice(i, i + 2), 16))
+    expect(r).toBeGreaterThan(g)
+    expect(b).toBe(0)
+  })
+
+  it('тёмный цвет на тёмной теме noir — осветляется', () => {
+    const text = doc('theme: noir\naccent: "#222244"')
+    const fixed = fixAndRecheck(text, findOne(text, 'accent-low-contrast'))
+    expect(contrast(parseCardMarkdown(fixed).data!.accent, '#14141f')).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('читаемые цвета, auto, тема auto и vercel — без замечаний', () => {
+    expect(findAll(doc('theme: minimal\naccent: "#c0392b"'), 'accent-low-contrast')).toEqual([])
+    expect(findAll(doc('theme: noir\naccent: "#ffd700"'), 'accent-low-contrast')).toEqual([])
+    expect(findAll(doc('theme: minimal\naccent: auto'), 'accent-low-contrast')).toEqual([])
+    expect(findAll(doc('accent: "#ffd700"'), 'accent-low-contrast')).toEqual([])
+    expect(findAll(doc('theme: vercel\naccent: "#ffd700"'), 'accent-low-contrast')).toEqual([])
+  })
+})

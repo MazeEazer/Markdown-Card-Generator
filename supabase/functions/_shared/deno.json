@@ -1,0 +1,8 @@
+{
+  "lock": false,
+  "imports": {
+    "zod": "npm:zod@^4.6.7",
+    "yaml": "npm:yaml@^2.9.0",
+    "@std/assert": "jsr:@std/assert@1"
+  }
+}

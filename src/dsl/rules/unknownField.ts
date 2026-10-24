@@ -70,7 +70,7 @@ function unknownBlockField(field: BlockFieldNode, previous: BlockFieldNode | und
       message: startsWithLink
         ? 'Ссылка в начале строки читается как поле и пропадёт с сайта. Перенесите её в конец предыдущей строки'
         : `Строка «${lineText}» читается как неизвестное поле «${field.key}» — этот текст пропадёт с сайта. Если это продолжение предыдущего текста, присоедините строку к нему. Возможные поля: ${known.join(', ')}`,
-      fix: { label: 'Присоединить к предыдущей строке', replace: ' ', from: previous.to, to: field.from },
+      fix: { label: 'Присоединить к предыдущей строке', replace: ' ', from: previous.to, to: field.from, guess: true },
     }
   }
 
@@ -116,7 +116,7 @@ export const unknownFieldRule: Rule = ({ text, ast }) => {
               severity: 'warning',
               code: 'duplicate-field',
               message: `Поле «${field.key}» уже есть в этом элементе — первое значение пропадёт. Если это следующий элемент, отделите его пустой строкой`,
-              fix: { label: 'Начать новый элемент', replace: '\n', from: field.from, to: field.from },
+              fix: { label: 'Начать новый элемент', replace: '\n', from: field.from, to: field.from, guess: true },
             })
           }
           seen.add(field.key)
