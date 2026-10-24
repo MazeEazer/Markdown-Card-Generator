@@ -7,5 +7,9 @@ export default defineConfig({
   test: {
     // Тесты Edge Functions — для Deno: npm run test:functions
     exclude: [...configDefaults.exclude, 'supabase/**'],
+    // Без кэшей: fsModuleCache хранит модули с уже раскрытым import.meta.glob, и тест не видел новых файлов
+    // правил (criteria.test.ts молча проходил по старому списку кодов). Проект маленький — холодный старт дёшев.
+    fsModuleCache: false,
+    cache: false,
   },
 })
