@@ -2,7 +2,7 @@
 // функция generate-site отвечает code: busy. Повторяем сами, но не дольше maxWaitMs — потом понятное сообщение.
 // Без Supabase: вызов функции передаётся параметром (generateSite.ts), поэтому логика проверяется тестами.
 import type { BusinessName } from '../dsl/schema/frontmatter'
-import type { GenerationModel, Outcome } from '../dsl/generate'
+import { DEFAULT_MODE, DEFAULT_MODEL, type GenerationModel, type Outcome } from '../dsl/generate'
 import type { PromptMode } from '../dsl/prompt'
 
 export interface GenerateRequest {
@@ -10,6 +10,14 @@ export interface GenerateRequest {
   business?: BusinessName
   mode: PromptMode
   model: GenerationModel
+}
+
+/**
+ * Запрос из диалога «Сайт с ИИ»: модель и режим — всегда по умолчанию (Ultra, json — по итогам эксперимента 1).
+ * Выбирать их можно только в песочнице /playground.
+ */
+export function defaultGenerateRequest(description: string, business?: BusinessName): GenerateRequest {
+  return { description: description.trim(), business, mode: DEFAULT_MODE, model: DEFAULT_MODEL }
 }
 
 /** Ответ generate-site при успешном запуске (документа может не быть — тогда есть message). */

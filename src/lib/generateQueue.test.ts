@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { DEFAULT_MODE, DEFAULT_MODEL } from '../dsl/generate'
 import {
   BUSY_TOO_LONG,
+  defaultGenerateRequest,
   type GenerateReply,
   type GenerateRequest,
   type GenerateResponse,
@@ -85,5 +87,17 @@ describe('generateWithQueue', () => {
     const { options, calls } = setup({ data: RESPONSE })
     await expect(generateWithQueue(REQUEST, { ...options, signal: controller.signal })).rejects.toMatchObject({ name: 'AbortError' })
     expect(calls).toEqual([])
+  })
+})
+
+describe('defaultGenerateRequest: диалог «Сайт с ИИ»', () => {
+  it('модель и режим — всегда по умолчанию (Ultra, json), описание обрезано, ниша передаётся', () => {
+    expect(defaultGenerateRequest('  Барбершоп в Самаре  ', 'barbershop')).toEqual({
+      description: 'Барбершоп в Самаре',
+      business: 'barbershop',
+      mode: 'json',
+      model: 'GigaChat-3-Ultra',
+    })
+    expect(defaultGenerateRequest('Торты на заказ')).toMatchObject({ business: undefined, mode: DEFAULT_MODE, model: DEFAULT_MODEL })
   })
 })

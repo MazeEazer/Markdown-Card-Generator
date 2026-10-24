@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { DEFAULT_MODE, DEFAULT_MODEL, DESCRIPTION_LIMITS, GENERATION_MODELS, type GenerationModel } from '../dsl/generate'
-import type { PromptMode } from '../dsl/prompt'
+import { DESCRIPTION_LIMITS } from '../dsl/generate'
 import { BUSINESS_NAMES, BUSINESSES, type BusinessName } from '../dsl/schema/frontmatter'
 import type { Site } from '../hooks/useSites'
-import { type GenerateResponse, type GenerateStatus, GenerateError } from '../lib/generateQueue'
+import { defaultGenerateRequest, type GenerateResponse, type GenerateStatus, GenerateError } from '../lib/generateQueue'
 import { generateSiteFromDescription } from '../lib/generateSite'
 import { parseCardMarkdown } from '../lib/parser'
 
@@ -35,8 +34,6 @@ function siteName(markdown: string): string {
 export function GenerateSiteDialog({ createSite, onCreated, onClose, initialDescription = '' }: GenerateSiteDialogProps) {
   const [description, setDescription] = useState(initialDescription)
   const [business, setBusiness] = useState<BusinessName | undefined>()
-  const [mode, setMode] = useState<PromptMode>(DEFAULT_MODE)
-  const [model, setModel] = useState<GenerationModel>(DEFAULT_MODEL)
   const [status, setStatus] = useState<GenerateStatus | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -65,7 +62,7 @@ export function GenerateSiteDialog({ createSite, onCreated, onClose, initialDesc
     let result: GenerateResponse
     try {
       result = await generateSiteFromDescription(
-        { description: description.trim(), business, mode, model },
+        defaultGenerateRequest(description, business),
         { onStatus: setStatus, signal: controller.current.signal },
       )
     } catch (err) {
@@ -148,34 +145,6 @@ export function GenerateSiteDialog({ createSite, onCreated, onClose, initialDesc
         ))}
       </div>
 
-      <details className="mb-4 text-sm">
-        <summary className="cursor-pointer text-ink-muted select-none">Настройки для эксперимента</summary>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <label className="block">
-            <span className="block mb-1 text-ink-muted">Режим</span>
-            <select
-              value={mode}
-              onChange={(e) => setMode(e.target.value as PromptMode)}
-              disabled={busy}
-              className="ui-field"
-            >
-              <option value="markdown">Разметка напрямую (markdown)</option>
-              <option value="json">JSON по схеме (json)</option>
-            </select>
-          </label>
-          <label className="block">
-            <span className="block mb-1 text-ink-muted">Модель</span>
-            <select
-              value={model}
-              onChange={(e) => setModel(e.target.value as GenerationModel)}
-              disabled={busy}
-              className="ui-field"
-            >
-              {GENERATION_MODELS.map((name) => <option key={name} value={name}>{name}</option>)}
-            </select>
-          </label>
-        </div>
-      </details>
 
       {status && (
         <p className="text-sm text-ink-muted mb-4" role="status" aria-live="polite">
