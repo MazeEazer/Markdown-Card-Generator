@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { emailRedirectUrl } from '../lib/authRedirect'
 import { supabase, type Profile } from '../lib/supabase'
 import type { User } from '@supabase/supabase-js'
 
@@ -59,7 +60,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } }
+      // Ссылка из письма ведёт обратно на этот же адрес (продакшен, Preview, localhost), а не на Site URL
+      options: { data: { full_name: fullName }, emailRedirectTo: emailRedirectUrl() }
     })
     
     if (!error) {
