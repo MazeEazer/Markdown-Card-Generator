@@ -269,8 +269,8 @@ const { url, error } = await deployToVercel(html, currentSiteId)
 }, [currentSiteId, currentSite, parsed.data, resolved])  // === РЕНДЕР: ЗАГРУЗКА ===
   if (authLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-zinc-100 dark:bg-zinc-950">
-        <div className="text-zinc-500">Загрузка...</div>
+      <div className="ui-page flex items-center justify-center">
+        <div className="text-ink-muted">Загрузка…</div>
       </div>
     )
   }

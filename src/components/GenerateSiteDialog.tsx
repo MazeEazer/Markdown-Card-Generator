@@ -11,6 +11,8 @@ interface GenerateSiteDialogProps {
   createSite: (name: string, markdown: string) => Promise<{ data: Site | null; error: unknown }>
   onCreated: (site: Site) => void
   onClose: () => void
+  /** Текст, с которого начать (вписали описание в поле названия формы шаблона) */
+  initialDescription?: string
 }
 
 const PLACEHOLDER =
@@ -30,8 +32,8 @@ function siteName(markdown: string): string {
 }
 
 /** Форма «Создать сайт по описанию»: описание → generate-site → новый сайт открывается в редакторе. */
-export function GenerateSiteDialog({ createSite, onCreated, onClose }: GenerateSiteDialogProps) {
-  const [description, setDescription] = useState('')
+export function GenerateSiteDialog({ createSite, onCreated, onClose, initialDescription = '' }: GenerateSiteDialogProps) {
+  const [description, setDescription] = useState(initialDescription)
   const [business, setBusiness] = useState<BusinessName | undefined>()
   const [mode, setMode] = useState<PromptMode>(DEFAULT_MODE)
   const [model, setModel] = useState<GenerationModel>(DEFAULT_MODEL)
@@ -95,12 +97,12 @@ export function GenerateSiteDialog({ createSite, onCreated, onClose }: GenerateS
 
   if (notice) {
     return (
-      <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 border border-zinc-200 dark:border-zinc-800">
-        <h3 className="text-lg font-semibold mb-2">Сайт составлен</h3>
-        <p className="text-sm text-amber-700 dark:text-amber-400 mb-4" role="status">{notice.message}</p>
+      <div className="ui-panel p-5 sm:p-6">
+        <h2 className="text-lg font-semibold tracking-tight mb-2">Сайт составлен</h2>
+        <p className="text-sm text-amber-800 mb-4" role="status">{notice.message}</p>
         <button
           onClick={() => onCreated(notice.site)}
-          className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors"
+          className="ui-btn-primary"
         >
           Открыть в редакторе
         </button>
@@ -109,9 +111,9 @@ export function GenerateSiteDialog({ createSite, onCreated, onClose }: GenerateS
   }
 
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 border border-zinc-200 dark:border-zinc-800">
-      <h3 className="text-lg font-semibold mb-1">Сайт по описанию</h3>
-      <p className="text-sm text-zinc-500 mb-4">
+    <div className="ui-panel p-5 sm:p-6">
+      <h2 className="text-lg font-semibold tracking-tight mb-1">Сайт с ИИ</h2>
+      <p className="text-sm text-ink-muted mb-5">
         Расскажите своими словами: чем занимаетесь, цены, адрес, часы работы и как с вами связаться.
         Нейросеть не придумывает то, чего нет в описании, — недостающее редактор подскажет добавить.
       </p>
@@ -126,7 +128,7 @@ export function GenerateSiteDialog({ createSite, onCreated, onClose }: GenerateS
         rows={5}
         disabled={busy}
         autoFocus
-        className="w-full px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 mb-4 disabled:opacity-60"
+        className="ui-field mb-4"
       />
 
       <p className="text-sm font-medium mb-2">Вид бизнеса</p>
@@ -139,11 +141,7 @@ export function GenerateSiteDialog({ createSite, onCreated, onClose }: GenerateS
             aria-checked={business === name}
             disabled={busy}
             onClick={() => setBusiness(name)}
-            className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${
-              business === name
-                ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950'
-                : 'border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-            }`}
+            className="ui-choice py-1.5 disabled:opacity-60"
           >
             {name ? capitalize(BUSINESSES[name]) : 'Не важно'}
           </button>
@@ -151,27 +149,27 @@ export function GenerateSiteDialog({ createSite, onCreated, onClose }: GenerateS
       </div>
 
       <details className="mb-4 text-sm">
-        <summary className="cursor-pointer text-zinc-500 select-none">Настройки для эксперимента</summary>
+        <summary className="cursor-pointer text-ink-muted select-none">Настройки для эксперимента</summary>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <label className="block">
-            <span className="block mb-1 text-zinc-600 dark:text-zinc-400">Режим</span>
+            <span className="block mb-1 text-ink-muted">Режим</span>
             <select
               value={mode}
               onChange={(e) => setMode(e.target.value as PromptMode)}
               disabled={busy}
-              className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+              className="ui-field"
             >
               <option value="markdown">Разметка напрямую (markdown)</option>
               <option value="json">JSON по схеме (json)</option>
             </select>
           </label>
           <label className="block">
-            <span className="block mb-1 text-zinc-600 dark:text-zinc-400">Модель</span>
+            <span className="block mb-1 text-ink-muted">Модель</span>
             <select
               value={model}
               onChange={(e) => setModel(e.target.value as GenerationModel)}
               disabled={busy}
-              className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+              className="ui-field"
             >
               {GENERATION_MODELS.map((name) => <option key={name} value={name}>{name}</option>)}
             </select>
@@ -180,23 +178,23 @@ export function GenerateSiteDialog({ createSite, onCreated, onClose }: GenerateS
       </details>
 
       {status && (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4" role="status" aria-live="polite">
+        <p className="text-sm text-ink-muted mb-4" role="status" aria-live="polite">
           {STATUS_TEXT[status]}… {elapsed > 0 && <span className="tabular-nums">{elapsed} с</span>}
         </p>
       )}
-      {error && <p className="text-sm text-red-600 dark:text-red-400 mb-4" role="alert">{error}</p>}
+      {error && <p className="text-sm text-red-600 mb-4" role="alert">{error}</p>}
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={handleGenerate}
           disabled={busy || tooShort}
-          className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+          className="ui-btn-primary"
         >
           {busy ? 'Составляем…' : 'Создать сайт'}
         </button>
         <button
           onClick={handleCancel}
-          className="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          className="ui-btn-secondary"
         >
           {busy ? 'Остановить' : 'Отмена'}
         </button>
