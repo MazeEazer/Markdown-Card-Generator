@@ -18,39 +18,40 @@ export function LoginForm({ onSwitch }: { onSwitch: () => void }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-sm mx-auto">
-      <h2 className="text-2xl font-bold text-center">Вход</h2>
+    <form onSubmit={handleSubmit} className="space-y-3">
       {error && (
-        <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 text-sm border border-red-200 dark:border-red-800">
+        <div className="p-3 rounded-md bg-red-50 text-red-700 text-sm border border-red-200" role="alert">
           {error}
         </div>
       )}
       <input
         type="email"
         placeholder="Email"
+        aria-label="Email"
         value={email}
         onChange={e => setEmail(e.target.value)}
         required
-        className="w-full px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+        className="ui-field"
       />
       <input
         type="password"
         placeholder="Пароль"
+        aria-label="Пароль"
         value={password}
         onChange={e => setPassword(e.target.value)}
         required
-        className="w-full px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+        className="ui-field"
       />
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+        className="ui-btn-primary w-full"
       >
         {loading ? 'Входим...' : 'Войти'}
       </button>
-      <p className="text-center text-sm text-zinc-500">
+      <p className="text-center text-sm text-ink-muted">
         Нет аккаунта?{' '}
-        <button type="button" onClick={onSwitch} className="text-indigo-600 hover:underline">
+        <button type="button" onClick={onSwitch} className="font-medium text-ink underline underline-offset-4">
           Зарегистрироваться
         </button>
       </p>
