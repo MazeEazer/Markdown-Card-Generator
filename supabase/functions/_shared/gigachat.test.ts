@@ -31,7 +31,7 @@ function stubFetch(...chat: Handler[]) {
 const ok = (content: string, finish = 'stop') => () =>
   Response.json({
     choices: [{ message: { content }, finish_reason: finish }],
-    usage: { prompt_tokens: 120, completion_tokens: 30, total_tokens: 150 },
+    usage: { prompt_tokens: 120, completion_tokens: 30, total_tokens: 150, precached_prompt_tokens: 2800 },
     model: 'GigaChat-2-Pro',
   })
 const status = (code: number) => () => new Response('ошибка', { status: code })
@@ -124,12 +124,19 @@ Deno.test('ответ не JSON — http (модель ответила)', async
   }
 })
 
-Deno.test('gigachatModel: параметры из GENERATION_PARAMS, токены usage, finish_reason', async () => {
+Deno.test('gigachatModel: параметры из GENERATION_PARAMS, токены usage (с кэшем), имя модели из ответа, finish_reason', async () => {
   const stub = stubFetch(ok('---\nname: A\n---\n'))
   try {
     const model = gigachatModel('GigaChat-2-Pro')
     const reply = await model([{ role: 'system', content: 'с' }, { role: 'user', content: 'у' }], { timeoutMs: 5000 })
-    assertEquals(reply, { text: '---\nname: A\n---\n', finishReason: 'stop', tokensIn: 120, tokensOut: 30 })
+    assertEquals(reply, {
+      text: '---\nname: A\n---\n',
+      finishReason: 'stop',
+      tokensIn: 120,
+      tokensOut: 30,
+      tokensPrecached: 2800,
+      responseModel: 'GigaChat-2-Pro',
+    })
     assertEquals(stub.sent[0].body.temperature, gigachatParams().temperature)
     assertEquals(stub.sent[0].body.max_tokens, gigachatParams().max_tokens)
     assertEquals(stub.sent[0].body.model, 'GigaChat-2-Pro')

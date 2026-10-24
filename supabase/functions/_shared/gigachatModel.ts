@@ -37,6 +37,8 @@ export function gigachatModel(model: string, { busyRetryDelaysMs = BUSY_RETRY_DE
           finishReason: result.finishReason,
           tokensIn: result.usage?.prompt_tokens,
           tokensOut: result.usage?.completion_tokens,
+          tokensPrecached: result.usage?.precached_prompt_tokens,
+          responseModel: result.model,
         }
       } catch (error) {
         if (!(error instanceof GigaChatError)) throw error

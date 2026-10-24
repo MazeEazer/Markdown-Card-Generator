@@ -10,6 +10,7 @@ import { parseDocument } from './parser.ts'
 import { parseRussianPhone } from './phone.ts'
 import type { ContactName } from './schema/frontmatter.ts'
 import type { Range } from './types.ts'
+import { CITY_ALIASES } from './cities.ts'
 import { letters, stemMatcher, wordsOf } from './words.ts'
 
 /** Код в журнале (fixed_codes) для каждого удалённого поля. */
@@ -68,19 +69,6 @@ const ADDRESS_STOP_WORDS = new Set([
   'пл', 'площадь', 'д', 'дом', 'к', 'корп', 'корпус', 'стр', 'строение', 'кв', 'оф', 'офис', 'кабинет', 'каб',
   'этаж', 'эт', 'район', 'р-н', 'мкр', 'микрорайон', 'г', 'город', 'пос', 'поселок', 'вход', 'street', 'st', 'avenue', 'ave',
 ])
-
-/** Сокращения и английские названия городов, которыми пишут в описании. */
-const CITY_ALIASES: Record<string, string[]> = {
-  'москва': ['мск', 'moscow'],
-  'санкт-петербург': ['спб', 'питер', 'петербург', 'saint petersburg', 'st petersburg', 'st. petersburg'],
-  'екатеринбург': ['екб', 'ебург', 'yekaterinburg', 'ekaterinburg'],
-  'новосибирск': ['нск', 'novosibirsk'],
-  'нижний новгород': ['нн', 'нижний', 'nizhny novgorod'],
-  'казань': ['kazan'],
-  'самара': ['samara'],
-  'краснодар': ['krasnodar'],
-  'ростов-на-дону': ['ростов', 'rostov'],
-}
 
 const numbersOf = (text: string) => text.match(/\d+/g) ?? []
 

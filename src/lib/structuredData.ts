@@ -1,13 +1,10 @@
 // Разметка для поисковиков и мессенджеров: JSON-LD Schema.org LocalBusiness, description, Open Graph.
 import { contactLinks } from '../dsl/contactLinks'
 import { parsePrice } from '../dsl/price'
+import { profileOf } from '../dsl/profiles/index'
+import { AMENITIES, type AmenityKey } from '../dsl/schema/amenities'
 import type { CardData, CardSection } from '../types/card'
 
-/** Тип Schema.org по виду бизнеса. BarberShop в Schema.org нет — ближайший HairSalon. */
-const BUSINESS_TYPES: Record<string, string> = {
-  barbershop: 'HairSalon',
-  nails: 'NailSalon',
-}
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
@@ -25,7 +22,7 @@ export function isBusinessSite(card: CardData): boolean {
   return Boolean(
     card.business ||
       card.address ||
-      card.sections.some((section) => ['services', 'hours', 'reviews', 'map', 'contacts'].includes(section.type)),
+      card.sections.some((section) => ['services', 'hours', 'reviews', 'amenities', 'map', 'contacts'].includes(section.type)),
   )
 }
 
@@ -71,6 +68,19 @@ function offerCatalog(card: CardData, currency: string): object | undefined {
   }
 }
 
+/** Удобства → amenityFeature (LocationFeatureSpecification): название, value: true и уточнение как description. */
+function amenityFeatures(card: CardData): Record<string, unknown> {
+  const features = sectionsOf(card, 'amenities')
+    .flatMap((section) => section.amenities ?? [])
+    .map((amenity) => ({
+      '@type': 'LocationFeatureSpecification',
+      name: AMENITIES[amenity.key as AmenityKey]?.label ?? amenity.key,
+      value: true,
+      ...(amenity.text ? { description: amenity.text } : {}),
+    }))
+  return features.length ? { amenityFeature: features } : {}
+}
+
 function reviews(card: CardData): Record<string, unknown> {
   const list = sectionsOf(card, 'reviews').flatMap((section) => section.reviews ?? [])
   if (!list.length) return {}
@@ -79,7 +89,7 @@ function reviews(card: CardData): Record<string, unknown> {
   return {
     review: list.map((review) => ({
       '@type': 'Review',
-      author: { '@type': 'Person', name: review.author },
+      ...(review.author ? { author: { '@type': 'Person', name: review.author } } : {}),
       reviewBody: review.text,
       ...(review.rating ? { reviewRating: { '@type': 'Rating', ratingValue: review.rating, bestRating: 5, worstRating: 1 } } : {}),
     })),
@@ -109,7 +119,8 @@ export function localBusiness(card: CardData): Record<string, unknown> | null {
 
   return {
     '@context': 'https://schema.org',
-    '@type': BUSINESS_TYPES[card.business ?? ''] ?? 'LocalBusiness',
+    // Тип по профилю ниши (BarberShop в Schema.org нет — HairSalon; у репетитора и фотографа подходящего подтипа LocalBusiness нет)
+    '@type': profileOf(card.business)?.schemaType ?? 'LocalBusiness',
     name: card.name,
     ...(siteDescription(card) ? { description: siteDescription(card) } : {}),
     ...(isAbsoluteUrl(card.avatar) ? { image: card.avatar } : {}),
@@ -128,6 +139,8 @@ export function localBusiness(card: CardData): Record<string, unknown> | null {
     ...(hours.length ? { openingHoursSpecification: hours } : {}),
     ...(catalog ? { hasOfferCatalog: catalog } : {}),
     ...reviews(card),
+    ...amenityFeatures(card),
+    ...(profileOf(card.business)?.schemaExtra ?? {}),
     ...(sameAs.length ? { sameAs } : {}),
   }
 }

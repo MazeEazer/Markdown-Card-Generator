@@ -107,10 +107,12 @@ Deno.test('пользователь из GENERATION_UNLIMITED_USERS — лими
 
 Deno.test('успех: документ, исход и журнал с prompt_version, params и одной итоговой строкой', async () => {
   const { handler, calls } = fakeDeps()
-  const res = await call(handler, post({ description: `  ${DESCRIPTION}  `, business: 'barbershop', siteId: SITE }))
+  const res = await call(handler, post({ description: `  ${DESCRIPTION}  `, business: 'barbershop', siteId: SITE, mode: 'markdown', model: 'GigaChat-2-Pro' }))
   assertEquals(res.status, 200)
-  assertEquals(res.body, { runId: 'run-1', outcome: 'valid', markdown: VALID, message: null, attempts: 1 })
-  // По умолчанию — markdown и GigaChat-2-Pro
+  // Ниша выбрана — после обработки: business, тема и accent ниши, название раздела по профилю барбершопа
+  const profiled =
+    '---\nname: Борода\nphone: +7 999 123-45-67\nbusiness: barbershop\ntheme: noir\naccent: "#cb5d51"\n---\n\n## Услуги и цены\n:::services\ntitle: Стрижка\nprice: 1500\n:::\n'
+  assertEquals(res.body, { runId: 'run-1', outcome: 'valid', markdown: profiled, message: null, attempts: 1 })
   assertEquals(calls.models, ['GigaChat-2-Pro'])
 
   const version = await promptVersion(buildSystemPrompt({ mode: 'markdown', business: 'barbershop' }))
@@ -137,6 +139,21 @@ Deno.test('режим json и выбранная модель доходят д�
   assertEquals(calls.logs[0].prompt_version, await promptVersion(buildSystemPrompt({ mode: 'json' })))
 })
 
+Deno.test('GigaChat-3-Ultra принимается (эксперимент 1), неизвестная модель — 400', async () => {
+  const { handler, calls } = fakeDeps({}, async () => ({ text: '{"name": "Борода", "sections": []}' }))
+  const res = await call(handler, post({ description: DESCRIPTION, mode: 'json', model: 'GigaChat-3-Ultra' }))
+  assertEquals(res.status, 200)
+  assertEquals(calls.models, ['GigaChat-3-Ultra'])
+  assertEquals((await call(handler, post({ description: DESCRIPTION, model: 'GigaChat-4' }))).status, 400)
+})
+
+Deno.test('по умолчанию — GigaChat-3-Ultra и режим json', async () => {
+  const { handler, calls } = fakeDeps()
+  await call(handler, post({ description: DESCRIPTION }))
+  assertEquals(calls.models, ['GigaChat-3-Ultra'])
+  assertEquals(calls.logs[0].mode, 'json')
+})
+
 Deno.test('нейросеть занята — 503 с code: busy, попытка записана с reached_model = false', async () => {
   const { handler, calls } = fakeDeps({}, () => Promise.reject(new ModelNotReachedError('Chat 429', 'busy')))
   const res = await call(handler, post({ description: DESCRIPTION }))
@@ -156,7 +173,7 @@ Deno.test('документа нет (отказ фильтра) — 200 с mark
 
 Deno.test('журнал не записался — сайт всё равно отдаётся', async () => {
   const { handler } = fakeDeps({ insertLogs: () => Promise.reject(new Error('db down')) })
-  const res = await call(handler, post({ description: DESCRIPTION }))
+  const res = await call(handler, post({ description: DESCRIPTION, mode: 'markdown' }))
   assertEquals(res.status, 200)
   assertEquals(res.body.markdown, VALID)
 })

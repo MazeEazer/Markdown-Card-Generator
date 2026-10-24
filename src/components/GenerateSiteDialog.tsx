@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { DEFAULT_MODEL, DESCRIPTION_LIMITS, GENERATION_MODELS, type GenerationModel } from '../dsl/generate'
+import { DEFAULT_MODE, DEFAULT_MODEL, DESCRIPTION_LIMITS, GENERATION_MODELS, type GenerationModel } from '../dsl/generate'
 import type { PromptMode } from '../dsl/prompt'
 import { BUSINESS_NAMES, BUSINESSES, type BusinessName } from '../dsl/schema/frontmatter'
 import type { Site } from '../hooks/useSites'
@@ -33,7 +33,7 @@ function siteName(markdown: string): string {
 export function GenerateSiteDialog({ createSite, onCreated, onClose }: GenerateSiteDialogProps) {
   const [description, setDescription] = useState('')
   const [business, setBusiness] = useState<BusinessName | undefined>()
-  const [mode, setMode] = useState<PromptMode>('markdown')
+  const [mode, setMode] = useState<PromptMode>(DEFAULT_MODE)
   const [model, setModel] = useState<GenerationModel>(DEFAULT_MODEL)
   const [status, setStatus] = useState<GenerateStatus | null>(null)
   const [elapsed, setElapsed] = useState(0)
