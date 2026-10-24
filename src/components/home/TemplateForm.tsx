@@ -4,7 +4,7 @@ import { looksLikeDescription } from '../../lib/looksLikeDescription'
 
 interface TemplateFormProps {
   onCreate: (name: string, templateId: SiteTemplate['id']) => Promise<void>
-  /** В поле названия вписали описание бизнеса — перейти в генерацию с этим текстом */
+  /** Перейти в генерацию: текст из поля названия становится описанием (пусто — диалог пустой) */
   onUseAi: (description: string) => void
   onCancel: () => void
 }
@@ -32,26 +32,6 @@ export function TemplateForm({ onCreate, onUseAi, onCancel }: TemplateFormProps)
       <h2 className="text-lg font-semibold tracking-tight">Сайт из шаблона</h2>
       <p className="mt-1 text-sm text-ink-muted">Выберите шаблон и впишите своё: цены, часы, контакты.</p>
 
-      <label htmlFor="site-name" className="mt-5 mb-1.5 block text-sm font-medium">Название сайта</label>
-      <input
-        id="site-name"
-        type="text"
-        placeholder="Например: Барбершоп «Борода»"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        className="ui-field"
-        autoFocus
-        aria-describedby={description ? 'site-name-hint' : undefined}
-      />
-      {description && (
-        <div id="site-name-hint" className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-line bg-wash px-3 py-2 text-sm" role="status">
-          <span className="text-ink-muted">Похоже на описание — создать сайт с ИИ?</span>
-          <button type="button" onClick={() => onUseAi(name.trim())} className="font-medium underline underline-offset-4">
-            Создать с ИИ
-          </button>
-        </div>
-      )}
-
       <p className="mt-5 mb-1.5 text-sm font-medium">Шаблон</p>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5" role="radiogroup" aria-label="Шаблон сайта">
         {TEMPLATES.map((template) => (
@@ -69,12 +49,49 @@ export function TemplateForm({ onCreate, onUseAi, onCancel }: TemplateFormProps)
         ))}
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-2">
+      <label htmlFor="site-name" className="mt-5 mb-1.5 block text-sm font-medium">Название сайта</label>
+      <input
+        id="site-name"
+        type="text"
+        placeholder="Например: Барбершоп «Борода»"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className="ui-field"
+        autoFocus
+        aria-describedby={description ? 'site-name-hint' : undefined}
+      />
+      {description && (
+        <p id="site-name-hint" className="mt-2 text-sm text-ink-muted" role="status">
+          Похоже на описание — создать с ИИ?
+        </p>
+      )}
+
+      <div className="mt-4 flex flex-wrap gap-2">
         <button type="submit" disabled={creating || !name.trim()} className="ui-btn-primary">
           {creating ? 'Создаём…' : 'Создать'}
         </button>
+        <AiSwitchButton highlighted={description} onClick={() => onUseAi(name.trim())} />
         <button type="button" onClick={onCancel} className="ui-btn-secondary">Отмена</button>
       </div>
     </form>
+  )
+}
+
+/**
+ * «✦ Создать с ИИ» рядом с «Создать» — видна всегда. Если в названии похоже на описание, кнопка выделяется
+ * (рамка цвета текста и обводка), а подсказка над ней объясняет почему; второй кнопки не появляется.
+ */
+export function AiSwitchButton({ highlighted, onClick }: { highlighted: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-highlighted={highlighted || undefined}
+      aria-describedby={highlighted ? 'site-name-hint' : undefined}
+      className={`ui-btn-secondary ${highlighted ? 'border-ink outline-2 outline-offset-2 outline-ink' : ''}`}
+    >
+      ✦ Создать с ИИ
+      <span className="rounded-full border border-line-strong px-1.5 py-0.5 font-geist-mono text-[10px] font-medium leading-none">ИИ</span>
+    </button>
   )
 }

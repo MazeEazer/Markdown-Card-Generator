@@ -5,7 +5,7 @@ import { CREATE_AI, CREATE_TEMPLATE, HERO_SUBTITLE, HERO_TITLE } from './copy'
 import { CreateButtons } from './CreateButtons'
 import { Hero } from './Hero'
 import { PREVIEW_CARD } from './previewCard'
-import { TemplateForm } from './TemplateForm'
+import { AiSwitchButton, TemplateForm } from './TemplateForm'
 
 const noop = () => {}
 const text = (html: string) => html.replace(/<[^>]+>/g, ' ').replace(/&quot;/g, '"').replace(/\s+/g, ' ')
@@ -51,9 +51,27 @@ describe('первый экран', () => {
 })
 
 describe('форма шаблона', () => {
+  const html = renderToStaticMarkup(<TemplateForm onCreate={async () => {}} onUseAi={noop} onCancel={noop} />)
+
   it('поле «Название сайта» с примером', () => {
-    const html = renderToStaticMarkup(<TemplateForm onCreate={async () => {}} onUseAi={noop} onCancel={noop} />)
     expect(text(html)).toContain('Название сайта')
     expect(html).toContain('placeholder="Например: Барбершоп «Борода»"')
+  })
+
+  it('«✦ Создать с ИИ» видна сразу, при пустом поле: белая с рамкой, с меткой «ИИ», после «Создать»', () => {
+    expect(text(html)).toContain('Создать ✦ Создать с ИИ ИИ Отмена')
+    expect(html.match(/Создать с ИИ/g)).toHaveLength(1)
+    expect(html).not.toContain('Похоже на описание')
+    expect(html).not.toContain('data-highlighted')
+  })
+
+  it('похоже на описание — та же кнопка выделяется, второй нет', () => {
+    const plain = renderToStaticMarkup(<AiSwitchButton highlighted={false} onClick={noop} />)
+    const marked = renderToStaticMarkup(<AiSwitchButton highlighted onClick={noop} />)
+    expect(plain).toContain('ui-btn-secondary')
+    expect(plain).not.toContain('outline-ink')
+    expect(marked).toContain('data-highlighted="true"')
+    expect(marked).toContain('outline-ink')
+    expect(marked).toContain('aria-describedby="site-name-hint"')
   })
 })
