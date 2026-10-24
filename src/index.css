@@ -5,6 +5,94 @@
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
+/*
+ * Интерфейс приложения (главная, вход, список сайтов) — в духе vercel.com, только светлая тема.
+ * Весь стиль — здесь: токены (bg-canvas, text-ink, border-line, font-geist…) и классы .ui-*.
+ * Темы сгенерированных сайтов (glass, minimal, noir, vercel) эти токены не используют.
+ */
+@theme {
+  --color-canvas: #ffffff;
+  --color-wash: #fafafa;
+  --color-ink: #111111;
+  --color-ink-muted: #666666;
+  --color-line: #eaeaea;
+  --color-line-strong: #d4d4d4;
+  --font-geist: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-geist-mono: "Geist Mono", ui-monospace, monospace;
+}
+
+@layer components {
+  .ui-page {
+    @apply min-h-screen bg-canvas font-geist text-ink antialiased;
+    color-scheme: light;
+  }
+
+  .ui-btn-primary,
+  .ui-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors
+      focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .ui-btn-primary {
+    @apply border-ink bg-ink text-canvas hover:bg-[#383838] hover:border-[#383838];
+  }
+
+  .ui-btn-secondary {
+    @apply border-line bg-canvas text-ink hover:bg-wash hover:border-line-strong;
+  }
+
+  .ui-field {
+    @apply w-full rounded-md border border-line bg-canvas px-3 py-2 text-sm text-ink placeholder:text-ink-muted
+      focus:border-ink focus:outline-none disabled:opacity-60;
+  }
+
+  .ui-panel {
+    @apply rounded-lg border border-line bg-canvas;
+  }
+
+  .ui-choice {
+    @apply rounded-md border border-line bg-canvas px-3 py-2 text-left text-sm transition-colors hover:border-line-strong
+      aria-checked:border-ink aria-checked:bg-wash;
+  }
+}
+
+/* Лёгкая сетка на фоне первого экрана: линии #eaeaea, к краям гаснет */
+.ui-grid {
+  background-image:
+    linear-gradient(to right, var(--color-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-line) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 40%, transparent 100%);
+}
+
+/*
+ * Параллакс первого экрана: useParallax пишет прокрутку (px) в --parallax, слои сдвигаются с разной скоростью.
+ * При prefers-reduced-motion переменная не обновляется, и сдвиг отключён ещё и здесь.
+ */
+.parallax-grid,
+.parallax-title,
+.parallax-preview {
+  will-change: transform;
+}
+.parallax-grid {
+  transform: translate3d(0, calc(var(--parallax, 0) * 0.45px), 0);
+}
+.parallax-title {
+  transform: translate3d(0, calc(var(--parallax, 0) * 0.12px), 0);
+}
+.parallax-preview {
+  transform: translate3d(0, calc(var(--parallax, 0) * -0.08px), 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parallax-grid,
+  .parallax-title,
+  .parallax-preview {
+    transform: none;
+    will-change: auto;
+  }
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;
