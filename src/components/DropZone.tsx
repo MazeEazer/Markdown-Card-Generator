@@ -1,46 +1,5 @@
 import { useState, useRef, useCallback, type ReactNode } from 'react'
-
-// 🆕 Функция для сжатия изображения перед конвертацией в base64
-const compressImage = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.readAsDataURL(file)
-    reader.onload = (event) => {
-      const img = new Image()
-      img.src = event.target?.result as string
-      img.onload = () => {
-        const canvas = document.createElement('canvas')
-        const MAX_SIZE = 256 // Оптимальный размер для аватара
-
-        let width = img.width
-        let height = img.height
-
-        // Сохраняем пропорции
-        if (width > height) {
-          if (width > MAX_SIZE) {
-            height *= MAX_SIZE / width
-            width = MAX_SIZE
-          }
-        } else {
-          if (height > MAX_SIZE) {
-            width *= MAX_SIZE / height
-            height = MAX_SIZE
-          }
-        }
-
-        canvas.width = width
-        canvas.height = height
-        const ctx = canvas.getContext('2d')
-        ctx?.drawImage(img, 0, 0, width, height)
-        
-        // Сжимаем в JPEG с качеством 0.7 (идеальный баланс размер/качество)
-        resolve(canvas.toDataURL('image/jpeg', 0.7))
-      }
-      img.onerror = reject
-    }
-    reader.onerror = reject
-  })
-}
+import { compressImage } from '../lib/imageCompress'
 
 interface DropZoneProps {
   onImage: (dataUrl: string) => void
@@ -71,7 +30,7 @@ export function DropZone({ onImage, children }: DropZoneProps) {
   }, [])
 
   const onDrop = useCallback(
-    async (e: React.DragEvent) => { // 🆕 Добавили async
+    async (e: React.DragEvent) => {
       e.preventDefault()
       e.stopPropagation()
       setIsDragging(false)
@@ -81,11 +40,11 @@ export function DropZone({ onImage, children }: DropZoneProps) {
       if (!file?.type.startsWith('image/')) return
 
       try {
-        // 🆕 Сжимаем изображение перед передачей
+        // Сжимаем до 512 px и WebP/JPEG 0,8 — base64 в шапке остаётся в десятках килобайт
         const compressedDataUrl = await compressImage(file)
         onImage(compressedDataUrl)
       } catch (err) {
-        console.error('Ошибка при обработке изображения:', err)
+        console.error('Не удалось обработать фото:', err)
       }
     },
     [onImage]

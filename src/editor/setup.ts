@@ -12,6 +12,7 @@ import {
   placeholder,
 } from '@codemirror/view'
 import { dslAutocomplete } from './complete'
+import { dataUrlFolding } from './dataUrl'
 import { type EditorLogger, editorEvents, NO_LOGGER } from './events'
 import { dslHover } from './hover'
 import { dslHighlighting } from './language'
@@ -125,6 +126,7 @@ export function baseExtensions(logger: EditorLogger = NO_LOGGER): Extension[] {
     dslAutocomplete(),
     dslHover(),
     dslLinter(),
+    dataUrlFolding(),
     editorEvents(logger),
   ]
 }

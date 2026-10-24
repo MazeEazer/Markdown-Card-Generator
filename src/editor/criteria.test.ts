@@ -16,6 +16,8 @@ const CORPUS: Record<string, string> = {
   'accent-low-contrast': H('theme: minimal\naccent: "#ffd700"\n'),
   'accent-unquoted': H('accent: #c0392b\n'),
   'address-without-city': H('address: ул. Ленина, 1\n'),
+  'amenity-duplicate': `${H()}## Удобства\n:::amenities\nkey: wifi\n\nkey: wifi\n:::\n`,
+  'amenity-unknown-key': `${H()}## Удобства\n:::amenities\nkey: wify\n:::\n`,
   'contact-link': H('contacts:\n  telegram: https://t.me/boroda\n'),
   'contacts-block-empty': '---\nname: Борода\n---\n\n## Контакты\n:::contacts\n:::\n',
   'contacts-block-text': `${H()}## Контакты\n:::contacts\nзвоните\n:::\n`,
@@ -41,6 +43,7 @@ const CORPUS: Record<string, string> = {
   'phone-format': H().replace('+7 999 123-45-67', '+79991234567'),
   'price-not-number': `${H()}## Цены\n:::services\ntitle: А\nprice: дорого\ndescription: а\n:::\n`,
   'primary-unknown': H('contacts:\n  primary: vk\n'),
+  'profile-section-missing': H('business: barbershop\n'),
   'rating-invalid': `${H()}## Отзывы\n:::reviews\nauthor: А\ntext: Хорошо\nrating: 7\n:::\n`,
   'service-no-description': `${H()}## Цены\n:::services\ntitle: А\nprice: 1500\n:::\n`,
   'stray-text': `${H()}## Цены\n:::services\nпросто текст\n:::\n`,
@@ -61,9 +64,9 @@ const RULE_SOURCES = import.meta.glob<string>(['../dsl/rules/*.ts', '!../dsl/rul
 const RULE_CODES = [...new Set(Object.values(RULE_SOURCES).flatMap((source) => [...source.matchAll(/code: '([a-z-]+)'/g)].map((m) => m[1])))]
 
 describe('все правила валидатора видны в редакторе', () => {
-  it('в корпусе есть пример на каждый код из правил (сейчас их 38)', () => {
+  it('в корпусе есть пример на каждый код из правил (сейчас их 41)', () => {
     expect(Object.keys(CORPUS).sort()).toEqual(RULE_CODES.sort())
-    expect(RULE_CODES).toHaveLength(38)
+    expect(RULE_CODES).toHaveLength(41)
   })
 
   it.each(Object.entries(CORPUS))('%s — подчёркивание с тем же сообщением и кнопкой исправления', (code, text) => {
