@@ -287,7 +287,7 @@ node experiments/run-generation.ts                 # весь прогон; пр
 node experiments/export-logs.ts                    # журнал → final.csv, metrics.csv, metrics-by-tag.csv, failures.csv, annotation/
 ```
 
-Результаты — в `experiments/results/exp1/` (в git не попадают). Проверка скриптов без GigaChat — на заглушке `experiments/stub-supabase.ts` (команды в её заголовке). Тесты функций — `npm run test:functions` (Deno).
+Что где лежит в папке — `experiments/README.md`. Результаты — в `experiments/results/exp1/` (в git не попадают). Проверка скриптов без GigaChat — на заглушке `experiments/stub-supabase.ts` (команды в её заголовке). Тесты функций — `npm run test:functions` (Deno).
 
 ## Редактор
 
