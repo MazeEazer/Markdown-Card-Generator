@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:functions": "npx deno@2 test -A --config supabase/functions/_shared/deno.json supabase/functions/_shared supabase/functions/generate-site",
-    "check:dsl": "node scripts/dsl-check.ts"
+    "check:dsl": "node scripts/dsl-check.ts",
+    "schema:samples": "node scripts/schema-samples.ts"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",
