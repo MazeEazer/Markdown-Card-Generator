@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:functions": "npx deno@2 test -A --config supabase/functions/_shared/deno.json supabase/functions/_shared supabase/functions/generate-site",
-    "check:dsl": "node scripts/dsl-check.ts"
+    "check:dsl": "node scripts/dsl-check.ts",
+    "schema:samples": "node scripts/schema-samples.ts"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",
@@ -23,9 +24,6 @@
     "@lezer/highlight": "^1.2.5",
     "@supabase/supabase-js": "^2.116.0",
     "file-saver": "^2.0.5",
-    "html2canvas": "^1.4.1",
-    "html2pdf.js": "^0.14.0",
-    "jspdf": "^4.2.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-markdown": "^10.1.0",
