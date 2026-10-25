@@ -1,0 +1,13 @@
+{
+  // Тесты лежат рядом с кодом: в проводнике они вкладываются под основной файл
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "*.ts": "${capture}.test.ts",
+    "*.tsx": "${capture}.test.tsx, ${capture}.test.ts",
+    "package.json": "package-lock.json, .oxlintrc.json, vite.config.ts, vercel.json",
+    "tsconfig.json": "tsconfig.*.json",
+    "README.md": "CLAUDE.md, PLAN.md",
+    ".gitignore": ".env, .env.*"
+  }
+}
